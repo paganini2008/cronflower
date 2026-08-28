@@ -1,4 +1,4 @@
-# cronsmith · cronflower
+# Cronflower
 
 > A **distributed, stateful cron scheduler** for the JVM — with a year-aware schedule syntax, an
 > auto-detecting multi-database store, cluster sharding & weighted dispatch, and a first-class web
