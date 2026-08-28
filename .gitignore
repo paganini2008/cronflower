@@ -1,0 +1,45 @@
+# ============================================================================================
+# Repo-wide ignores — commit SOURCE only. Every artifact below is rebuilt from source by the
+# deploy scripts (mvn/ng build), so none of it belongs in git. Per-directory .gitignore files
+# (frontend/, backend modules, deploy/) still apply on top of this.
+# ============================================================================================
+
+# --- Java / Maven ---------------------------------------------------------------------------
+**/target/
+*.jar
+*.war
+!**/.mvn/wrapper/maven-wrapper.jar   # keep the Maven Wrapper jar if a project commits one
+backend/.mvn/maven.config            # local dev only: pins an absolute -Dmaven.repo.local, per-machine
+
+# --- Node / Angular -------------------------------------------------------------------------
+**/node_modules/
+**/dist/
+**/.angular/
+npm-debug.log*
+yarn-error.log*
+
+# --- Embedded H2 store (runtime data, never source) -----------------------------------------
+*.mv.db
+*.trace.db
+**/data/
+
+# --- deploy build/runtime outputs (also covered by deploy/.gitignore) -----------------------
+deploy/bin/*.jar
+deploy/web-dist/
+deploy/logs/
+deploy/run/
+deploy/docker-compose.generated.yml
+!deploy/bin/.gitkeep
+
+# --- IDE / editor ---------------------------------------------------------------------------
+.idea/
+*.iml
+*.iws
+
+# --- Dev notes (kept local, not published) --------------------------------------------------
+**/change_logs/
+
+# --- OS / misc ------------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.log

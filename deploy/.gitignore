@@ -1,0 +1,8 @@
+# Build outputs & runtime state staged by the run scripts — not source, don't commit.
+bin/*.jar
+web-dist/
+docker-compose.generated.yml
+logs/
+run/
+data/
+!bin/.gitkeep

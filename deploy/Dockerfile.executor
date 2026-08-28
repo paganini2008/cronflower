@@ -1,0 +1,5 @@
+FROM eclipse-temurin:17-jre
+# The executor jar staged into bin/ by run-docker.sh (build context is the deploy/ dir).
+COPY bin/cronsmith-executor-example-*.jar /app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "/app.jar"]

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.github.paganini2008</groupId>
+	<artifactId>cronsmith-backend</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>cronsmith-backend</name>
+	<description>
+		Aggregator for the cronsmith backend: the two Spring Boot starters (scheduler + executor)
+		and their runnable reference applications. Build everything with:
+
+		    mvn -f backend/pom.xml clean install -DskipTests
+
+		The base library `com.github.paganini2008:cronsmith` is NOT part of this repo (it is the
+		upstream engine, released on its own); it is resolved from your local Maven repository, so
+		run `mvn install` in the cronsmith repo once, or depend on the published artifact.
+	</description>
+
+	<!-- Aggregation only. Each module keeps its own spring-boot-starter-parent (inheritance is
+	     independent of aggregation), so a reactor build resolves inter-module order automatically. -->
+	<modules>
+		<module>cronsmith-spring-boot-starter</module>
+		<module>cronsmith-executor-spring-boot-starter</module>
+		<module>cronsmith-scheduler-example</module>
+		<module>cronsmith-executor-example</module>
+	</modules>
+</project>

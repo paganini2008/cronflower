@@ -1,0 +1,65 @@
+:host {
+  display: block;
+  height: 100vh;
+}
+
+.app-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  color: #0f2c4d;
+  background: #ffffff;
+  border-bottom: 1px solid #e3eaf3;
+  box-shadow: 0 2px 10px rgba(21, 101, 192, 0.08);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.25rem;
+  text-decoration: none;
+}
+
+.logo {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+
+.brand-sub {
+  font-size: 0.8rem;
+  color: #7a8aa0;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+.flex-1 {
+  flex: 1 1 auto;
+}
+
+.app-container {
+  height: calc(100vh - 64px);
+  background: #f4f7fb;
+}
+
+.app-sidenav {
+  width: 240px;
+  border-right: 1px solid #e3eaf3;
+  background: #ffffff;
+  padding-top: 0.5rem;
+}
+
+.app-sidenav .active-link {
+  background: #e8f1fd;
+  border-right: 3px solid #1565c0;
+  font-weight: 600;
+}
+
+.app-sidenav .active-link mat-icon {
+  color: #1565c0;
+}
+
+.app-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+}

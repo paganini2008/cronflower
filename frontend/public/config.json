@@ -1,0 +1,8 @@
+{
+  "apiBaseUrl": "http://localhost:7500/cs",
+  "apiPrefix": "/cronsmith",
+  "auth": {
+    "username": "admin",
+    "password": "admin"
+  }
+}

@@ -1,0 +1,27 @@
+<mat-toolbar class="app-toolbar">
+  <button matIconButton (click)="toggle()" aria-label="Toggle navigation">
+    <mat-icon>menu</mat-icon>
+  </button>
+  <a routerLink="/dashboard" class="brand" aria-label="cronflower home">
+    <img src="default_logo.png" class="logo" alt="cronflower" />
+  </a>
+  <span class="flex-1"></span>
+  <span class="brand-sub">cronsmith control plane</span>
+</mat-toolbar>
+
+<mat-sidenav-container class="app-container">
+  <mat-sidenav [opened]="opened()" mode="side" class="app-sidenav">
+    <mat-nav-list>
+      @for (item of nav; track item.path) {
+        <a mat-list-item [routerLink]="item.path" routerLinkActive="active-link">
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="app-content">
+    <router-outlet />
+  </mat-sidenav-content>
+</mat-sidenav-container>

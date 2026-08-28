@@ -1,0 +1,6 @@
+# Keep the build context small: only bin/ (jars), web-dist/ and conf/ are needed by the images.
+logs/
+run/
+data/
+docker-compose.generated.yml
+*.md
