@@ -93,3 +93,54 @@ connection:
 | H2 file | **default** (per node: `jdbc:h2:file:./data/cronsmith-<n>`) | node-local, kept in sync by leader **broadcast** | no |
 | in-memory | set `jdbc:h2:mem:cronsmith` (or no DataSource) | node-local, broadcast | no |
 | MySQL / PostgreSQL | uncomment a datasource block in `scheduler.properties` | **shared** (single store, CAS) | **yes** |
+
+## Running behind nginx / KONG
+
+**You don't need a gateway.** By default the web console (`deploy/web-server.mjs`) discovers the whole
+scheduler cluster from a single seed and round-robins the API across the nodes with failover, and the
+executor's `server-urls` fails over across nodes on its own. A reverse proxy is purely optional — reach
+for one only when you want **TLS termination, a single fixed ingress, or NAT traversal**. The golden
+rule stays: **load balancing is the scheduler's job; the gateway is transparent transport.**
+
+### Browser → scheduler (the console)
+
+Two equally valid setups:
+
+- **Console self-discovery (default).** Give `web-server.mjs` one seed and let it find the rest:
+  `SCHEDULER_URL=http://scheduler-1:8080` (discovery on). No gateway involved.
+- **Behind a gateway.** Front the scheduler pool with nginx/KONG (health-checked upstream) and point
+  the console at that single endpoint, turning discovery off so it just forwards:
+  `SCHEDULER_URL=https://gw.example.com` and `DISCOVERY=off`. The browser still talks to one origin
+  (the console), the console talks to one origin (the gateway).
+
+nginx fronting the scheduler pool:
+
+```nginx
+upstream cronsmith_schedulers {
+  server scheduler-1:8080 max_fails=2 fail_timeout=5s;
+  server scheduler-2:8080 max_fails=2 fail_timeout=5s;
+  server scheduler-3:8080 max_fails=2 fail_timeout=5s;
+}
+server {
+  listen 443 ssl;
+  # ... ssl_certificate ...
+  location ~ ^/(cronsmith|actuator)/ {
+    proxy_pass http://cronsmith_schedulers;
+    proxy_set_header Host $host;
+  }
+}
+```
+
+KONG: create a Service pointing at the pool (or an upstream with the three targets) and a Route on the
+`/cronsmith` and `/actuator` path prefixes — same shape, KONG does the health checks and balancing.
+
+Reaching **any** scheduler node is enough: the cluster forwards writes to the leader internally, so the
+gateway needs no leader awareness.
+
+### Server → executor (dispatch)
+
+This direction must **not** be pooled behind a shared gateway upstream — the scheduler's own
+round-robin already picks the target instance, and dispatch addresses a *specific* executor. If a
+gateway sits in front, give each executor a unique, deterministically-routed address via
+`cronsmith.client.base-url` (or `advertise-host`/`advertise-port`), e.g. `http://gw/exec-1` → that
+one instance. See [Two directions — and why nginx only fronts one of them](#two-directions--and-why-nginx-only-fronts-one-of-them) above for the full rationale.

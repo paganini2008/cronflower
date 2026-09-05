@@ -36,9 +36,6 @@ public class ShardedSchedulerLifecycle implements SchedulerLifecycle {
 
     private static final Logger log = LoggerFactory.getLogger(ShardedSchedulerLifecycle.class);
 
-    /** Sharding needs windowed claiming; if none is configured, fall back to five minutes. */
-    private static final long DEFAULT_WINDOW_MILLIS = 5 * 60_000L;
-
     private final TaskManager shardingTaskManager;
     private final GossipCluster cluster;
     private final ZoneId zoneId;
@@ -72,7 +69,8 @@ public class ShardedSchedulerLifecycle implements SchedulerLifecycle {
     }
 
     private void start() {
-        long window = claimWindowMillis > 0 ? claimWindowMillis : DEFAULT_WINDOW_MILLIS;
+        long window =
+                claimWindowMillis > 0 ? claimWindowMillis : Settings.DEFAULT_CLAIM_WINDOW_MILLIS;
         if (claimWindowMillis <= 0) {
             log.warn("Sharding requires windowed claiming; no window configured, defaulting to {}ms",
                     window);

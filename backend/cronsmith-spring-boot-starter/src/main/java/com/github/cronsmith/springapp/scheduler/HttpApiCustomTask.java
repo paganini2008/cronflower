@@ -50,6 +50,10 @@ public class HttpApiCustomTask extends ApiCallTask {
         record.put("misfirePolicy", r.misfirePolicy());
         record.put("cron", r.cron());
         record.put("parser", r.parser());
+        record.put("repeatCount", r.repeatCount());
+        record.put("stopAt",
+                com.github.cronsmith.utils.StringUtils.isNotBlank(r.stopAt()) ? r.stopAt().trim()
+                        : null);
         return new HttpApiCustomTask(record);
     }
 

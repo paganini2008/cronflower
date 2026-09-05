@@ -26,7 +26,7 @@ class HttpDispatchCustomTaskTests {
 
     private static ExecutorTaskMetadata metadata(String cron, String parser) {
         return new ExecutorTaskMetadata("grp", "job", "com.demo.Tasks", "demoTasks", "run", cron,
-                parser, "a demo task", "hello", 4000L, 2, 1500L, "SKIP");
+                parser, "a demo task", "hello", 4000L, 2, 1500L, "SKIP", -1, null);
     }
 
     @Test

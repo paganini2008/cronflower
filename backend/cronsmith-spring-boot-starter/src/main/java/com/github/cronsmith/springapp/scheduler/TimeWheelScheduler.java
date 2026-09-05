@@ -44,13 +44,6 @@ public class TimeWheelScheduler implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(TimeWheelScheduler.class);
 
-    /**
-     * How many times a fire time in the past is skipped over before the scheduler gives up on
-     * catching a task up. Reached only when an expression produces times faster than the scheduler
-     * can walk them.
-     */
-    private static final int MAX_CATCH_UP_STEPS = 1000;
-
     private final ScheduledExecutorService schedulerThreads;
     private final ExecutorService workerThreads;
     private final ExecutorServiceFactory executorServiceFactory;
@@ -69,7 +62,7 @@ public class TimeWheelScheduler implements AutoCloseable {
     // tasks whose next fire is within this many milliseconds, claimed from the store on an interval,
     // so a very large schedule needs only a bounded slice in memory and failover is quick.
     private long claimWindowMillis = 0L;
-    private long claimIntervalMillis = 30000L;
+    private long claimIntervalMillis = Settings.DEFAULT_CLAIM_INTERVAL_MILLIS;
 
     private volatile ScheduledFuture<?> tickFuture;
     private volatile ScheduledFuture<?> claimFuture;
@@ -446,7 +439,7 @@ public class TimeWheelScheduler implements AutoCloseable {
      */
     private boolean scheduleNext(TaskId taskId, LocalDateTime from) {
         LocalDateTime cursor = from;
-        for (int step = 0; step < MAX_CATCH_UP_STEPS; step++) {
+        for (int step = 0; step < Settings.DEFAULT_MAX_CATCH_UP_STEPS; step++) {
             LocalDateTime nextFiredDateTime;
             try {
                 nextFiredDateTime = taskManager.computeNextFiredDateTime(taskId, cursor);
@@ -496,7 +489,7 @@ public class TimeWheelScheduler implements AutoCloseable {
             cursor = nextFiredDateTime;
         }
         log.warn("Gave up catching task {} up after {} attempts; it produces fire times faster"
-                + " than they can be scheduled.", taskId, MAX_CATCH_UP_STEPS);
+                + " than they can be scheduled.", taskId, Settings.DEFAULT_MAX_CATCH_UP_STEPS);
         taskManager.setTaskStatus(taskId, TaskStatus.STANDBY);
         return false;
     }

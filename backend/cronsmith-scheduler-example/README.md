@@ -42,6 +42,23 @@ java -jar cronsmith-scheduler-example-1.0.0-SNAPSHOT.jar \
   --cronsmith.server.scheduler.sharding=true
 ```
 
+### Supported & tested databases
+
+All six are regression-tested. The **JPA** store works on every one; the **jOOQ** store runs on the
+four open-source jOOQ dialects — SQL Server and Oracle are jOOQ-commercial-only, so on those two the
+store is JPA/Hibernate (which generates the schema itself, so the bundled `db/*.sql` are reference DDL).
+
+| Database   | Tested server version        | JDBC driver          | Store tested   |
+|------------|------------------------------|----------------------|----------------|
+| H2         | 2.4.240 (embedded)           | bundled              | JPA + jOOQ     |
+| SQLite     | via sqlite-jdbc 3.46.1.3     | sqlite-jdbc 3.46.1.3 | jOOQ           |
+| MySQL      | 8.x                          | mysql-connector-j    | JPA + jOOQ     |
+| PostgreSQL | 14+                          | postgresql 42.7.4    | JPA + jOOQ     |
+| SQL Server | 2022 (`mssql/server:2022`)   | mssql-jdbc 12.8.1    | JPA¹           |
+| Oracle     | Free 23c (`gvenzl/oracle-free:23`) | ojdbc11 23.7.0.25.01 | JPA¹     |
+
+¹ jOOQ has no open-source dialect for SQL Server / Oracle; use the JPA store there.
+
 ## Cluster (multi-node)
 
 One fixed port per machine; list the peer hosts. On a single host, run several instances (one grabs

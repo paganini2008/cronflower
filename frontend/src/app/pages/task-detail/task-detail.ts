@@ -72,6 +72,8 @@ import { fmt, statusClass } from '../../core/util';
             <div><dt>Timeout</dt><dd>{{ t.timeout }} ms</dd></div>
             <div><dt>Retries</dt><dd>{{ t.maxRetryCount }} × {{ t.retryInterval }}ms</dd></div>
             <div><dt>Misfire policy</dt><dd>{{ t.misfirePolicy || '—' }}</dd></div>
+            <div><dt>Repeat count</dt><dd>{{ (t.repeatCount ?? -1) > 0 ? t.repeatCount : 'Unlimited' }}</dd></div>
+            <div><dt>Stop at</dt><dd>{{ t.stopAt ? fmt(t.stopAt) : '—' }}</dd></div>
           </dl>
         </div>
 

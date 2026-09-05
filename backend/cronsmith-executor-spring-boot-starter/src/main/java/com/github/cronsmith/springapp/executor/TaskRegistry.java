@@ -1,6 +1,7 @@
 package com.github.cronsmith.springapp.executor;
 
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -54,17 +55,50 @@ public class TaskRegistry {
                         : applicationName;
                 String name = StringUtils.hasText(annotation.name()) ? annotation.name()
                         : beanName + "." + method.getName();
+                Schedule schedule = resolveScheduleAndParser(annotation, method);
                 tasks.add(new TaskMetadata(group, name, targetClass.getName(), beanName,
-                        method.getName(), resolveSchedule(annotation, method),
-                        resolveParser(annotation, method), annotation.description(),
-                        annotation.initialParameter(), annotation.timeout(),
+                        method.getName(), schedule.cron(), schedule.parser(),
+                        annotation.description(), annotation.initialParameter(), annotation.timeout(),
                         annotation.maxRetryCount(), annotation.retryInterval(),
-                        annotation.misfirePolicy()));
+                        annotation.misfirePolicy(), schedule.repeatCount(), schedule.stopAt()));
                 log.debug("Discovered @Task {}#{} on {}.{}", group, name, targetClass.getSimpleName(),
                         method.getName());
             });
         }
         return tasks;
+    }
+
+    /** The resolved schedule of a task: what the executor reports to the server. */
+    private record Schedule(String cron, String parser, int repeatCount, String stopAt) {
+    }
+
+    /**
+     * Works out the four schedule fields the server needs. A named {@link Task#builder()} is the
+     * single source and wins outright; otherwise the annotation's own attributes are used.
+     */
+    private Schedule resolveScheduleAndParser(Task annotation, Method method) {
+        if (StringUtils.hasText(annotation.builder())) {
+            CronExpressionBuilder builder = lookupBuilder(annotation.builder(), method);
+            String cron = builder.buildCron();
+            if (!StringUtils.hasText(cron)) {
+                throw new IllegalStateException("@Task " + method + " builder '" + annotation.builder()
+                        + "' returned a blank cron expression");
+            }
+            LocalDateTime stopAt = builder.getStopAt();
+            return new Schedule(cron.trim(), normalizeParser(builder.getParser(), method),
+                    builder.getRepeatCount(), stopAt != null ? stopAt.toString() : null);
+        }
+        return new Schedule(resolveSchedule(annotation, method),
+                normalizeParser(annotation.parser(), method), annotation.repeatCount(), null);
+    }
+
+    private CronExpressionBuilder lookupBuilder(String beanName, Method method) {
+        try {
+            return applicationContext.getBean(beanName, CronExpressionBuilder.class);
+        } catch (RuntimeException e) {
+            throw new IllegalStateException("@Task " + method + " names builder '" + beanName
+                    + "', which is not a CronExpressionBuilder bean", e);
+        }
     }
 
     /**
@@ -79,7 +113,7 @@ public class TaskRegistry {
         int count = (hasCron ? 1 : 0) + (hasInterval ? 1 : 0) + (hasIso ? 1 : 0);
         if (count != 1) {
             throw new IllegalStateException("@Task " + method
-                    + " must set exactly one of cron / interval / iso");
+                    + " must set exactly one of cron / interval / iso (or a builder)");
         }
         if (hasCron) {
             return annotation.cron().trim();
@@ -95,11 +129,11 @@ public class TaskRegistry {
      * Which syntax the {@code cron} expression is in: {@code "cron"} (traditional) or {@code "ycron"}
      * (year-based). Validated here so a typo fails fast at startup rather than on the server.
      */
-    private String resolveParser(Task annotation, Method method) {
-        String parser = annotation.parser().trim().toLowerCase();
+    private String normalizeParser(String rawParser, Method method) {
+        String parser = rawParser != null ? rawParser.trim().toLowerCase() : "cron";
         if (!parser.equals("cron") && !parser.equals("ycron")) {
-            throw new IllegalStateException("@Task " + method + " has an unknown parser '"
-                    + annotation.parser() + "'; use \"cron\" or \"ycron\"");
+            throw new IllegalStateException("@Task " + method + " has an unknown parser '" + rawParser
+                    + "'; use \"cron\" or \"ycron\"");
         }
         return parser;
     }

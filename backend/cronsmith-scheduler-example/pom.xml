@@ -30,6 +30,14 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
+		<!-- Swagger UI / OpenAPI for the scheduler's REST API. The 3.x line targets Spring Boot 4 /
+		     Spring Framework 7. Served at /swagger-ui.html and /v3/api-docs (outside the business
+		     API prefix, which is scoped to the ...scheduler.web controllers only). -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>3.1.0</version>
+		</dependency>
 		<!-- JPA storage backend for this test: an embedded H2. -->
 		<dependency>
 			<groupId>com.h2database</groupId>
@@ -72,6 +80,13 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<!-- Boot 4.1.1's default (new) fat-jar loader fails to load some nested-jar classes
+					     (e.g. jakarta.servlet.ServletRequestWrapper during @RequestParam multipart
+					     resolution), giving a 500 under `java -jar`; the app is fine when run exploded.
+					     The CLASSIC loader avoids it. -->
+					<loaderImplementation>CLASSIC</loaderImplementation>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

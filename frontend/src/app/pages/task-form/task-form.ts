@@ -11,6 +11,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { CronsmithApi } from '../../core/api.service';
 import { HTTP_METHODS, MISFIRE_POLICIES, TaskMetadata } from '../../core/models';
+import { fromInputDateTime, toInputDateTime, tzLabel } from '../../core/util';
 import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-builder-dialog';
 
 @Component({
@@ -192,6 +193,18 @@ import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-bu
             </mat-select>
           </mat-form-field>
         </div>
+        <div class="field-grid cols-2">
+          <mat-form-field appearance="outline">
+            <mat-label>Repeat count</mat-label>
+            <input matInput type="number" formControlName="repeatCount" />
+            <mat-hint>Total fires for a periodic task; -1 or 0 = unlimited</mat-hint>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Stop at</mat-label>
+            <input matInput type="datetime-local" formControlName="stopAt" step="1" />
+            <mat-hint>Deadline after which the task stops; blank = none · times in {{ tzLabel() }}</mat-hint>
+          </mat-form-field>
+        </div>
         <mat-form-field appearance="outline" class="w-full">
           <mat-label>Description</mat-label>
           <input matInput formControlName="description" />
@@ -273,6 +286,7 @@ export class TaskForm {
   protected readonly saving = signal(false);
   protected readonly editing = signal(false);
   protected readonly type = signal<'BEAN' | 'HTTP'>('BEAN');
+  protected readonly tzLabel = tzLabel;
 
   protected readonly form = this.fb.nonNullable.group({
     taskGroup: ['', Validators.required],
@@ -291,6 +305,8 @@ export class TaskForm {
     maxRetryCount: [0],
     retryInterval: [1000],
     misfirePolicy: ['FIRE_ONCE_NOW'],
+    repeatCount: [-1],
+    stopAt: [''],
   });
 
   constructor() {
@@ -311,6 +327,9 @@ export class TaskForm {
             initialParameter: t.initialParameter ?? '', cron: t.cron ?? '', parser: t.parser ?? 'cron',
             description: t.description ?? '', timeout: t.timeout, maxRetryCount: t.maxRetryCount,
             retryInterval: t.retryInterval, misfirePolicy: t.misfirePolicy ?? 'FIRE_ONCE_NOW',
+            repeatCount: t.repeatCount ?? -1,
+            // Server stopAt is UTC; render it into the datetime-local per the active time-zone mode.
+            stopAt: toInputDateTime(t.stopAt),
           });
           this.applyType(kind);
           this.form.controls.taskGroup.disable();
@@ -383,6 +402,8 @@ export class TaskForm {
       initialParameter: v.initialParameter, cron: v.cron, parser: v.parser, description: v.description,
       timeout: v.timeout, maxRetryCount: v.maxRetryCount, retryInterval: v.retryInterval,
       misfirePolicy: v.misfirePolicy,
+      // Convert the datetime-local value (entered in the active mode) back to the UTC the server stores.
+      repeatCount: v.repeatCount, stopAt: fromInputDateTime(v.stopAt),
     };
     this.api.save(body).subscribe({
       next: () => {

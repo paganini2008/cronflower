@@ -29,6 +29,9 @@ CREATE TABLE cs_task_detail (
     max_retry_count     INT            NOT NULL DEFAULT 0,
     retry_interval      BIGINT         NOT NULL DEFAULT 1000,
     timeout             BIGINT         NOT NULL DEFAULT -1,
+    -- Periodic-task limits: repeat_count <= 0 means unlimited; stop_at NULL means no deadline.
+    repeat_count        INT            NOT NULL DEFAULT -1,
+    stop_at             DATETIME2,
     run_count           BIGINT         NOT NULL DEFAULT 0,
     failure_count       BIGINT         NOT NULL DEFAULT 0,
     misfire_count       BIGINT         NOT NULL DEFAULT 0,

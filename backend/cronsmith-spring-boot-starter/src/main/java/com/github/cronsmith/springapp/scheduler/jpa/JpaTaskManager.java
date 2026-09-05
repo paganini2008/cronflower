@@ -116,6 +116,8 @@ public class JpaTaskManager implements TaskManager {
                 entity.setMaxRetryCount(task.getMaxRetryCount());
                 entity.setRetryInterval(task.getRetryInterval());
                 entity.setTimeout(task.getTimeout());
+                entity.setRepeatCount(task.getRepeatCount());
+                entity.setStopAt(task.getStopAt());
                 entity.setMisfirePolicy(task.getMisfirePolicy().name());
                 // Re-saving is a re-registration: back to standby with no fire times.
                 entity.setTaskStatus(TaskStatus.STANDBY.name());
@@ -280,6 +282,12 @@ public class JpaTaskManager implements TaskManager {
             CronExpression cronExpression = readCronExpression(entity, taskId);
             LocalDateTime nextFiredDateTime =
                     cronExpression.getNextFiredDateTime(previousFiredDateTime);
+            // A repeat cap or a deadline turns the next occurrence into "none", finishing the task.
+            // A legacy row may hold a null repeat_count (column added by a later ddl update) — treat
+            // that as unlimited.
+            int repeatCount = entity.getRepeatCount() != null ? entity.getRepeatCount() : -1;
+            nextFiredDateTime = Task.capNextFiredDateTime(nextFiredDateTime, entity.getRunCount(),
+                    repeatCount, entity.getStopAt());
             entity.setNextFiredDatetime(nextFiredDateTime);
             entity.setPrevFiredDatetime(previousFiredDateTime);
             entity.setCronExpression(cronExpression.serialize());
@@ -466,6 +474,8 @@ public class JpaTaskManager implements TaskManager {
         r.put("maxRetryCount", e.getMaxRetryCount());
         r.put("retryInterval", e.getRetryInterval());
         r.put("timeout", e.getTimeout());
+        r.put("repeatCount", e.getRepeatCount());
+        r.put("stopAt", e.getStopAt());
         r.put("runCount", e.getRunCount());
         r.put("failureCount", e.getFailureCount());
         r.put("misfireCount", e.getMisfireCount());

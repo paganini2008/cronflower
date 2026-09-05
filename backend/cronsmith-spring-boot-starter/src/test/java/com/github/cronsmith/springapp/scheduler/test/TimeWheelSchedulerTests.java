@@ -84,6 +84,58 @@ public class TimeWheelSchedulerTests {
     }
 
     @Test
+    public void testRepeatCountFinishesAfterExactlyNRuns() throws Exception {
+        // Fires every second; a repeat cap of 3 means exactly three runs, then the task finishes.
+        CappedTask task = new CappedTask("capped", 3, null);
+        assertTrue(scheduler.schedule(task));
+        scheduler.start();
+        awaitTrue(() -> taskManager.getTaskStatus(TaskId.of("capped")) == TaskStatus.FINISHED);
+        assertEquals(3, task.getRuns(), "a repeatCount of 3 must run exactly three times");
+        assertTrue(listener.finished.get() >= 1);
+        // It stays finished: no further runs after the cap.
+        int runsAtFinish = task.getRuns();
+        Thread.sleep(1500L);
+        assertEquals(runsAtFinish, task.getRuns(), "a finished task must not run again");
+    }
+
+    @Test
+    public void testStopAtFinishesAtTheDeadline() throws Exception {
+        // No repeat cap, but a deadline ~2.5s out: it runs a couple of times, then finishes when the
+        // next occurrence would fall after stopAt.
+        LocalDateTime stopAt = Settings.now().plusNanos(2_500_000_000L);
+        CappedTask task = new CappedTask("deadline", -1, stopAt);
+        assertTrue(scheduler.schedule(task));
+        scheduler.start();
+        awaitTrue(() -> taskManager.getTaskStatus(TaskId.of("deadline")) == TaskStatus.FINISHED);
+        assertTrue(task.getRuns() >= 1, "it should run at least once before the deadline");
+        int runsAtFinish = task.getRuns();
+        Thread.sleep(1500L);
+        assertEquals(runsAtFinish, task.getRuns(), "no runs are allowed after stopAt");
+    }
+
+    /** A once-per-second task carrying a repeat cap and/or a deadline, to exercise both limits. */
+    static class CappedTask extends CountingTask {
+        private final int repeatCount;
+        private final LocalDateTime stopAt;
+
+        CappedTask(String name, int repeatCount, LocalDateTime stopAt) {
+            super(name, 1);
+            this.repeatCount = repeatCount;
+            this.stopAt = stopAt;
+        }
+
+        @Override
+        public int getRepeatCount() {
+            return repeatCount;
+        }
+
+        @Override
+        public LocalDateTime getStopAt() {
+            return stopAt;
+        }
+    }
+
+    @Test
     public void testScheduleReturnsToStandbyBetweenRuns() throws Exception {
         CountingTask task = new CountingTask("standby", 2);
         scheduler.schedule(task);

@@ -11,8 +11,9 @@
   Store: each node gets its OWN H2 file (deploy\data\cronsmith-<n>); the leader broadcasts every write
   and each node keeps its own copy in sync (so a failover keeps the data). Persists across restarts.
   Uncomment a datasource in conf\scheduler.properties for a shared MySQL/PostgreSQL.
-  Ports: schedulers 19090, 19091, ... . frontend 7200 . executors random 50000-60000.
-  Schedulers start leader-first (node 1) then the rest together.
+  Ports: seed scheduler 19090 . followers RANDOM (auto-discovered) . console 7200 . executors random.
+  The console (web-server.mjs) discovers the whole cluster from the single seed and load-balances -
+  no nginx/KONG. Seed (node 1) starts first, then followers on random ports.
 
   If scripts are blocked, run:  powershell -ExecutionPolicy Bypass -File .\run-local.ps1 -n 2 -e 1
 #>
@@ -41,7 +42,10 @@ function Scheduler-DsArgs([int]$i) {
 }
 
 function Launch-Scheduler([int]$i) {
-  $port = $SchedBasePort + $i - 1
+  # Node 1 is the seed on a fixed, well-known HTTP port (the console/executors bootstrap from it).
+  # Followers take a RANDOM HTTP port (server.port=0): nobody needs to know it - the console discovers
+  # every node (and its real HTTP port) from the seed's /cluster roster and load-balances across them.
+  $port = if ($i -eq 1) { $SchedBasePort } else { 0 }
   $jarArgs = @(
     "-Xmx$($SchedXmxGb)g",
     '-jar', (Join-Path $Bin $SchedJar),
@@ -55,25 +59,49 @@ function Launch-Scheduler([int]$i) {
         -RedirectStandardError  (Join-Path $Logs "scheduler-$i.err.log") `
         -PassThru -WindowStyle Hidden
   Save-Pid $p.Id "scheduler-$i"
-  Write-Host "     node $i  ->  http://localhost:$port/cronsmith/tasks   (log: logs\scheduler-$i.log)"
+  if ($i -eq 1) { Write-Host "     node 1 (seed)  ->  http://localhost:$SchedBasePort/cronsmith/tasks   (log: logs\scheduler-1.log)" }
+  else          { Write-Host "     node $i         ->  random HTTP port, auto-discovered via the seed   (log: logs\scheduler-$i.log)" }
 }
 
 function Start-Schedulers([int]$nodes) {
-  Write-Host ">> starting $nodes scheduler node(s) - leader (node 1) first, then the rest together"
-  # Node 1 first (console + executors target it, and it becomes the leader). Each node has its own
-  # store, kept in sync by the leader's broadcast. Followers start in parallel; we confirm each healthy.
+  Write-Host ">> starting $nodes scheduler node(s) - seed (node 1) on :$SchedBasePort first, then the rest on random ports"
   Launch-Scheduler 1
   if (-not (Wait-Up $SchedBasePort)) { Write-Host '!! scheduler-1 did not come up - see logs\scheduler-1.log'; exit 1 }
   for ($i = 2; $i -le $nodes; $i++) { Launch-Scheduler $i }
-  for ($i = 2; $i -le $nodes; $i++) {
-    if (-not (Wait-Up ($SchedBasePort + $i - 1))) { Write-Host "!! scheduler-$i did not come up - see logs\scheduler-$i.log"; exit 1 }
+  # Followers use random ports, so wait on cluster convergence (roster size), not per-node ports.
+  if ($nodes -gt 1) { Wait-Cluster $nodes }
+}
+
+# Wait until the seed reports the full roster - port-agnostic, so it works with random follower ports.
+function Wait-Cluster([int]$want) {
+  Write-Host -NoNewline ">> waiting for the $want-node cluster to converge "
+  for ($i = 0; $i -lt 60; $i++) {
+    try {
+      $r = Invoke-RestMethod "http://localhost:$SchedBasePort/cronsmith/cluster" -TimeoutSec 3
+      if ($r.nodeCount -ge $want) { Write-Host "ok ($($r.nodeCount) nodes)"; return }
+    } catch { }
+    Write-Host -NoNewline '.'; Start-Sleep -Seconds 2
   }
+  Write-Host ' timeout - continuing anyway'
 }
 
 function Start-Frontend {
-  Write-Host ">> starting the frontend (ng serve) on :$FrontendPort (proxying to :$SchedBasePort)"
-  $p = Start-Process -FilePath 'npx.cmd' -ArgumentList @('ng', 'serve', '--port', "$FrontendPort", '--host', '0.0.0.0') `
-        -WorkingDirectory $Frontend `
+  $dist = Join-Path $Frontend 'dist\cronflower\browser'
+  Write-Host ">> building the web console (ng build), then serving via web-server.mjs on :$FrontendPort"
+  Write-Host "   (single-seed cluster discovery + load-balancing - no nginx/KONG; matches the Docker path)"
+  if (-not $env:NG_CONFIG) { $env:NG_CONFIG = 'development' }
+  Build-FrontendDist
+  # Patch the served (disposable) build output's config.json - never the source under public\.
+  $cfg = Join-Path $dist 'config.json'
+  if (Test-Path $cfg) {
+    try { $j = Get-Content $cfg -Raw | ConvertFrom-Json } catch { $j = [pscustomobject]@{} }
+    $j | Add-Member -NotePropertyName apiPrefix -NotePropertyValue '/cronsmith' -Force
+    ($j | ConvertTo-Json) | Out-File -Encoding ascii $cfg
+  }
+  # web-server.mjs: static dist + discover the cluster from the seed and round-robin the API across nodes.
+  $env:PORT = "$FrontendPort"; $env:WEB_ROOT = $dist
+  $env:SCHEDULER_URL = "http://localhost:$SchedBasePort"; $env:API_PREFIX = '/cronsmith'
+  $p = Start-Process -FilePath 'node' -ArgumentList @((Join-Path $Here 'web-server.mjs')) -WorkingDirectory $Here `
         -RedirectStandardOutput (Join-Path $Logs 'frontend.log') `
         -RedirectStandardError  (Join-Path $Logs 'frontend.err.log') `
         -PassThru -WindowStyle Hidden
@@ -83,8 +111,10 @@ function Start-Frontend {
 
 function Start-Executors([int]$execs, [int]$schedNodes) {
   Write-Host ">> starting $execs executor node(s) - random ports in $ExecPortLo-$ExecPortHi"
-  # All scheduler URLs, so executors can fail over if the leader dies.
-  $urls = ((1..$schedNodes | ForEach-Object { "http://localhost:$($SchedBasePort + $_ - 1)" }) -join ',')
+  # The executor only needs to reach ONE node to register (the cluster forwards writes to the leader);
+  # it also fails over across a comma-separated list if you give it more. Seed is enough here.
+  $urls = "http://localhost:$SchedBasePort"
+  $execConf = 'file:' + ($Conf -replace '\\', '/') + '/executor.properties'
   $used = @()
   for ($i = 1; $i -le $execs; $i++) {
     $port = Get-FreePort $used; $used += $port
@@ -92,8 +122,11 @@ function Start-Executors([int]$execs, [int]$schedNodes) {
       "-Xmx$($ExecXmxGb)g",
       '-jar', (Join-Path $Bin $ExecJar),
       "--server.port=$port",
-      "--spring.application.name=demo-executor-$i",
-      "--cronsmith.client.server-urls=$urls"
+      # SHARED app name so the scheduler round-robins across every executor instance.
+      '--spring.application.name=demo-executor',
+      "--spring.config.additional-location=$execConf",
+      "--cronsmith.client.server-urls=$urls",
+      '--cronsmith.client.server-api-prefix=/cronsmith'
     )
     $p = Start-Process -FilePath 'java' -ArgumentList $jarArgs -WorkingDirectory $Here `
           -RedirectStandardOutput (Join-Path $Logs "executor-$i.log") `
@@ -123,7 +156,7 @@ function Do-Up {
   Write-Host ''
   Write-Host 'cronsmith is up (local):'
   Write-Host "  console    : http://localhost:$FrontendPort"
-  Write-Host "  scheduler  : http://localhost:$SchedBasePort/cronsmith/tasks   ($n node(s), per-node H2 file @ deploy\data)"
+  Write-Host "  scheduler  : http://localhost:$SchedBasePort/cronsmith/tasks   ($n node(s): seed + random-port followers, per-node H2 @ deploy\data)"
   if ($e -gt 0) { Write-Host "  executors  : $e node(s) on random ports $ExecPortLo-$ExecPortHi (shown above)" }
   Write-Host "  real DB?   : edit conf\scheduler.properties (MySQL/PostgreSQL) - default is per-node H2 files replicated by broadcast"
   Write-Host "  tail a log : .\run-local.ps1 logs <name>   (name: $names)"

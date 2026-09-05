@@ -1,19 +1,21 @@
 # Screenshots
 
-The root `README.md` references the images below. They are **not** committed here — capture them from
-a running console and drop them in (or upload to GCS and swap the README links for the GCS URLs).
+These images are referenced by the root [`README.md`](../../README.md) with relative paths, so they
+render on GitHub with no external hosting. They were captured from a running console
+(`deploy/run-local.sh -e 1`, <http://localhost:7200>, sign in `admin` / `admin`) with the time-zone
+toggle set to **UTC**.
 
-Suggested shot list (start the stack with `deploy/run-local.sh -e 1`, open <http://localhost:7200>,
-sign in `admin` / `admin`):
+| file | page | what it shows |
+|------|------|---------------|
+| `dashboard.jpg` | Dashboard | task counts by status + executor / cluster summary tiles |
+| `tasks-list.jpg` | Tasks | the task list with cron / **YCRON** schedules, runs, and next fire |
+| `task-detail.jpg` | Task detail | schedule, next/previous fire, and **repeat count / stop-at** |
+| `task-form.jpg` | Tasks → New | the create form (Spring Bean / HTTP API invocation) |
+| `task-edit.jpg` | Tasks → Edit | the schedule & options, incl. repeat count and stop-at |
+| `execution-history.jpg` | Task detail | the execution log with retries (a `flaky` run) + scheduler/executor |
+| `executors.jpg` | Executors | registered executors with liveness, weight, and run URL |
+| `cluster.jpg` | Cluster | nodes, leader, detected store type, sharding |
+| `system-health.jpg` | System Health | actuator health incl. the `spreaderCluster` component |
+| `timezone-toggle.jpg` | (top bar) | the UTC ↔ local time-zone switcher |
 
-| file | page | what to show |
-|------|------|--------------|
-| `dashboard.png` | Dashboard | task counts by status + executor summary tiles |
-| `tasks-list.png` | Tasks | the task list with the cron / **YCRON** type icons in the schedule column |
-| `task-form.png` | Tasks → New | the create form with the **Syntax** selector (Cron / YCRON) |
-| `task-detail.png` | Task detail | schedule, next fire times, and the execution log (incl. a retried `flaky` run) |
-| `executors.png` | Executors | registered executors with liveness + weight |
-| `cluster.png` | Cluster | nodes, leader, detected store type, sharding |
-| `system-health.png` | System Health | actuator health incl. the `spreaderCluster` component |
-
-Keep them reasonably sized (≈1600px wide, PNG). Recommended aspect keeps the README tidy.
+To refresh a shot, retake it from the running console at ~1440px wide and overwrite the file in place.

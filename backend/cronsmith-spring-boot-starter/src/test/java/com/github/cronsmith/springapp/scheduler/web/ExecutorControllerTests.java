@@ -31,7 +31,7 @@ class ExecutorControllerTests {
 
     private static ExecutorTaskMetadata task(String cron) {
         return new ExecutorTaskMetadata("g", "n", "com.example.X", "xBean", "run", cron, "cron",
-                "desc", "p", -1L, 0, 1000L, "FIRE_ONCE_NOW");
+                "desc", "p", -1L, 0, 1000L, "FIRE_ONCE_NOW", -1, null);
     }
 
     private static RegistrationRequest register(String instanceId, ExecutorTaskMetadata task) {

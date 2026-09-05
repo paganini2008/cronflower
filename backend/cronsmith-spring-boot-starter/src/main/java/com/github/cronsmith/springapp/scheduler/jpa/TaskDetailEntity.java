@@ -85,6 +85,15 @@ public class TaskDetailEntity {
     @Column(name = "timeout")
     private long timeout;
 
+    // Boxed on purpose: a database upgraded with ddl-auto=update gains this column as nullable, so
+    // rows written before the column existed read back as NULL. A primitive int would throw on such
+    // a row; the null is treated as "unlimited" when the task is rebuilt.
+    @Column(name = "repeat_count")
+    private Integer repeatCount;
+
+    @Column(name = "stop_at")
+    private LocalDateTime stopAt;
+
     @Column(name = "run_count")
     private long runCount;
 

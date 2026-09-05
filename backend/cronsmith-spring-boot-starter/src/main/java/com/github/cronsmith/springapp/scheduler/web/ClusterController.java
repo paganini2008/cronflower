@@ -48,6 +48,11 @@ public class ClusterController {
             m.put("name", n.name());
             m.put("host", n.host());
             m.put("port", n.port());
+            // The HTTP port each node serves the REST API on — advertised via node metadata by
+            // openspreader (n.port() is the gossip port, not the HTTP one). Lets a front proxy (see
+            // deploy/web-server.mjs) discover every node's real API endpoint and load-balance without
+            // an external LB, even when nodes use different/random HTTP ports.
+            m.put("httpPort", parseHttpPort(n.metadata("server.port")));
             m.put("self", n.id().equals(selfId));
             m.put("leader", n.id().equals(leaderId));
             m.put("role", shardingEnabled ? "sharded" : (n.id().equals(leaderId) ? "leader" : "standby"));
@@ -66,6 +71,18 @@ public class ClusterController {
         out.put("nodeCount", nodes.size());
         out.put("nodes", nodes);
         return out;
+    }
+
+    /** Parse the advertised HTTP port from node metadata; null when absent or malformed. */
+    private static Integer parseHttpPort(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
 }

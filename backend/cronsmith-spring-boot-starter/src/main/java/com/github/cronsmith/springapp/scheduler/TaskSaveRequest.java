@@ -20,7 +20,8 @@ import com.github.cronsmith.utils.StringUtils;
 public record TaskSaveRequest(String taskGroup, String taskName, String taskType, String className,
         String beanName, String methodName, String initialParameter, String url, String httpMethod,
         String httpHeaders, String dataType, String cron, String parser, String description,
-        long timeout, int maxRetryCount, long retryInterval, String misfirePolicy) {
+        long timeout, int maxRetryCount, long retryInterval, String misfirePolicy, int repeatCount,
+        String stopAt) {
 
     /** Whether this describes an HTTP-API task rather than a Spring-bean task. */
     public boolean isHttp() {
@@ -32,8 +33,9 @@ public record TaskSaveRequest(String taskGroup, String taskName, String taskType
 
     /** Adapt the bean-task fields to the shape the executor dispatch path already understands. */
     public ExecutorTaskMetadata toExecutorMetadata() {
+        // repeatCount <= 0 means unlimited; a blank stopAt means no deadline.
         return new ExecutorTaskMetadata(taskGroup, taskName, className, beanName, methodName, cron,
                 parser, description, initialParameter, timeout, maxRetryCount, retryInterval,
-                misfirePolicy);
+                misfirePolicy, repeatCount, StringUtils.isNotBlank(stopAt) ? stopAt.trim() : null);
     }
 }

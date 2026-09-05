@@ -51,6 +51,8 @@ public class HttpDispatchCustomTask extends BeanReflectionTask {
         record.put("misfirePolicy", metadata.misfirePolicy());
         record.put("cron", metadata.cron());
         record.put("parser", metadata.parser());
+        record.put("repeatCount", metadata.repeatCount());
+        record.put("stopAt", metadata.stopAt());
         return new HttpDispatchCustomTask(record);
     }
 

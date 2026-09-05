@@ -24,6 +24,9 @@ export interface TaskView {
   maxRetryCount: number;
   retryInterval: number;
   misfirePolicy?: string;
+  /** Periodic-task limits: repeatCount <= 0 = unlimited; stopAt absent = no deadline. */
+  repeatCount?: number;
+  stopAt?: string;
 }
 
 export interface TaskListResponse {
@@ -69,6 +72,8 @@ export interface ClusterNode {
   name: string;
   host: string;
   port: number;
+  /** HTTP (REST API) port the node serves on; advertised via node metadata. */
+  httpPort?: number;
   self: boolean;
   leader: boolean;
   role: string;
@@ -120,6 +125,10 @@ export interface TaskMetadata {
   maxRetryCount: number;
   retryInterval: number;
   misfirePolicy: string;
+  /** For a periodic task: total fires before it finishes; <= 0 = unlimited. */
+  repeatCount: number;
+  /** ISO-8601 local date-time after which the task stops firing; blank = no deadline. */
+  stopAt: string;
 }
 
 export const TASK_TYPES = ['BEAN', 'HTTP'] as const;
