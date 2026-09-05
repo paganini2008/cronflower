@@ -8,7 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../core/auth.service';
-import { localZone, localZoneOffset } from '../core/util';
+import { localZone, localZoneOffset, setTzMode, tzLabel, tzMode } from '../core/util';
 
 interface NavItem {
   path: string;
@@ -32,9 +32,20 @@ interface NavItem {
         <img src="default_logo.png" class="logo" alt="cronflower" />
       </a>
       <span class="flex-1"></span>
-      <span class="tz-badge" matTooltip="All times are shown in your local time zone">
-        <mat-icon>schedule</mat-icon>{{ zone }} · {{ zoneOffset }}
-      </span>
+      <button type="button" class="tz-badge" [matMenuTriggerFor]="tzMenu"
+        matTooltip="Times are UTC by default — click to switch time zone">
+        <mat-icon>schedule</mat-icon>{{ tzLabel() }}<mat-icon class="caret">expand_more</mat-icon>
+      </button>
+      <mat-menu #tzMenu="matMenu">
+        <div class="menu-head">Show times in</div>
+        <button mat-menu-item (click)="useTz('utc')">
+          <mat-icon>{{ mode() === 'utc' ? 'check' : 'schedule' }}</mat-icon> UTC
+        </button>
+        <button mat-menu-item (click)="useTz('local')">
+          <mat-icon>{{ mode() === 'local' ? 'check' : 'public' }}</mat-icon>
+          Local — {{ zone }} · {{ zoneOffset }}
+        </button>
+      </mat-menu>
       <span class="brand-sub">cronsmith control plane</span>
       <button matIconButton [matMenuTriggerFor]="userMenu" aria-label="Account" class="ml-2">
         <mat-icon>account_circle</mat-icon>
@@ -72,9 +83,14 @@ interface NavItem {
     .logo { height: 46px; width: auto; display: block; }
     .brand-sub { font-size: 0.8rem; color: #7a8aa0; font-weight: 500; }
     .tz-badge { display: inline-flex; align-items: center; gap: 0.3rem; margin-right: 0.9rem;
-      padding: 0.2rem 0.6rem; border-radius: 999px; background: #f1f5f9; color: #5b6b7f;
-      font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+      padding: 0.2rem 0.6rem; border: none; cursor: pointer; border-radius: 999px; background: #f1f5f9;
+      color: #5b6b7f; font-size: 0.75rem; font-weight: 600; white-space: nowrap;
+      transition: background .15s, color .15s; }
+    .tz-badge:hover { background: #e2ebf6; color: #1565c0; }
     .tz-badge mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    .tz-badge .caret { margin-left: -0.1rem; opacity: 0.7; }
+    .menu-head { padding: 0.4rem 1rem 0.2rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em;
+      text-transform: uppercase; color: #93a2b6; }
     .flex-1 { flex: 1 1 auto; }
     .ml-2 { margin-left: 0.5rem; }
     .menu-user { padding: 0.5rem 1rem; font-size: 0.8rem; color: #5b6b7f; border-bottom: 1px solid #eef2f7; }
@@ -92,6 +108,12 @@ export class Shell {
   protected readonly opened = signal(true);
   protected readonly zone = localZone();
   protected readonly zoneOffset = localZoneOffset();
+  protected readonly tzLabel = tzLabel;
+  protected readonly mode = tzMode;
+
+  protected useTz(mode: 'utc' | 'local'): void {
+    setTzMode(mode);
+  }
 
   protected readonly nav: NavItem[] = [
     { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },

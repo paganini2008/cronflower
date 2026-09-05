@@ -25,7 +25,7 @@ class TaskControllerTests {
     private static TaskSaveRequest beanTask(String group, String name) {
         return new TaskSaveRequest(group, name, "bean", "com.example.Reports", "reports", "run",
                 "p", null, null, null, null, "0 0 12 * * ?", "cron", "nightly", -1L, 2, 1000L,
-                "FIRE_ONCE_NOW");
+                "FIRE_ONCE_NOW", -1, null);
     }
 
     @BeforeEach
@@ -44,7 +44,7 @@ class TaskControllerTests {
     void savesAnHttpApiTask() {
         TaskSaveRequest http = new TaskSaveRequest("api", "ping", "HTTP", null, null, null, null,
                 "http://example.com/ping", "GET", null, null, "0 0 * * * ?", "cron", "ping", -1L, 0,
-                1000L, "SKIP");
+                1000L, "SKIP", -1, null);
         TaskDetailView view = controller.save(http, null);
         assertThat(view.taskName()).isEqualTo("ping");
     }

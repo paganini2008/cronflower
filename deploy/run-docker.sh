@@ -83,13 +83,14 @@ generate_compose() {
     # leader) is killed.
     local sched_urls; sched_urls=$(for i in $(seq 1 "$nodes"); do printf ',http://scheduler-%s:8080' "$i"; done); sched_urls=${sched_urls#,}
 
-    # cronflower web console — a Node static server that proxies /cronsmith + /actuator, failing over
-    # across all scheduler nodes.
+    # cronflower web console — a Node static server that proxies /cronsmith + /actuator. It needs only
+    # ONE seed: web-server.mjs discovers every other node (and its real HTTP port) from the seed's
+    # /cluster roster and round-robins across them, so `-n 5` needs no extra config here.
     echo "  cronflower:"
     echo "    image: cronflower:local"
     echo "    container_name: cronflower"
     echo "    environment:"
-    echo "      SCHEDULER_URL: $sched_urls"
+    echo "      SCHEDULER_URL: http://scheduler-1:8080"
     echo "      API_PREFIX: $API_PREFIX"
     echo "    ports: [\"$WEB_PORT:80\"]"
     echo "    depends_on:"

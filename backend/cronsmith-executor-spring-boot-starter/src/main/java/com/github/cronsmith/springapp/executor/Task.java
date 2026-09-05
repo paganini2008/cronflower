@@ -45,6 +45,21 @@ public @interface Task {
     String parser() default "cron";
 
     /**
+     * The bean name of a {@link CronExpressionBuilder}. When set, the builder is the single source of
+     * the schedule — its {@link CronExpressionBuilder#buildCron() cron},
+     * {@link CronExpressionBuilder#getParser() parser}, {@link CronExpressionBuilder#getRepeatCount()
+     * repeatCount} and {@link CronExpressionBuilder#getStopAt() stopAt} take priority over the
+     * {@code cron} / {@code parser} / {@code interval} / {@code iso} / {@code repeatCount} attributes
+     * here, which are only the default when no builder is named.
+     *
+     * <p>
+     * {@code stopAt} — a wall-clock instant in the future — has no annotation attribute on purpose: a
+     * constant cannot express a value relative to "now", so a task that needs a deadline supplies it
+     * through a builder (e.g. {@code getStopAt() { return LocalDateTime.now().plusDays(7); }}).
+     */
+    String builder() default "";
+
+    /**
      * A fixed interval — fire every {@code interval} {@link #intervalUnit()}. Use this for a simple
      * "every N seconds/minutes/hours" schedule. {@code 0} means unset. Set exactly one of
      * {@code cron}, {@code interval} or {@code iso}.
@@ -62,7 +77,9 @@ public @interface Task {
     String iso() default "";
 
     /**
-     * Task group. Defaults to the executor application name when left blank.
+     * Task group. Left blank (the default), a Spring Boot executor uses its
+     * {@code spring.application.name} as the group; outside Spring Boot the core falls back to the
+     * literal group {@code "default"}.
      */
     String group() default "";
 
@@ -104,5 +121,12 @@ public @interface Task {
      * {@code SKIP} or {@code FIRE_ALL}.
      */
     String misfirePolicy() default "FIRE_ONCE_NOW";
+
+    /**
+     * For a periodic task, the total number of times it should fire before it finishes. {@code -1}
+     * (the default) or {@code 0} means unlimited. Overridden by {@link CronExpressionBuilder#getRepeatCount()}
+     * when a {@link #builder()} is named.
+     */
+    int repeatCount() default -1;
 
 }

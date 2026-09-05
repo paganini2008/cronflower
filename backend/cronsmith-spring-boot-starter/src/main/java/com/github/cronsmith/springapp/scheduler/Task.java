@@ -1,6 +1,7 @@
 package com.github.cronsmith.springapp.scheduler;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import com.github.cronsmith.cron.CronExpression;
 
 /**
@@ -65,6 +66,48 @@ public interface Task extends Serializable {
      */
     default MisfirePolicy getMisfirePolicy() {
         return MisfirePolicy.FIRE_ONCE_NOW;
+    }
+
+    /**
+     * For a periodic task, the total number of times it may fire before it finishes. A value of
+     * zero or less means unlimited. Enforced by the task manager against the run count, so — for a
+     * task that does not retry — a value of {@code n} means exactly {@code n} runs.
+     */
+    default int getRepeatCount() {
+        return -1;
+    }
+
+    /**
+     * A wall-clock instant after which the task stops firing. {@code null} means no deadline. The
+     * first occurrence that would fall after this instant is not run; the task finishes instead.
+     */
+    default LocalDateTime getStopAt() {
+        return null;
+    }
+
+    /**
+     * Applies {@link #getRepeatCount()} and {@link #getStopAt()} to a freshly computed fire time.
+     * Returns {@code null} — meaning "no next occurrence, the task is finished" — when the repeat cap
+     * has been reached or the occurrence falls after the deadline. Shared by every task manager so the
+     * two limits mean the same thing on every store.
+     *
+     * @param nextFiredDateTime the raw next fire time from the cron expression, possibly {@code null}
+     * @param runCount how many times the task has already run
+     * @param repeatCount {@link #getRepeatCount()}
+     * @param stopAt {@link #getStopAt()}
+     */
+    static LocalDateTime capNextFiredDateTime(LocalDateTime nextFiredDateTime, long runCount,
+            int repeatCount, LocalDateTime stopAt) {
+        if (nextFiredDateTime == null) {
+            return null;
+        }
+        if (repeatCount > 0 && runCount >= repeatCount) {
+            return null;
+        }
+        if (stopAt != null && nextFiredDateTime.isAfter(stopAt)) {
+            return null;
+        }
+        return nextFiredDateTime;
     }
 
     /**

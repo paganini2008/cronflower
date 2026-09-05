@@ -61,6 +61,24 @@ public abstract class AbstractTask implements Task {
     }
 
     @Override
+    public int getRepeatCount() {
+        return (int) longOf("repeatCount", -1L);
+    }
+
+    @Override
+    public LocalDateTime getStopAt() {
+        Object value = record.get("stopAt");
+        if (value instanceof LocalDateTime) {
+            return (LocalDateTime) value;
+        }
+        if (value instanceof CharSequence) {
+            String text = value.toString().trim();
+            return text.isEmpty() ? null : LocalDateTime.parse(text);
+        }
+        return null;
+    }
+
+    @Override
     public MisfirePolicy getMisfirePolicy() {
         Object value = record.get("misfirePolicy");
         if (value instanceof MisfirePolicy) {

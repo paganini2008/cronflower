@@ -288,8 +288,12 @@ public class InMemoryTaskManager implements TaskManager {
         if (taskDetail == null) {
             return null;
         }
-        LocalDateTime nextFiredDateTime = taskDetail.getTask().getCronExpression()
-                .getNextFiredDateTime(previousFiredDateTime);
+        Task task = taskDetail.getTask();
+        LocalDateTime nextFiredDateTime =
+                task.getCronExpression().getNextFiredDateTime(previousFiredDateTime);
+        // A repeat cap or a deadline turns the next occurrence into "none", which finishes the task.
+        nextFiredDateTime = Task.capNextFiredDateTime(nextFiredDateTime, taskDetail.getRunCount(),
+                task.getRepeatCount(), task.getStopAt());
         taskDetail.setFiredDateTimes(previousFiredDateTime, nextFiredDateTime);
         return nextFiredDateTime;
     }

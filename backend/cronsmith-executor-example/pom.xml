@@ -44,6 +44,11 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<!-- Boot 4.1.1's default fat-jar loader mis-loads some nested-jar classes under
+					     `java -jar`; the CLASSIC loader avoids it (see scheduler-example pom). -->
+					<loaderImplementation>CLASSIC</loaderImplementation>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

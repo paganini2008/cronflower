@@ -11,5 +11,6 @@ package com.github.cronsmith.springapp.executor;
  */
 public record TaskMetadata(String taskGroup, String taskName, String className, String beanName,
         String methodName, String cron, String parser, String description, String initialParameter,
-        long timeout, int maxRetryCount, long retryInterval, String misfirePolicy) {
+        long timeout, int maxRetryCount, long retryInterval, String misfirePolicy, int repeatCount,
+        String stopAt) {
 }

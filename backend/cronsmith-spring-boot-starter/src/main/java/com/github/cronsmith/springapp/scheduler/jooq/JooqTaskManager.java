@@ -16,7 +16,9 @@ import static com.github.cronsmith.springapp.scheduler.jooq.TaskTables.MISFIRE_C
 import static com.github.cronsmith.springapp.scheduler.jooq.TaskTables.MISFIRE_POLICY;
 import static com.github.cronsmith.springapp.scheduler.jooq.TaskTables.NEXT_FIRED_DATETIME;
 import static com.github.cronsmith.springapp.scheduler.jooq.TaskTables.PREV_FIRED_DATETIME;
+import static com.github.cronsmith.springapp.scheduler.jooq.TaskTables.REPEAT_COUNT;
 import static com.github.cronsmith.springapp.scheduler.jooq.TaskTables.RETRY_INTERVAL;
+import static com.github.cronsmith.springapp.scheduler.jooq.TaskTables.STOP_AT;
 import static com.github.cronsmith.springapp.scheduler.jooq.TaskTables.RETURN_VALUE;
 import static com.github.cronsmith.springapp.scheduler.jooq.TaskTables.RUN_COUNT;
 import static com.github.cronsmith.springapp.scheduler.jooq.TaskTables.SCHEDULED_DATETIME;
@@ -393,6 +395,7 @@ public class JooqTaskManager implements TaskManager {
                     .set(CRON, cronExpression.toString()).set(INITIAL_PARAMETER, parameter)
                     .set(MAX_RETRY_COUNT, task.getMaxRetryCount())
                     .set(RETRY_INTERVAL, task.getRetryInterval()).set(TIMEOUT, task.getTimeout())
+                    .set(REPEAT_COUNT, task.getRepeatCount()).set(STOP_AT, task.getStopAt())
                     .set(MISFIRE_POLICY, task.getMisfirePolicy().name())
                     .set(TASK_STATUS, TaskStatus.STANDBY.name())
                     .set(NEXT_FIRED_DATETIME, (LocalDateTime) null)
@@ -409,6 +412,7 @@ public class JooqTaskManager implements TaskManager {
                         .set(MAX_RETRY_COUNT, task.getMaxRetryCount())
                         .set(RETRY_INTERVAL, task.getRetryInterval())
                         .set(TIMEOUT, task.getTimeout())
+                        .set(REPEAT_COUNT, task.getRepeatCount()).set(STOP_AT, task.getStopAt())
                         .set(MISFIRE_POLICY, task.getMisfirePolicy().name())
                         .set(TASK_STATUS, TaskStatus.STANDBY.name()).set(RUN_COUNT, 0L)
                         .set(FAILURE_COUNT, 0L).set(MISFIRE_COUNT, 0L)
@@ -578,6 +582,13 @@ public class JooqTaskManager implements TaskManager {
         CronExpression cronExpression = readCronExpression(record, taskId);
         LocalDateTime nextFiredDateTime =
                 cronExpression.getNextFiredDateTime(previousFiredDateTime);
+        // A repeat cap or a deadline turns the next occurrence into "none", which finishes the task.
+        long runCount = record.get("runCount") instanceof Number rc ? rc.longValue() : 0L;
+        int repeatCount = record.get("repeatCount") instanceof Number rp ? rp.intValue() : -1;
+        LocalDateTime stopAt =
+                record.get("stopAt") instanceof LocalDateTime sa ? sa : null;
+        nextFiredDateTime = com.github.cronsmith.springapp.scheduler.Task
+                .capNextFiredDateTime(nextFiredDateTime, runCount, repeatCount, stopAt);
         try {
             dsl.update(tables.taskDetail()).set(NEXT_FIRED_DATETIME, nextFiredDateTime)
                     .set(PREV_FIRED_DATETIME, previousFiredDateTime)

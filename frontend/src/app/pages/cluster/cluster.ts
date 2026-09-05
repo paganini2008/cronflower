@@ -47,7 +47,7 @@ import { poll } from '../../core/util';
             <ng-container matColumnDef="node">
               <th mat-header-cell *matHeaderCellDef>Node</th>
               <td mat-cell *matCellDef="let n">
-                <div><strong>{{ n.host }}:{{ n.port }}</strong> @if (n.self) { <span class="chip st-finished">this</span> }</div>
+                <div><strong>{{ n.host }}:{{ n.httpPort ?? n.port }}</strong> @if (n.self) { <span class="chip st-finished">this</span> }</div>
                 <div class="mono muted text-xs">{{ n.id }}</div>
               </td>
             </ng-container>

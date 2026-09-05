@@ -55,7 +55,10 @@ scheduler_ds_args() {
 
 launch_scheduler() {
   local i="$1"
-  local port=$((SCHED_BASE_PORT + i - 1))
+  # Node 1 is the seed on a fixed, well-known HTTP port (the console/executors bootstrap from it).
+  # Followers take a RANDOM HTTP port (server.port=0): nobody needs to know it — the console discovers
+  # every node (and its real HTTP port) from the seed's /cluster roster and load-balances across them.
+  local port; [ "$i" -eq 1 ] && port="$SCHED_BASE_PORT" || port=0
   # shellcheck disable=SC2046
   java -Xmx"${SCHED_XMX_GB}g" -jar "$BIN/$SCHED_JAR" \
     --server.port="$port" \
@@ -65,18 +68,35 @@ launch_scheduler() {
     $(scheduler_ds_args "$i") \
     >"$LOGS/scheduler-$i.log" 2>&1 &
   echo $! >"$RUN/scheduler-$i.pid"
-  echo "     node $i  ->  http://localhost:$port/cronsmith/tasks   (log: logs/scheduler-$i.log)"
+  if [ "$i" -eq 1 ]; then
+    echo "     node 1 (seed)  ->  http://localhost:$SCHED_BASE_PORT/cronsmith/tasks   (log: logs/scheduler-1.log)"
+  else
+    echo "     node $i         ->  random HTTP port, auto-discovered via the seed   (log: logs/scheduler-$i.log)"
+  fi
 }
 
 start_schedulers() {
   local nodes="$1" i
-  echo ">> starting $nodes scheduler node(s) — leader (node 1) first, then the rest together"
-  # Node 1 first: the console + executors target :$SCHED_BASE_PORT and it becomes the leader; followers
-  # then start in parallel. Each node has its OWN store and stays in sync via the leader's broadcast.
+  echo ">> starting $nodes scheduler node(s) — seed (node 1) on :$SCHED_BASE_PORT first, then the rest on random ports"
+  # Node 1 first: it becomes the seed the console + executors bootstrap from. Followers then start on
+  # random HTTP ports; each keeps its OWN store and stays in sync via the leader's broadcast.
   launch_scheduler 1
   wait_for_scheduler "$SCHED_BASE_PORT"
   for i in $(seq 2 "$nodes"); do launch_scheduler "$i"; done
-  for i in $(seq 2 "$nodes"); do wait_for_scheduler "$((SCHED_BASE_PORT + i - 1))"; done
+  # Followers use random ports, so wait on cluster convergence (roster size) rather than per-node ports.
+  [ "$nodes" -gt 1 ] && wait_for_cluster "$nodes"
+}
+
+# Wait until the seed reports the full roster — port-agnostic, so it works with random follower ports.
+wait_for_cluster() {
+  local want="$1" i n
+  echo -n ">> waiting for the $want-node cluster to converge "
+  for i in $(seq 1 60); do
+    n=$(curl -fsS "http://localhost:$SCHED_BASE_PORT$API_PREFIX/cluster" 2>/dev/null | grep -o '"nodeCount":[0-9]*' | grep -o '[0-9]*')
+    [ "${n:-0}" -ge "$want" ] 2>/dev/null && { echo "ok ($n nodes)"; return 0; }
+    echo -n "."; sleep 2
+  done
+  echo " timeout (saw ${n:-0}/$want) — continuing anyway"; return 0
 }
 
 wait_for_scheduler() {
@@ -89,27 +109,23 @@ wait_for_scheduler() {
   echo " timeout"; echo "!! scheduler :$port did not come up — see logs/scheduler-$node.log" >&2; return 1
 }
 
-# Back up config.json once, then set its apiPrefix to the configured value so the browser calls the
-# same path the dev proxy forwards. Restored by do_down.
-patch_frontend_config() {
-  [ -f "$FRONTEND_CONFIG" ] || return 0
-  [ -f "$CONFIG_BAK" ] || cp "$FRONTEND_CONFIG" "$CONFIG_BAK"
-  apply_config_apiprefix "$FRONTEND_CONFIG" "$API_PREFIX"
-}
-restore_frontend_config() {
-  if [ -f "$CONFIG_BAK" ]; then
-    cp "$CONFIG_BAK" "$FRONTEND_CONFIG"; rm -f "$CONFIG_BAK"
-    echo ">> restored frontend/public/config.json"
-  fi
-}
+# The console is now served from the built dist (see start_frontend), whose config.json is patched in
+# place there — so the source under public/ is never touched and there is nothing to back up/restore.
+patch_frontend_config() { :; }
+restore_frontend_config() { :; }
 
 start_frontend() {
-  echo ">> starting the frontend (ng serve) on :$FRONTEND_PORT (proxying $API_PREFIX + /actuator to :$SCHED_BASE_PORT)"
+  local dist="$FRONTEND/dist/cronflower/browser"
+  echo ">> building the web console (ng build), then serving it via web-server.mjs on :$FRONTEND_PORT"
+  echo "   (single-seed cluster discovery + load-balancing — no nginx/KONG; matches the Docker path)"
   ( cd "$FRONTEND" && [ -d node_modules ] || npm install --no-audit --no-fund ) >>"$LOGS/frontend.log" 2>&1 || true
-  # `exec` so the recorded pid IS the ng-serve process (not a wrapper subshell), making it killable.
-  # API_PREFIX drives proxy.conf.cjs; SCHEDULER_URL points the dev proxy at node 1.
-  ( cd "$FRONTEND" && API_PREFIX="$API_PREFIX" SCHEDULER_URL="http://localhost:$SCHED_BASE_PORT" \
-      exec npx ng serve --port "$FRONTEND_PORT" --host 0.0.0.0 ) >"$LOGS/frontend.log" 2>&1 &
+  ( cd "$FRONTEND" && npx ng build --configuration development ) >>"$LOGS/frontend.log" 2>&1
+  # Patch the served (disposable) build output's config.json — never the source under public/.
+  [ -f "$dist/config.json" ] && apply_config_apiprefix "$dist/config.json" "$API_PREFIX"
+  # web-server.mjs: static dist + discover the cluster from the seed (:$SCHED_BASE_PORT) and
+  # round-robin /cronsmith + /actuator across every node it finds.
+  PORT="$FRONTEND_PORT" WEB_ROOT="$dist" SCHEDULER_URL="http://localhost:$SCHED_BASE_PORT" \
+    API_PREFIX="$API_PREFIX" node "$HERE/web-server.mjs" >>"$LOGS/frontend.log" 2>&1 &
   echo $! >"$RUN/frontend.pid"
   echo "     console  ->  http://localhost:$FRONTEND_PORT   (log: logs/frontend.log)"
 }
@@ -211,7 +227,7 @@ do_down() {
   # the listener (-sTCP:LISTEN) so we never kill browser tabs that merely connected to the port.
   fp=$(lsof -ti tcp:"$FRONTEND_PORT" -sTCP:LISTEN 2>/dev/null) || true
   if [ -n "$fp" ]; then kill_tree "$fp" 2>/dev/null || true; echo ">> freed frontend port $FRONTEND_PORT"; fi
-  restore_frontend_config && echo ">> restored frontend/public/config.json"
+  restore_frontend_config
   echo ">> all local cronsmith processes stopped"
 }
 

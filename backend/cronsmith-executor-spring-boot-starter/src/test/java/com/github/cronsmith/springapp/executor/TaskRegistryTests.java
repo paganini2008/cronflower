@@ -127,6 +127,54 @@ class TaskRegistryTests {
         }
     }
 
+    @Test
+    void repeatCountDefaultsToUnlimitedAndNoDeadline() {
+        try (GenericApplicationContext ctx = contextWith(GoodTasks.class)) {
+            TaskMetadata meta = byMethod(new TaskRegistry(ctx).scan("demo-app"), "cronTask");
+            assertThat(meta.repeatCount()).isEqualTo(-1);
+            assertThat(meta.stopAt()).isNull();
+        }
+    }
+
+    @Test
+    void repeatCountCarriesFromAnnotation() {
+        try (GenericApplicationContext ctx = contextWith(RepeatingTask.class)) {
+            TaskMetadata meta = byMethod(new TaskRegistry(ctx).scan("demo-app"), "capped");
+            assertThat(meta.repeatCount()).isEqualTo(5);
+            // stopAt has no annotation attribute, so it stays null without a builder.
+            assertThat(meta.stopAt()).isNull();
+        }
+    }
+
+    @Test
+    void builderOverridesCronParserRepeatAndStopAt() {
+        GenericApplicationContext ctx = new GenericApplicationContext();
+        ctx.registerBean("theBean", BuiltTask.class);
+        ctx.registerBean("myBuilder", DemoBuilder.class);
+        ctx.refresh();
+        try (ctx) {
+            TaskMetadata meta = byMethod(new TaskRegistry(ctx).scan("demo-app"), "built");
+            // The builder wins over the annotation's own cron / parser.
+            assertThat(meta.cron()).isEqualTo("0 0 9 ? * MON");
+            assertThat(meta.parser()).isEqualTo("ycron");
+            assertThat(meta.repeatCount()).isEqualTo(4);
+            assertThat(meta.stopAt()).isEqualTo(DemoBuilder.STOP_AT.toString());
+        }
+    }
+
+    @Test
+    void rejectsBuilderThatIsNotACronExpressionBuilder() {
+        GenericApplicationContext ctx = new GenericApplicationContext();
+        ctx.registerBean("theBean", BuiltTask.class);
+        // "myBuilder" is missing entirely.
+        ctx.refresh();
+        try (ctx) {
+            assertThatThrownBy(() -> new TaskRegistry(ctx).scan("demo-app"))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("not a CronExpressionBuilder bean");
+        }
+    }
+
     // ---- fixtures ----
 
     static class GoodTasks {
@@ -175,6 +223,42 @@ class TaskRegistryTests {
     static class BadParser {
         @Task(cron = "0 0 12 * * ?", parser = "quartz")
         public void bad() {}
+    }
+
+    static class RepeatingTask {
+        @Task(interval = 10, intervalUnit = TimeUnit.SECONDS, repeatCount = 5, name = "capped")
+        public void capped() {}
+    }
+
+    static class BuiltTask {
+        // A named builder wins, so this cron / parser are deliberately the wrong answer.
+        @Task(builder = "myBuilder", cron = "0 0 12 * * ?", parser = "cron", name = "built")
+        public void built() {}
+    }
+
+    static class DemoBuilder implements CronExpressionBuilder {
+        static final java.time.LocalDateTime STOP_AT =
+                java.time.LocalDateTime.of(2027, 1, 1, 0, 0, 0);
+
+        @Override
+        public String buildCron() {
+            return "0 0 9 ? * MON";
+        }
+
+        @Override
+        public String getParser() {
+            return "ycron";
+        }
+
+        @Override
+        public int getRepeatCount() {
+            return 4;
+        }
+
+        @Override
+        public java.time.LocalDateTime getStopAt() {
+            return STOP_AT;
+        }
     }
 
 }

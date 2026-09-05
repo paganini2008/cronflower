@@ -70,6 +70,10 @@ public class TaskTables {
     public static final Field<Long> RETRY_INTERVAL =
             DSL.field(DSL.unquotedName("retry_interval"), SQLDataType.BIGINT);
     public static final Field<Long> TIMEOUT = DSL.field(DSL.unquotedName("timeout"), SQLDataType.BIGINT);
+    public static final Field<Integer> REPEAT_COUNT =
+            DSL.field(DSL.unquotedName("repeat_count"), SQLDataType.INTEGER);
+    public static final Field<LocalDateTime> STOP_AT =
+            DSL.field(DSL.unquotedName("stop_at"), SQLDataType.LOCALDATETIME);
     public static final Field<Long> RUN_COUNT =
             DSL.field(DSL.unquotedName("run_count"), SQLDataType.BIGINT);
     public static final Field<Long> FAILURE_COUNT =
@@ -140,7 +144,8 @@ public class TaskTables {
         return new Field<?>[] {TASK_GROUP, TASK_NAME, TASK_CLASS, TASK_METHOD, BEAN_NAME, APPLICATION,
                 URL, DESCRIPTION, INITIAL_PARAMETER, CRON_EXPRESSION, CRON, NEXT_FIRED_DATETIME,
                 PREV_FIRED_DATETIME, TASK_STATUS, MISFIRE_POLICY, MAX_RETRY_COUNT, RETRY_INTERVAL,
-                TIMEOUT, RUN_COUNT, FAILURE_COUNT, MISFIRE_COUNT, LAST_MODIFIED};
+                TIMEOUT, REPEAT_COUNT, STOP_AT, RUN_COUNT, FAILURE_COUNT, MISFIRE_COUNT,
+                LAST_MODIFIED};
     }
 
     /**

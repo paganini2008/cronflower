@@ -55,7 +55,8 @@ function Generate-Compose([int]$nodes, [int]$execs, [int[]]$execPorts) {
     $L.Add('      start_period: 20s')
     $L.Add('    networks: [cnet]')
   }
-  # cronflower web console - Node static server that proxies /cronsmith + /actuator to scheduler-1.
+  # cronflower web console - Node static server. It needs only ONE seed: web-server.mjs discovers
+  # every other node from the seed's /cluster roster and round-robins across them (no nginx/KONG).
   $L.Add('  cronflower:')
   $L.Add('    image: cronflower:local')
   $L.Add('    container_name: cronflower')
@@ -67,7 +68,8 @@ function Generate-Compose([int]$nodes, [int]$execs, [int[]]$execPorts) {
   $L.Add('    networks: [cnet]')
   for ($i = 1; $i -le $execs; $i++) {
     $port = $execPorts[$i - 1]
-    $ejson = '{"server":{"port":8080},"spring":{"application":{"name":"demo-executor-' + $i + '"}},"cronsmith":{"client":{"server-urls":"http://scheduler-1:8080"}}}'
+    # SHARED app name so the scheduler round-robins across every executor instance.
+    $ejson = '{"server":{"port":8080},"spring":{"application":{"name":"demo-executor"}},"cronsmith":{"client":{"server-urls":"http://scheduler-1:8080"}}}'
     $L.Add("  executor-${i}:")
     $L.Add('    image: cronsmith-executor:local')
     $L.Add('    environment:')

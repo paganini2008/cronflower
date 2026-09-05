@@ -40,6 +40,23 @@ public abstract class Settings {
     public static final long DEFAULT_MISFIRE_THRESHOLD = 60000L;
 
     /**
+     * How many fire times in the past the scheduler steps over before it gives up catching a task
+     * up. Reached only when an expression produces times faster than they can be walked.
+     */
+    public static final int DEFAULT_MAX_CATCH_UP_STEPS = 1000;
+
+    /**
+     * How often, in milliseconds, a windowed scheduler claims newly-due tasks from the store.
+     */
+    public static final long DEFAULT_CLAIM_INTERVAL_MILLIS = 30000L;
+
+    /**
+     * The claim window, in milliseconds, a windowed scheduler falls back to when none is configured
+     * (for example a sharded deployment, which requires windowed claiming).
+     */
+    public static final long DEFAULT_CLAIM_WINDOW_MILLIS = 5 * 60_000L;
+
+    /**
      * The current time in the zone every stored timestamp is expressed in.
      */
     public static LocalDateTime now() {
