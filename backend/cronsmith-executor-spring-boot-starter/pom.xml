@@ -12,8 +12,8 @@
 	<artifactId>cronsmith-executor-spring-boot-starter</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<name>cronsmith-executor-spring-boot-starter</name>
-	<description/>
-	<url/>
+	<description>Spring Boot starter for cronsmith executors: register @Task beans and run scheduler-dispatched jobs over HTTP, on either a servlet or reactive web stack.</description>
+	<url>https://github.com/paganini2008/cronflower</url>
 	<licenses>
 		<license>
 			<name>Apache License, Version 2.0</name>
@@ -22,13 +22,15 @@
 		</license>
 	</licenses>
 	<developers>
-		<developer/>
+		<developer>
+			<name>Fred Feng</name>
+			<email>paganini.fy@gmail.com</email>
+		</developer>
 	</developers>
 	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
+		<connection>https://github.com/paganini2008/cronflower.git</connection>
+		<developerConnection>https://github.com/paganini2008/cronflower.git</developerConnection>
+		<url>https://github.com/paganini2008/cronflower</url>
 	</scm>
 	<properties>
 		<!-- JDK 17 or later. -->
@@ -101,6 +103,41 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- Attach the sources jar on package (required by Maven Central). Version managed by parent. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<phase>package</phase>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Attach a javadoc jar on package (required by Maven Central). Version managed by parent;
+			     doclint off so non-conforming comments never fail the build. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<configuration>
+					<doclint>none</doclint>
+					<charset>UTF-8</charset>
+					<encoding>UTF-8</encoding>
+					<docencoding>UTF-8</docencoding>
+				</configuration>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<phase>package</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<!-- This module is a library (a starter), not an application: no repackage goal. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -140,5 +177,64 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<!-- Activated only for a Central deploy: mvn -Prelease deploy
+	     (kept out of the default build so a plain `mvn install` never GPG-signs or publishes).
+	     maven-gpg-plugin version is managed by spring-boot-starter-parent. -->
+	<profiles>
+		<profile>
+			<id>release</id>
+			<build>
+				<plugins>
+					<!-- GPG signing. Only required for a release; harmless for snapshots
+					     (skip it with -Dgpg.skip=true on a pure snapshot push). -->
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<configuration>
+							<gpgArguments>
+								<arg>--pinentry-mode</arg>
+								<arg>loopback</arg>
+							</gpgArguments>
+						</configuration>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.sonatype.central</groupId>
+						<artifactId>central-publishing-maven-plugin</artifactId>
+						<version>0.9.0</version>
+						<extensions>true</extensions>
+						<configuration>
+							<publishingServerId>central</publishingServerId>
+							<autoPublish>true</autoPublish>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+	<!-- Resolve the cronsmith engine snapshot from the Central Portal snapshot repo. -->
+	<repositories>
+		<repository>
+			<id>central-portal-snapshots</id>
+			<name>Central Portal Snapshots</name>
+			<url>https://central.sonatype.com/repository/maven-snapshots/</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
 
 </project>
