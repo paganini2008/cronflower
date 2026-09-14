@@ -26,8 +26,8 @@ Both build with the project's **Maven Wrapper** (`backend/mvnw`) — no system M
 the two runnable jars into `bin/`:
 
 ```
-bin/cronsmith-scheduler-example-1.0.0-SNAPSHOT.jar
-bin/cronsmith-executor-example-1.0.0-SNAPSHOT.jar
+bin/cronflow-scheduler-example-1.0.0-SNAPSHOT.jar
+bin/cronflow-executor-example-1.0.0-SNAPSHOT.jar
 ```
 
 > `cronsmith` (the engine) and `openspreader` (its cluster library) are not on Maven Central **yet**;

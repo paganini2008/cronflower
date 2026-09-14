@@ -14,8 +14,8 @@ $Logs     = Join-Path $Here 'logs'
 $Data     = Join-Path $Here 'data'
 
 $Version  = if ($env:VERSION) { $env:VERSION } else { '1.0.0-SNAPSHOT' }
-$SchedJar = "cronsmith-scheduler-example-$Version.jar"
-$ExecJar  = "cronsmith-executor-example-$Version.jar"
+$SchedJar = "cronflow-scheduler-example-$Version.jar"
+$ExecJar  = "cronflow-executor-example-$Version.jar"
 
 # Executors get a random port in this range.
 $ExecPortLo = if ($env:EXEC_PORT_LO) { [int]$env:EXEC_PORT_LO } else { 50000 }
@@ -56,8 +56,8 @@ function Build-Backend {
 
 function Stage-Jars {
   New-Item -ItemType Directory -Force -Path $Bin | Out-Null
-  Copy-Item (Join-Path $Backend "cronsmith-scheduler-example\target\$SchedJar") (Join-Path $Bin $SchedJar) -Force
-  Copy-Item (Join-Path $Backend "cronsmith-executor-example\target\$ExecJar")   (Join-Path $Bin $ExecJar)  -Force
+  Copy-Item (Join-Path $Backend "cronflow-scheduler-example\target\$SchedJar") (Join-Path $Bin $SchedJar) -Force
+  Copy-Item (Join-Path $Backend "cronflow-executor-example\target\$ExecJar")   (Join-Path $Bin $ExecJar)  -Force
   Write-Host ">> staged jars into bin\: $SchedJar, $ExecJar"
 }
 
