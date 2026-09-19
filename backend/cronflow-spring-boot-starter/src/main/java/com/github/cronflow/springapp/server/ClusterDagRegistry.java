@@ -8,6 +8,9 @@ import com.chaconneai.openspreader.serialization.ObjectCodec;
 import com.chaconneai.spreader.GossipCluster;
 import com.chaconneai.spreader.Node;
 import com.chaconneai.spreader.event.GossipListener;
+import com.github.cronflow.springapp.server.pojo.DagHeartbeatRequest;
+import com.github.cronflow.springapp.server.pojo.DagRegistrationRequest;
+import com.github.cronflow.springapp.server.pojo.DagSyncMessage;
 
 /**
  * Keeps the in-memory {@link DagExecutorRegistry} in step across the cluster, exactly like cronsmith's

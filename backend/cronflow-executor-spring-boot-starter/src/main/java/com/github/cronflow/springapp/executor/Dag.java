@@ -5,6 +5,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import com.github.cronflow.springapp.executor.pojo.DagDefinition;
 
 /**
  * Declares that a Spring bean hosts the nodes of one DAG (workflow). Node methods in the bean are

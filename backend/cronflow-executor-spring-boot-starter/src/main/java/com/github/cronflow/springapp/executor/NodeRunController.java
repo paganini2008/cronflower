@@ -3,6 +3,8 @@ package com.github.cronflow.springapp.executor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import com.github.cronflow.springapp.executor.pojo.NodeRunRequest;
+import com.github.cronflow.springapp.executor.pojo.NodeRunResult;
 
 /**
  * Receives node dispatches from the cronflow server and runs them <b>synchronously</b>, returning the

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 import com.github.cronflow.springapp.executor.Channel;
+import com.github.cronflow.springapp.executor.ChannelReducer;
 import com.github.cronflow.springapp.executor.Dag;
 import com.github.cronflow.springapp.executor.DagNode;
 import com.github.cronflow.springapp.executor.DagState;
@@ -30,7 +31,7 @@ import com.github.cronsmith.springapp.executor.Task;
  * initial input. With amount = 500 the risk is low, so the {@code fulfilment} subgraph runs.
  */
 @Dag(name = "order-flow", inputs = {"input"},
-        channels = {@Channel(name = "steps", reducer = "concatList")})
+        channels = {@Channel(name = "steps", reducer = ChannelReducer.CONCAT_LIST)})
 @Component
 public class OrderFlow {
 

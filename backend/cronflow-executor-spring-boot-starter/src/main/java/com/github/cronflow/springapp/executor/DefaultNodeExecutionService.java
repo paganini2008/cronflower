@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.ReflectionUtils;
+import com.github.cronflow.springapp.executor.pojo.NodeRunRequest;
+import com.github.cronflow.springapp.executor.pojo.NodeRunResult;
 
 /**
  * Default {@link NodeExecutionService}: the "HTTP → spring bean + method" invocation, the same shape

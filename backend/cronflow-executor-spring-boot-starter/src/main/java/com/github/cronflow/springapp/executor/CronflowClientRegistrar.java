@@ -10,6 +10,8 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.Environment;
+import com.github.cronflow.springapp.executor.pojo.DagHeartbeatRequest;
+import com.github.cronflow.springapp.executor.pojo.DagRegistrationRequest;
 
 /**
  * Weaves this executor's DAG definitions once the context is ready and registers them with the

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -8,6 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../core/auth.service';
+import { CronflowFeature } from '../core/cronflow-feature';
 import { localZone, localZoneOffset, setTzMode, tzLabel, tzMode } from '../core/util';
 
 interface NavItem {
@@ -59,7 +60,7 @@ interface NavItem {
     <mat-sidenav-container class="app-container">
       <mat-sidenav [opened]="opened()" mode="side" class="app-sidenav">
         <mat-nav-list>
-          @for (item of nav; track item.path) {
+          @for (item of nav(); track item.path) {
             <a mat-list-item [routerLink]="item.path" routerLinkActive="active-link">
               <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
               <span matListItemTitle>{{ item.label }}</span>
@@ -72,6 +73,13 @@ interface NavItem {
         <div class="content-inner">
           <router-outlet />
         </div>
+        <footer class="app-footer">
+          <span class="ft-brand">cronflower</span>
+          <span class="ft-sep">·</span>
+          <span>cronsmith scheduling with cronflow DAG orchestration</span>
+          <span class="ft-sep">·</span>
+          <span>© 2026 cronflower</span>
+        </footer>
       </mat-sidenav-content>
     </mat-sidenav-container>
   `,
@@ -98,8 +106,13 @@ interface NavItem {
     .app-sidenav { width: 240px; border-right: 1px solid #e3eaf3; background: #fff; padding-top: 0.5rem; }
     .app-sidenav .active-link { background: #e8f1fd; border-right: 3px solid #1565c0; font-weight: 600; }
     .app-sidenav .active-link mat-icon { color: #1565c0; }
-    .app-content { background: #f4f7fb; }
-    .content-inner { padding: 1.5rem 1.5rem 2.5rem; min-height: 100%; box-sizing: border-box; }
+    .app-content { background: #f4f7fb; display: flex; flex-direction: column; min-height: 100%; }
+    .content-inner { flex: 1 0 auto; padding: 1.5rem 1.5rem 2rem; box-sizing: border-box; }
+    .app-footer { flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+      gap: 0.5rem; flex-wrap: wrap; padding: 1rem 1.5rem 1.3rem; border-top: 1px solid #e3eaf3;
+      color: #93a2b6; font-size: 0.78rem; }
+    .app-footer .ft-brand { font-family: var(--cf-font-display); font-weight: 600; color: #5b6b7f; }
+    .app-footer .ft-sep { opacity: 0.5; }
   `],
 })
 export class Shell {
@@ -115,13 +128,25 @@ export class Shell {
     setTzMode(mode);
   }
 
-  protected readonly nav: NavItem[] = [
+  private readonly feature = inject(CronflowFeature);
+
+  private readonly baseNav: NavItem[] = [
     { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
     { path: '/tasks', label: 'Tasks', icon: 'list_alt' },
-    { path: '/executors', label: 'Executors', icon: 'memory' },
-    { path: '/cluster', label: 'Cluster', icon: 'hub' },
-    { path: '/health', label: 'System Health', icon: 'monitor_heart' },
+    { path: '/system', label: 'System', icon: 'dns' },
   ];
+
+  /** DAG (cronflow) items, shown only when the backend has the cronflow add-on. */
+  private readonly dagNav: NavItem[] = [
+    { path: '/dag', label: 'DAG', icon: 'account_tree' },
+  ];
+
+  protected readonly nav = computed<NavItem[]>(() =>
+    this.feature.available() ? [...this.baseNav, ...this.dagNav] : this.baseNav);
+
+  constructor() {
+    this.feature.ensure();
+  }
 
   protected toggle(): void {
     this.opened.update((v) => !v);

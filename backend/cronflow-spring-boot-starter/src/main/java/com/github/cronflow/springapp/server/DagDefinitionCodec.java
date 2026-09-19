@@ -2,6 +2,7 @@ package com.github.cronflow.springapp.server;
 
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.dataformat.yaml.YAMLMapper;
+import com.github.cronflow.springapp.server.pojo.DagDefinition;
 
 /**
  * (De)serializes a {@link DagDefinition} to/from the text stored in {@code cf_task_dag}, in either

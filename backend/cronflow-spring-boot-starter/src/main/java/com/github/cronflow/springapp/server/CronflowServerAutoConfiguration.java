@@ -10,7 +10,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import javax.sql.DataSource;
 import jakarta.persistence.EntityManagerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.util.ClassUtils;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
@@ -27,6 +29,9 @@ import com.github.cronflow.springapp.server.jpa.TaskDagEntity;
 import com.github.cronflow.springapp.server.jooq.JooqDagRunLog;
 import com.github.cronflow.springapp.server.jooq.JooqDagStore;
 import com.github.cronflow.springapp.server.web.DagRegistrationController;
+import com.github.cronflow.springapp.server.web.DagQueryController;
+import com.github.cronflow.springapp.server.web.DagTriggerController;
+import com.github.cronflow.springapp.server.web.DagAuthoringController;
 import com.github.cronsmith.springapp.scheduler.SchedulerLifecycle;
 import com.github.cronsmith.springapp.scheduler.TaskListener;
 
@@ -82,8 +87,8 @@ public class CronflowServerAutoConfiguration {
      * definition {@link DagStore}: JPA by default, jOOQ in a jOOQ-only deployment.
      */
     @Bean
-    @ConditionalOnMissingBean
-    public DagRunLog cronflowDagRunLog(ObjectProvider<DataSource> ds,
+    @ConditionalOnMissingBean(name = "cronflowDagRunLogStore")
+    public DagRunLog cronflowDagRunLogStore(ObjectProvider<DataSource> ds,
             ObjectProvider<EntityManagerFactory> emf) {
         if (emf.getIfAvailable() != null) {
             log.info("cronflow: cf_dag_log / cf_dag_node_log store = JPA");
@@ -94,6 +99,24 @@ public class CronflowServerAutoConfiguration {
             return new JooqDagRunLog(dataSource);
         }
         throw new IllegalStateException(noStoreMessage());
+    }
+
+    /**
+     * The run-log the coordinator writes through: the storage impl wrapped so its writes replicate over
+     * gossip in the node-local store model (per-node H2/SQLite), so every node holds the full history —
+     * as {@link ClusterDagRegistry} replicates definitions. For a shared store (MySQL/PostgreSQL/…)
+     * replication is off: every node already reads the same rows.
+     */
+    @Bean
+    @Primary
+    @ConditionalOnMissingBean(name = "cronflowDagRunLog")
+    public ClusterDagRunLog cronflowDagRunLog(
+            @Qualifier("cronflowDagRunLogStore") DagRunLog store, GossipCluster cluster,
+            ObjectProvider<com.github.cronsmith.springapp.scheduler.StoreType> storeType) {
+        com.github.cronsmith.springapp.scheduler.StoreType st = storeType.getIfAvailable();
+        boolean replicate = st == null || !st.isShared();
+        return new ClusterDagRunLog(store, cluster, ObjectCodecs.create(SerializationType.JDK),
+                replicate);
     }
 
     private boolean jooqPresent() {
@@ -125,11 +148,51 @@ public class CronflowServerAutoConfiguration {
         return new DagNodeDispatcher(registry, RestClient.create());
     }
 
+    /** The one node bean the openspreader engine dispatches for every cronflow node (HTTP → executor). */
+    @Bean(name = "cronflowNode")
+    @ConditionalOnMissingBean(name = "cronflowNode")
+    public CronflowNode cronflowNode(DagNodeDispatcher dispatcher) {
+        return new CronflowNode(dispatcher);
+    }
+
+    /** The node bean for a {@code @DagNode(subgraph=...)} — runs the nested graph on the engine. Depends
+     *  on the coordinator lazily (it also is the {@link SubGraphResolver}) to avoid a bean cycle. */
+    @Bean(name = "cronflowSubGraph")
+    @ConditionalOnMissingBean(name = "cronflowSubGraph")
+    public CronflowSubGraphNode cronflowSubGraphNode(ObjectProvider<SubGraphResolver> resolver) {
+        return new CronflowSubGraphNode(resolver);
+    }
+
+    /** The MapReduce job every sharded node runs on: each shard dispatched to the executor over HTTP.
+     *  Present only when the openspreader aggregation toolkit is on (a {@code ProcessingMapReduce}). */
+    @Bean(name = "cronflowShardJob")
+    @ConditionalOnBean(com.chaconneai.openspreader.aggregation.ProcessingMapReduce.class)
+    @ConditionalOnMissingBean(name = "cronflowShardJob")
+    public CronflowShardJob cronflowShardJob(DagNodeDispatcher dispatcher) {
+        return new CronflowShardJob(dispatcher);
+    }
+
+    /** The node bean for a {@code @DagNode(shard=...)} — dynamic fan-out over MapReduce. */
+    @Bean(name = "cronflowShardedNode")
+    @ConditionalOnBean(com.chaconneai.openspreader.aggregation.ProcessingMapReduce.class)
+    @ConditionalOnMissingBean(name = "cronflowShardedNode")
+    public CronflowShardedNode cronflowShardedNode(
+            com.chaconneai.openspreader.aggregation.ProcessingMapReduce mapReduce) {
+        return new CronflowShardedNode(mapReduce);
+    }
+
+    /** Runs cronflow DAGs on the openspreader multi-processing engine (distributed across schedulers).
+     *  Concrete return type so it is also injectable as {@link SubGraphResolver} (for subgraph nodes). */
     @Bean
-    @ConditionalOnMissingBean
-    public DagCoordinator cronflowDagCoordinator(DagExecutorRegistry registry,
-            DagNodeDispatcher dispatcher, DagRunLog runLog, ObjectMapper objectMapper) {
-        return new DefaultDagCoordinator(registry, dispatcher, runLog, objectMapper);
+    @ConditionalOnMissingBean(DagCoordinator.class)
+    public EngineDagRunner cronflowDagCoordinator(
+            com.chaconneai.openspreader.dag.ProcessingDag dagger, DagExecutorRegistry registry,
+            DagRunLog runLog, ObjectMapper objectMapper,
+            ObjectProvider<com.chaconneai.openspreader.dag.Reducer<?>> reducers) {
+        // Custom channel reducers declared as Spring beans join the kernel + cronflow built-ins.
+        java.util.List<com.chaconneai.openspreader.dag.Reducer<?>> custom =
+                reducers.stream().toList();
+        return new EngineDagRunner(dagger, registry, runLog, objectMapper, custom);
     }
 
     /** Cluster-wide sync of the DAG registry over gossip — same pattern as cronsmith's executor list. */
@@ -147,10 +210,42 @@ public class CronflowServerAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean
+    public DagQueryController cronflowDagQueryController(DagExecutorRegistry registry,
+            DagRunLog runLog, ObjectProvider<EngineDagRunner> coordinator) {
+        return new DagQueryController(registry, runLog, coordinator);
+    }
+
+    /** Manual DAG trigger endpoint — same coordinator/engine path as the @Task-driven trigger. */
+    @Bean
+    @ConditionalOnMissingBean
+    public DagTriggerController cronflowDagTriggerController(DagExecutorRegistry registry,
+            DagCoordinator coordinator) {
+        return new DagTriggerController(registry, coordinator);
+    }
+
+    /** Canvas authoring endpoints: list target applications, create a graph drawn in the console. */
+    @Bean
+    @ConditionalOnMissingBean
+    public DagAuthoringController cronflowDagAuthoringController(ClusterDagRegistry clusterRegistry,
+            DagExecutorRegistry registry) {
+        return new DagAuthoringController(clusterRegistry, registry);
+    }
+
+    /** Contributes a {@code cronflow} component to {@code /actuator/health} so the console can detect
+     *  the DAG feature (present only when cronflow is deployed) and show or hide its menu accordingly. */
+    @Bean
+    @ConditionalOnClass(org.springframework.boot.health.contributor.HealthIndicator.class)
+    @ConditionalOnMissingBean(name = "cronflowHealthIndicator")
+    public CronflowHealthIndicator cronflowHealthIndicator(DagExecutorRegistry registry) {
+        return new CronflowHealthIndicator(registry);
+    }
+
+    @Bean
     @ConditionalOnMissingBean(name = "cronflowDagTriggerTaskListener")
     public TaskListener cronflowDagTriggerTaskListener(DagExecutorRegistry registry,
-            DagCoordinator coordinator) {
-        return new DagTriggerTaskListener(registry, coordinator);
+            DagCoordinator coordinator, ObjectMapper objectMapper) {
+        return new DagTriggerTaskListener(registry, coordinator, objectMapper);
     }
 
     @Bean
@@ -176,8 +271,11 @@ public class CronflowServerAutoConfiguration {
         };
     }
 
-    /** Additively registers cf_task_dag alongside cronsmith's entities (does not replace them). */
+    /** Additively registers cf_* entities alongside cronsmith's (does not replace them). Guarded by the
+     *  JPA API's presence — as cronsmith guards its own entity scan — so a jOOQ deployment without a
+     *  persistence unit never tries to load the entities. */
     @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = "jakarta.persistence.EntityManagerFactory")
     @EntityScan(basePackageClasses = TaskDagEntity.class)
     static class CronflowEntityScanConfiguration {
     }

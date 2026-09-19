@@ -1,6 +1,7 @@
 {
-  "apiBaseUrl": "http://localhost:7500/cs",
+  "apiBaseUrl": "",
   "apiPrefix": "/cronsmith",
+  "cronflowPrefix": "/cronflow",
   "auth": {
     "username": "admin",
     "password": "admin"

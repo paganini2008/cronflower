@@ -9,10 +9,10 @@ import java.lang.annotation.RetentionPolicy;
  * inside {@link Dag#channels()}.
  *
  * <p>
- * The reducer is referenced <b>by name</b> so the definition survives being written to
- * {@code cf_task_dag} and read back on the server. The eight built-ins of the DAG kernel are always
- * available: {@code lastWins}, {@code firstWins}, {@code concatList}, {@code unionSet},
- * {@code mergeMap}, {@code sumLong}, {@code sumInt}, {@code writeOnce}.
+ * Pick a reducer from the {@link ChannelReducer} enum (the DAG-kernel built-ins plus cronflow's own).
+ * For an application-defined reducer — a {@code Reducer} bean on the server — set {@link #customReducer()}
+ * to its name instead; when both are given, {@code customReducer} wins. The chosen name travels in the
+ * woven definition (so it survives {@code cf_task_dag}) and is looked up in the server's catalog.
  *
  * @Description: Channel
  * @Author: Fred Feng
@@ -25,7 +25,10 @@ public @interface Channel {
     /** The channel name. */
     String name();
 
-    /** The reducer name (a DAG-kernel built-in, or one registered on the server). */
-    String reducer() default "lastWins";
+    /** A built-in reducer. Ignored when {@link #customReducer()} is set. */
+    ChannelReducer reducer() default ChannelReducer.LAST_WINS;
+
+    /** Name of a custom {@code Reducer} bean on the server; overrides {@link #reducer()} when non-blank. */
+    String customReducer() default "";
 
 }

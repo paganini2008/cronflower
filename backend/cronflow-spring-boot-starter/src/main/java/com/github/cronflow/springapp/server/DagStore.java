@@ -1,6 +1,7 @@
 package com.github.cronflow.springapp.server;
 
 import java.util.List;
+import com.github.cronflow.springapp.server.pojo.StoredDag;
 
 /**
  * Durable storage for DAG definitions ({@code cf_task_dag}). Kept minimal: the registry holds the

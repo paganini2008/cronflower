@@ -29,8 +29,15 @@ public class CronflowClientAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public CronflowServerClient cronflowServerClient(CronflowClientProperties properties) {
-        return new WebClientCronflowServerClient(properties);
+    public CronflowWebClient cronflowWebClient(CronflowClientProperties properties) {
+        return new CronflowWebClient(properties);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public CronflowServerClient cronflowServerClient(CronflowClientProperties properties,
+            CronflowWebClient cronflowWebClient) {
+        return new WebClientCronflowServerClient(properties, cronflowWebClient);
     }
 
     @Bean

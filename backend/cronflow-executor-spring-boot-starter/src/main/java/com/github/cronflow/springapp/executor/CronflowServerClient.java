@@ -1,4 +1,6 @@
 package com.github.cronflow.springapp.executor;
+import com.github.cronflow.springapp.executor.pojo.DagHeartbeatRequest;
+import com.github.cronflow.springapp.executor.pojo.DagRegistrationRequest;
 
 /**
  * The executor's view of the cronflow server: register DAG definitions + trigger bindings, and

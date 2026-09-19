@@ -4,11 +4,20 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.github.cronflow.springapp.executor.pojo.DagDefinition;
+import com.github.cronflow.springapp.executor.pojo.TriggerBinding;
 
 /**
  * The programmatic way to weave a DAG, as an alternative to the {@link Dag}/{@link DagNode}
  * annotations. Declare a {@code @Bean CronflowDag} and the executor registers it with the server the
  * same way it registers annotated graphs — both produce a {@link DagDefinition}.
+ *
+ * <p>
+ * Each node names its own {@code bean} + {@code method}, so one graph can span several service beans.
+ * The {@code @Bean} returns the {@code CronflowDag} itself (the executor calls {@code build()}), so end
+ * the chain on a graph-level step — {@link #triggeredBy} / {@link #channel} / {@link #input} — not on
+ * {@code build()} (which returns the {@link DagDefinition}). Bind a {@code @Task} with
+ * {@link #triggeredBy} so the graph actually runs.
  *
  * <pre>{@code
  * @Bean
@@ -21,7 +30,7 @@ import java.util.Map;
  *             .node("riskScore").bean("orderFlow").method("riskScore")
  *                 .when("#risk > 80", "humanReview").otherwise("fulfilment")
  *             .node("transfer").bean("bank").method("transfer").retry(2).onFailure("flag")
- *             .build();
+ *             .triggeredBy("cronsmith-executor", "orderFlow.kickoff");
  * }
  * }</pre>
  *
@@ -35,6 +44,7 @@ public final class CronflowDag {
     private final List<String> inputs = new ArrayList<>();
     private final List<DagDefinition.ChannelDef> channels = new ArrayList<>();
     private final List<NodeAcc> nodes = new ArrayList<>();
+    private final List<TriggerBinding> triggers = new ArrayList<>();
 
     private CronflowDag(String graph) {
         this.graph = graph;
@@ -47,6 +57,21 @@ public final class CronflowDag {
     public CronflowDag input(String channel) {
         inputs.add(channel);
         return this;
+    }
+
+    /**
+     * Bind a cronsmith {@code @Task} (by its group + name) to this graph, so the task's completion
+     * triggers a run with its return value as the initial state — the programmatic equivalent of putting
+     * a {@code @Task} in a {@code @Dag} class. Call once per triggering task.
+     */
+    public CronflowDag triggeredBy(String taskGroup, String taskName) {
+        triggers.add(new TriggerBinding(taskGroup, taskName, graph));
+        return this;
+    }
+
+    /** The task→graph trigger bindings declared via {@link #triggeredBy}, for the scanner to register. */
+    public List<TriggerBinding> triggerBindings() {
+        return List.copyOf(triggers);
     }
 
     public CronflowDag channel(String name, String reducer) {
@@ -84,7 +109,7 @@ public final class CronflowDag {
             }
         }
         return new DagDefinition(graph, List.copyOf(inputs), List.copyOf(channels),
-                List.copyOf(nodeDefs), List.copyOf(edgeDefs), List.copyOf(conditionalDefs));
+                List.copyOf(nodeDefs), List.copyOf(edgeDefs), List.copyOf(conditionalDefs), List.of());
     }
 
     /** Chained node configuration; re-exposes graph-level steps so the chain never breaks. */
@@ -114,6 +139,7 @@ public final class CronflowDag {
         public NodeBuilder node(String name) { return owner.node(name); }
         public CronflowDag input(String channel) { return owner.input(channel); }
         public CronflowDag channel(String name, String reducer) { return owner.channel(name, reducer); }
+        public CronflowDag triggeredBy(String taskGroup, String taskName) { return owner.triggeredBy(taskGroup, taskName); }
         public DagDefinition build() { return owner.build(); }
     }
 

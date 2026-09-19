@@ -2,13 +2,22 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, timeout } from 'rxjs';
 import {
-  ClusterView, Executor, HealthView, LogView, Stats, TaskListResponse, TaskMetadata, TaskView,
+  ClusterView, DagDefinition, DagGraphView, DagRunDetail, DagRunPage, Executor, HealthView, LogView,
+  Stats, TaskListResponse, TaskMetadata, TaskView,
 } from './models';
 import { ConfigService } from './runtime-config';
 
 export interface TaskQuery {
   group?: string;
   name?: string;
+  status?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface DagRunQuery {
+  application?: string;
+  graph?: string;
   status?: string;
   limit?: number;
   offset?: number;
@@ -27,6 +36,11 @@ export class CronsmithApi {
   /** The REST base — `{apiBaseUrl}{apiPrefix}` (apiPrefix defaults to `/cronsmith`). */
   private get base(): string {
     return `${this.root()}${this.config.apiPrefix}`;
+  }
+
+  /** The cronflow (DAG) REST base — `{apiBaseUrl}{cronflowPrefix}` (defaults to `/cronflow`). */
+  private get cronflowBase(): string {
+    return `${this.root()}${this.config.cronflowPrefix}`;
   }
 
   stats(): Observable<Stats> {
@@ -85,6 +99,50 @@ export class CronsmithApi {
 
   action(group: string, name: string, action: 'pause' | 'resume' | 'cancel'): Observable<TaskView> {
     return this.http.post<TaskView>(`${this.base}/tasks/${enc(group)}/${enc(name)}/${action}`, {});
+  }
+
+  // ---- cronflow (DAG) — under the separate cronflow prefix -------------------------------------
+
+  /** Every registered DAG with its definition (for the DAG list and diagram). */
+  dags(): Observable<DagGraphView[]> {
+    return this.http.get<DagGraphView[]>(`${this.cronflowBase}/dags`);
+  }
+
+  /** One DAG's definition. */
+  dag(application: string, graph: string): Observable<DagGraphView> {
+    return this.http.get<DagGraphView>(`${this.cronflowBase}/dags/${enc(application)}/${enc(graph)}`);
+  }
+
+  /** A page of run history, newest first, optionally filtered. */
+  dagRuns(query: DagRunQuery = {}): Observable<DagRunPage> {
+    let params = new HttpParams();
+    for (const [k, v] of Object.entries(query)) {
+      if (v !== undefined && v !== null && v !== '') {
+        params = params.set(k, String(v));
+      }
+    }
+    return this.http.get<DagRunPage>(`${this.cronflowBase}/runs`, { params });
+  }
+
+  /** One run drilled down: the run, its node executions and any child (subgraph) runs. */
+  dagRun(runId: string): Observable<DagRunDetail> {
+    return this.http.get<DagRunDetail>(`${this.cronflowBase}/runs/${enc(runId)}`);
+  }
+
+  /** Applications the canvas can target (those with a live executor to host the node beans). */
+  dagApplications(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.cronflowBase}/applications`);
+  }
+
+  /** Create a DAG drawn on the console canvas, hosted by a live executor of {@code application}. */
+  createDag(application: string, definition: DagDefinition): Observable<{ graph: string }> {
+    return this.http.post<{ graph: string }>(`${this.cronflowBase}/dags`, { application, definition });
+  }
+
+  /** Trigger a DAG by hand with an optional initial state; returns the new run id. */
+  triggerDag(graph: string, initialState?: Record<string, unknown>): Observable<{ runId: string }> {
+    return this.http.post<{ runId: string }>(
+      `${this.cronflowBase}/dags/${enc(graph)}/trigger`, initialState ?? {});
   }
 }
 

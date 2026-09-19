@@ -56,12 +56,37 @@ public final class DagState {
         return v == null ? 0 : Integer.parseInt(v.toString());
     }
 
+    public double getDouble(String name) {
+        Object v = channels.get(name);
+        if (v instanceof Number n) {
+            return n.doubleValue();
+        }
+        return v == null ? 0.0 : Double.parseDouble(v.toString());
+    }
+
     public boolean getBoolean(String name) {
         Object v = channels.get(name);
         if (v instanceof Boolean b) {
             return b;
         }
         return v != null && Boolean.parseBoolean(v.toString());
+    }
+
+    /** A channel read as a list; a single non-list value is wrapped, an absent one is empty. Handy for a
+     *  sharded node's per-shard handler reading {@code Shard.CHANNEL}. */
+    @SuppressWarnings("unchecked")
+    public java.util.List<Object> getList(String name) {
+        Object v = channels.get(name);
+        if (v == null) {
+            return java.util.List.of();
+        }
+        if (v instanceof java.util.List) {
+            return (java.util.List<Object>) v;
+        }
+        if (v instanceof java.util.Collection) {
+            return new java.util.ArrayList<>((java.util.Collection<Object>) v);
+        }
+        return java.util.List.of(v);
     }
 
     /** The raw channels, read-only. */

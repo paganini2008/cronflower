@@ -48,17 +48,21 @@ cd deploy
 ./run-local.sh down           # stop everything it started
 ```
 
-- Ports: schedulers `19090, 19091, …` · console (ng serve) `7200` · executors **random 50000-60000**
-- The dev server proxies `/cronsmith` + `/actuator` to the first scheduler (`:19090`).
+- Ports: **console `7200` is the one entry point**; schedulers AND executors take **random free ports
+  in 50000-60000** (no fixed 19090). The console (`server.mjs`) is handed every node's address as a seed
+  and discovers the full member list — and each node's real port — from any node's `/actuator/health`,
+  then load-balances `/cronsmith` + `/cronflow` + `/actuator` across them with failover.
 - Store: each node has its **own** H2 file `data/cronsmith-<n>` (the leader broadcasts writes so every
   node keeps a copy; persists across restarts); logs in `logs/`, pids in `run/`.
 - `down` kills the whole process tree and frees the frontend port (never touches browser tabs).
 
-## 2. Docker — `run-docker.sh` (multi-node, each on its own port)
+## 2. Docker — `run-docker.sh` (multi-node, random host ports)
 
 Generates `docker-compose.generated.yml` for the chosen topology and brings it up. The console
-container proxies `/cronsmith` + `/actuator` across **all** scheduler nodes (failing over when one —
-even the leader — is down), so the browser only ever talks to `:7200`.
+container proxies `/cronsmith` + `/cronflow` + `/actuator` across **all** scheduler nodes (failing over
+when one — even the leader — is down), so the browser only ever talks to `:7200`. Inside the network the
+console discovers nodes by **container name** (`scheduler-N:8080`), so the random host ports are for
+external access only and never affect discovery.
 
 ```bash
 cd deploy
@@ -68,7 +72,8 @@ cd deploy
 ./run-docker.sh down          # stop + remove containers (keeps the H2 data volumes)
 ```
 
-- Ports on the host: schedulers `19090…` · console `7200` · executors **random 50000-60000**
+- Ports on the host: console `7200` (the one entry point) · schedulers AND executors on **random free
+  ports in 50000-60000** (no fixed 19090; reach any scheduler through the console).
 - Default H2 is **node-local** (each node has its own store) — fine for a demo. For a real
   shared/sharded cluster, point `conf/scheduler.properties` at a shared MySQL/PostgreSQL reachable
   from the containers (it's mounted into every node); no flag needed.
@@ -99,6 +104,6 @@ to touch the executor, the proxy or the frontend by hand. (The executor's *own* 
 - `bin/*.jar`, `web-dist/`, `docker-compose.generated.yml`, `logs/`, `run/`, `data/` are build/runtime
   outputs (git-ignored), not source.
 - Override anything via env, e.g. `MVN=…`, `M2_REPO=…`, `CRONSMITH_REPO=…`, `WEB_PORT=9000`,
-  `SCHED_BASE_PORT=…`, `NG_CONFIG=production`.
+  `NG_CONFIG=production`. (There is no fixed scheduler port to override — the ports are random.)
 - Tune resources via env: `SCHED_XMX_GB` / `EXEC_XMX_GB` (per-node JVM heap in GB, default `1`),
   `MEM_BUDGET_PCT` (capacity cap, default `70`), `EXEC_PORT_LO` / `EXEC_PORT_HI` (executor port range).

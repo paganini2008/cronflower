@@ -33,6 +33,25 @@ public @interface DagNode {
     String name() default "";
 
     /**
+     * The graph this node belongs to. Leave blank for a node inside a {@code @Dag} class (it joins that
+     * class's graph). Set it to a graph name to contribute a node <b>from another Spring bean</b>: the
+     * method may live in any service bean, and this node runs on that bean+method — so one graph can span
+     * several beans, wired together by {@link #to()} across them. The named graph's shape (channels,
+     * inputs) is still declared by its {@code @Dag} class.
+     */
+    String graph() default "";
+
+    /**
+     * Override the bean that executes this node (defaults to the bean the method is declared on). With
+     * {@link #method()} it lets a node declared in the {@code @Dag} class delegate to another service
+     * bean's method; the annotated method is then a wiring placeholder and is not itself invoked.
+     */
+    String bean() default "";
+
+    /** Override the method name that executes this node (defaults to the annotated method's name). */
+    String method() default "";
+
+    /**
      * When set, this node is a <b>subgraph</b>: instead of calling a bean, the server runs the named
      * DAG (itself a {@code @Dag}) as a nested workflow, seeded with the current state, and merges its
      * result channels back. The annotated method is then never invoked (it exists only for wiring).
@@ -65,5 +84,12 @@ public @interface DagNode {
 
     /** Where an unmatched conditional falls through to; empty means nowhere. */
     String[] otherwise() default {};
+
+    /**
+     * When present (0 or 1), this node is a <b>dynamic fan-out</b>: the {@link Shard#input()} collection
+     * is split and processed in parallel across the cluster, each shard dispatched to this method, and
+     * the partial results gathered into {@link Shard#output()}. See {@link Shard}.
+     */
+    Shard[] shard() default {};
 
 }

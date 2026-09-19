@@ -4,9 +4,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import com.github.cronflow.springapp.server.ClusterDagRegistry;
-import com.github.cronflow.springapp.server.DagHeartbeatRequest;
-import com.github.cronflow.springapp.server.DagRegistrationRequest;
-import com.github.cronflow.springapp.server.DagRegistrationResponse;
+import com.github.cronflow.springapp.server.pojo.DagHeartbeatRequest;
+import com.github.cronflow.springapp.server.pojo.DagRegistrationRequest;
+import com.github.cronflow.springapp.server.pojo.DagRegistrationResponse;
 
 /**
  * Receives executor registrations and heartbeats. In its own {@code .web} package so the cronflow

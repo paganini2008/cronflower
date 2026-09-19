@@ -1,4 +1,6 @@
 package com.github.cronflow.springapp.executor;
+import com.github.cronflow.springapp.executor.pojo.NodeRunRequest;
+import com.github.cronflow.springapp.executor.pojo.NodeRunResult;
 
 /**
  * Runs one DAG node on this executor. The single seam the {@link NodeRunController} calls, so an

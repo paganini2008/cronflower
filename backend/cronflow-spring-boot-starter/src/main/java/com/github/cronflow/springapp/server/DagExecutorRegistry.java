@@ -11,6 +11,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.github.cronflow.springapp.server.pojo.DagDefinition;
+import com.github.cronflow.springapp.server.pojo.DagGraph;
+import com.github.cronflow.springapp.server.pojo.DagHeartbeatRequest;
+import com.github.cronflow.springapp.server.pojo.DagRegistrationRequest;
+import com.github.cronflow.springapp.server.pojo.StoredDag;
+import com.github.cronflow.springapp.server.pojo.TriggerBinding;
 
 /**
  * In-memory registry of cronflow executor instances and the graphs they host, plus the task→DAG
@@ -140,8 +146,33 @@ public class DagExecutorRegistry {
         return Optional.ofNullable(applicationByGraph.get(graph));
     }
 
+    /** Every known graph with its owning application and parsed definition, for the console. The
+     *  in-memory map is gossip-replicated ({@link ClusterDagRegistry}), so it is cluster-complete. */
+    public List<DagGraph> graphs() {
+        List<DagGraph> out = new ArrayList<>();
+        for (Map.Entry<String, DagDefinition> e : definitions.entrySet()) {
+            out.add(new DagGraph(applicationByGraph.getOrDefault(e.getKey(), ""), e.getValue()));
+        }
+        out.sort((a, b) -> a.definition().graph().compareToIgnoreCase(b.definition().graph()));
+        return out;
+    }
+
     public Optional<String> triggeredGraph(String taskGroup, String taskName) {
         return Optional.ofNullable(triggerBindings.get(taskGroup + "/" + taskName));
+    }
+
+    /** Distinct applications that currently have at least one live executor — the pool the console
+     *  offers when authoring a DAG (its nodes' beans must live in one of these executors). */
+    public List<String> liveApplications() {
+        return instances.values().stream().filter(this::isLive)
+                .map(ExecutorInstance::application).distinct().sorted().collect(Collectors.toList());
+    }
+
+    /** Any live executor instance of an application — used to host a console-authored graph so its
+     *  nodes dispatch to that executor (where their beans/methods live). */
+    public Optional<ExecutorInstance> anyLiveInstance(String application) {
+        return instances.values().stream()
+                .filter(i -> application.equals(i.application()) && isLive(i)).findFirst();
     }
 
     /** Pick a live instance hosting {@code graph}, round-robin. TODO: reuse cronsmith's router. */

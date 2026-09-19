@@ -215,7 +215,7 @@ export class TaskList implements OnInit {
       data: {
         title: `Withdraw ${t.taskName}?`,
         message: `“${t.taskGroup} / ${t.taskName}” will stop firing. Its definition and run history are kept.`,
-        note: 'This cannot be undone from here — a withdrawn task can only be brought back by editing and saving it.',
+        note: 'This cannot be undone from here. A withdrawn task can only be brought back by editing and saving it.',
         confirmLabel: 'Withdraw',
         icon: 'block',
       },

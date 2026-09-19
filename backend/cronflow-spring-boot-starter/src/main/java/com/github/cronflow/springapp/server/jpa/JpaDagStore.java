@@ -1,7 +1,7 @@
 package com.github.cronflow.springapp.server.jpa;
 
 import com.github.cronflow.springapp.server.DagStore;
-import com.github.cronflow.springapp.server.StoredDag;
+import com.github.cronflow.springapp.server.pojo.StoredDag;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
