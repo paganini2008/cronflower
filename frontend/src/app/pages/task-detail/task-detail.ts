@@ -269,7 +269,7 @@ export class TaskDetail {
       data: {
         title: `Withdraw ${this.name()}?`,
         message: `“${this.group()} / ${this.name()}” will stop firing. Its definition and run history are kept.`,
-        note: 'This cannot be undone from here — a withdrawn task can only be brought back by editing and saving it.',
+        note: 'This cannot be undone from here. A withdrawn task can only be brought back by editing and saving it.',
         confirmLabel: 'Withdraw',
         icon: 'block',
       },

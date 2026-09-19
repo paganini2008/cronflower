@@ -21,6 +21,18 @@ export function statusClass(status: string | undefined | null): string {
   return STATUS_CLASS[status ?? 'NONE'] ?? 'st-none';
 }
 
+const DAG_STATUS_CLASS: Record<string, string> = {
+  RUNNING: 'dg-running',
+  SUCCESS: 'dg-success',
+  FAILED: 'dg-failed',
+  SKIPPED: 'dg-skipped',
+};
+
+/** Chip class for a DAG run/node status (SUCCESS/FAILED/RUNNING/SKIPPED). */
+export function dagStatusClass(status: string | undefined | null): string {
+  return DAG_STATUS_CLASS[status ?? ''] ?? 'dg-none';
+}
+
 /**
  * The server stores and returns timestamps in UTC, as ISO strings with no zone designator
  * (e.g. "2026-08-26T12:54:04.340495"). JavaScript would parse such a string as *local* time, which

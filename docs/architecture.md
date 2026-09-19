@@ -31,7 +31,7 @@ cronsmith is a **distributed, stateful cron scheduler**. Responsibility is split
 
 ## Components
 
-### Scheduler (`cronsmith-spring-boot-starter` → `cronsmith-scheduler-example`)
+### Scheduler (`cronsmith-spring-boot-starter` → `cronflow-scheduler-example`)
 - A **spreader** cluster: nodes discover each other and elect a leader; the leader schedules and
   dispatches, followers serve reads and can take over on failover.
 - **Windowed loading**: only tasks due within `window-minutes` are held in memory; the leader
@@ -41,7 +41,7 @@ cronsmith is a **distributed, stateful cron scheduler**. Responsibility is split
 - **Group sharding** (over a shared store) partitions task groups across nodes for horizontal scale;
   **weighted dispatch** routes runs to executors by capacity.
 
-### Executor (`cronsmith-executor-spring-boot-starter` → `cronsmith-executor-example`)
+### Executor (`cronsmith-executor-spring-boot-starter` → `cronflow-executor-example`)
 - On boot, scans beans for **`@Task`** methods, turns each into a definition and registers it with
   the scheduler. The scheduler owns the schedule; when a task is due it calls back into the method.
 - Schedules: traditional **cron**, **YCRON** (year-based — week-of-year / day-of-year), fixed

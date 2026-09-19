@@ -25,7 +25,7 @@ per-node ones (port, datasource, cluster peers) for you; everything else has a b
 | `management.endpoints.web.cors.allowed-origin-patterns` | `${cronsmith.demo.cors-origins:*}` | **Actuator CORS — separate from the MVC CORS above.** Required for the System Health page to read `/actuator/health` cross-origin (e.g. console at `:7200`, backend/gateway at another origin). Without it `/actuator/health` returns 200 but the browser blocks the response. |
 | `management.endpoints.web.cors.allowed-methods` | `GET` | Methods allowed on the actuator CORS above |
 
-The runnable defaults live in `backend/cronsmith-scheduler-example/src/main/resources/application.properties`.
+The runnable defaults live in `backend/cronflow-scheduler-example/src/main/resources/application.properties`.
 For deploy-time tuning **without a rebuild**, edit `deploy/conf/scheduler.properties` (layered on top).
 
 ## Executor (client)
@@ -77,7 +77,7 @@ So: **`server-urls` can collapse to one nginx URL; the dispatch address must sta
 
 Set exactly one of `cron` / `interval`(+`intervalUnit`) / `iso`. A method takes no args or a single
 `String` (the `initialParameter`); a non-void return is stored in the execution log. See
-`backend/cronsmith-executor-example/.../DemoTasks.java` for a worked example of every attribute.
+`backend/cronflow-executor-example/.../DemoTasks.java` for a worked example of every attribute.
 
 ## Storage matrix
 

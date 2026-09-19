@@ -25,7 +25,9 @@
 	<modules>
 		<module>cronsmith-spring-boot-starter</module>
 		<module>cronsmith-executor-spring-boot-starter</module>
-		<module>cronsmith-scheduler-example</module>
-		<module>cronsmith-executor-example</module>
+		<module>cronflow-spring-boot-starter</module>
+		<module>cronflow-executor-spring-boot-starter</module>
+		<module>cronflow-scheduler-example</module>
+		<module>cronflow-executor-example</module>
 	</modules>
 </project>

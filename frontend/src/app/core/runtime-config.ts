@@ -27,12 +27,22 @@ export interface RuntimeConfig {
    * proxies, which forward this same prefix).
    */
   apiPrefix: string;
+  /**
+   * The cronflow (DAG) REST API prefix — must match the scheduler's `cronflow.server.api-prefix`
+   * (default `/cronflow`). The DAG console pages call under it, separately from `apiPrefix`. Only
+   * meaningful when the backend has the cronflow add-on; the console auto-detects that via
+   * `/actuator/health` and hides all DAG menus/pages when it is absent, so this is harmless on a
+   * cronsmith-only backend. Change it only if you changed the backend prefix (then also update the
+   * dev/Node proxies, which forward this same prefix).
+   */
+  cronflowPrefix: string;
 }
 
 export const DEFAULT_CONFIG: RuntimeConfig = {
   auth: { username: 'admin', password: 'admin' },
   apiBaseUrl: 'http://localhost:19090',
   apiPrefix: '/cronsmith',
+  cronflowPrefix: '/cronflow',
 };
 
 @Injectable({ providedIn: 'root' })
@@ -67,6 +77,18 @@ export class ConfigService {
     }
     return p.replace(/\/+$/, '');
   }
+
+  /** cronflow (DAG) REST API prefix, normalized like {@link apiPrefix}. Defaults to '/cronflow'. */
+  get cronflowPrefix(): string {
+    let p = (this._config().cronflowPrefix ?? '/cronflow').trim();
+    if (p === '' || p === '/') {
+      return '';
+    }
+    if (!p.startsWith('/')) {
+      p = '/' + p;
+    }
+    return p.replace(/\/+$/, '');
+  }
 }
 
 /**
@@ -84,6 +106,7 @@ export async function loadRuntimeConfig(): Promise<void> {
         auth: { ...DEFAULT_CONFIG.auth, ...(json?.auth ?? {}) },
         apiBaseUrl: json?.apiBaseUrl ?? DEFAULT_CONFIG.apiBaseUrl,
         apiPrefix: json?.apiPrefix ?? DEFAULT_CONFIG.apiPrefix,
+        cronflowPrefix: json?.cronflowPrefix ?? DEFAULT_CONFIG.cronflowPrefix,
       });
     }
   } catch {

@@ -3,8 +3,13 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "config": "node scripts/gen-config.mjs",
+    "prestart": "node scripts/gen-config.mjs",
+    "prebuild": "node scripts/gen-config.mjs",
     "start": "ng serve",
     "build": "ng build",
+    "preserve": "node scripts/gen-config.mjs",
+    "serve": "node server.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -20,6 +25,12 @@
     "@angular/material": "^21.2.14",
     "@angular/platform-browser": "^21.2.0",
     "@angular/router": "^21.2.0",
+    "@types/cytoscape-dagre": "^2.3.4",
+    "@types/js-yaml": "^4.0.9",
+    "cytoscape": "^3.34.3",
+    "cytoscape-dagre": "^4.0.1",
+    "cytoscape-edgehandles": "^4.0.1",
+    "js-yaml": "^5.4.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

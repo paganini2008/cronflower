@@ -60,13 +60,32 @@ body {
   --cf-radius-sm: 10px;
   --cf-shadow: 0 1px 2px rgba(15, 44, 77, 0.05), 0 8px 24px -12px rgba(15, 44, 77, 0.14);
   --cf-shadow-hover: 0 2px 6px rgba(15, 44, 77, 0.08), 0 14px 34px -14px rgba(21, 101, 192, 0.28);
+
+  /* Display typeface for titles — geometric, engineered, deliberately not the generic UI sans. */
+  --cf-font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --cf-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* DAG canvas — a dark, terminal-grade surface (the graph is where people watch a run live). */
+  --cf-canvas: #0d1524;       /* deep slate canvas */
+  --cf-canvas-2: #111c30;     /* node fill */
+  --cf-canvas-line: #22314c;  /* node border / grid */
+  --cf-canvas-ink: #e6edf9;   /* node label */
+  --cf-canvas-muted: #8492ad; /* de-emphasised */
+  --cf-accent: #38e0c8;       /* teal accent (entry / brand pop) */
+  --cf-accent-amber: #f5b544; /* subgraph / attention */
+  /* Run status — saturated, glowing on the dark canvas; not pastel. */
+  --cf-ok: #34d399;
+  --cf-bad: #fb7185;
+  --cf-run: #38bdf8;
+  --cf-skip: #64748b;
 }
 
 /* Page scaffolding */
 .page-title {
-  font-size: 1.55rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-family: var(--cf-font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
   color: var(--cf-ink);
   margin: 0 0 0.25rem;
 }
@@ -124,6 +143,14 @@ body {
 .st-canceled  { color: #d93025; background: #fce8e6; }
 .st-none      { color: #94a3b8; background: #f1f5f9; }
 
+/* DAG run/node status chips — a cleaner, more saturated palette than the old pastels; the hues match
+   the cytoscape node colours used on the dark canvas in cf-dag-graph. */
+.dg-success { color: #067a55; background: #d9f5ea; }
+.dg-failed  { color: #c02b4b; background: #ffe4e9; }
+.dg-running { color: #0b74b8; background: #dcf1fd; }
+.dg-skipped { color: #55627a; background: #eef1f6; }
+.dg-none    { color: #94a3b8; background: #f1f5f9; }
+
 .ok   { color: #0f9d58; font-weight: 600; }
 .bad  { color: #d93025; font-weight: 600; }
 .muted { color: var(--cf-muted); }
@@ -147,4 +174,17 @@ table.mat-mdc-table {
 /* Buttons: a touch more presence on the primary action */
 .mat-mdc-raised-button, .mat-mdc-unelevated-button { letter-spacing: 0.01em; }
 .mat-mdc-unelevated-button:not(:disabled):hover { box-shadow: var(--cf-shadow-hover); }
+
+/* Restrained corners on operation buttons — the Material 3 default pill reads too round here.
+   Material 3 drives the radius from container-shape tokens; set those and back them with a rule.
+   Icon buttons stay circular. */
+:root {
+  --mdc-filled-button-container-shape: 9px;
+  --mdc-outlined-button-container-shape: 9px;
+  --mdc-text-button-container-shape: 9px;
+  --mdc-protected-button-container-shape: 9px;
+}
+.mat-mdc-button-base { border-radius: 9px !important; }
+.mat-mdc-icon-button { border-radius: 50% !important; }
+/* Plain HTML buttons/inputs used in custom toolbars already set their own radius; leave them. */
 

@@ -41,7 +41,7 @@ import { ConfigService } from '../../core/runtime-config';
         </form>
 
         <!-- Demo convenience: reflects config.json. Delete this line for a non-demo deployment. -->
-        <p class="login-hint">Demo credentials — <strong>{{ demoUser }}</strong> / <strong>{{ demoPass }}</strong></p>
+        <p class="login-hint">Demo credentials&nbsp;&nbsp;<strong>{{ demoUser }}</strong> / <strong>{{ demoPass }}</strong></p>
       </div>
     </div>
   `,

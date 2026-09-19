@@ -109,8 +109,10 @@ cronflower/
 ├── backend/                                   # Maven reactor (mvnw included — no system Maven needed)
 │   ├── cronsmith-spring-boot-starter/             # scheduler (server) starter
 │   ├── cronsmith-executor-spring-boot-starter/    # executor (client) starter
-│   ├── cronsmith-scheduler-example/               # runnable scheduler — best-practice reference
-│   └── cronsmith-executor-example/                # runnable executor — full @Task showcase
+│   ├── cronflow-spring-boot-starter/              # DAG (server) starter — optional add-on
+│   ├── cronflow-executor-spring-boot-starter/     # DAG (executor) starter — optional add-on
+│   ├── cronflow-scheduler-example/                # runnable scheduler (cronsmith + optional cronflow DAG)
+│   └── cronflow-executor-example/                 # runnable executor (@Task showcase + optional DAG nodes)
 ├── frontend/                                  # the cronflower Angular console
 ├── deploy/                                    # one-click runners (local + docker), Dockerfiles, web server
 │   ├── run-local.sh   ·   run-docker.sh

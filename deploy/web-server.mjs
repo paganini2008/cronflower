@@ -36,7 +36,15 @@ const API_PREFIX = (() => {
   if (!p.startsWith('/')) p = '/' + p;
   return p.replace(/\/+$/, '') || '/cronsmith';
 })();
-const PROXY_PREFIXES = [API_PREFIX, '/actuator'];
+// The cronflow (DAG) API prefix, tracking cronflow.server.api-prefix (default /cronflow). Proxied like
+// the cronsmith prefix so the DAG console pages reach the cluster; harmless when the backend has no
+// cronflow add-on (those routes 404 and the console hides all DAG UI, detected via /actuator/health).
+const CRONFLOW_PREFIX = (() => {
+  let p = (process.env.CRONFLOW_PREFIX || '/cronflow').trim();
+  if (!p.startsWith('/')) p = '/' + p;
+  return p.replace(/\/+$/, '') || '/cronflow';
+})();
+const PROXY_PREFIXES = [API_PREFIX, CRONFLOW_PREFIX, '/actuator'];
 
 // The HTTP port every scheduler is assumed to listen on (see SCHED_HTTP_PORT note above).
 const HTTP_PORT = String(process.env.SCHED_HTTP_PORT || SEEDS[0].port || 80);

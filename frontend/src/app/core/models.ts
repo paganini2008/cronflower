@@ -139,3 +139,104 @@ export const TASK_STATUSES = [
 ] as const;
 
 export const MISFIRE_POLICIES = ['FIRE_ONCE_NOW', 'FIRE_ALL', 'SKIP'] as const;
+
+// ---- cronflow (DAG) — mirrors the backend's server.pojo records --------------------------------
+
+export interface DagChannelDef {
+  name: string;
+  reducer: string;
+}
+
+export interface DagNodeDef {
+  name: string;
+  entry: boolean;
+  trigger: string;
+  retries: number;
+  beanName: string;
+  methodName: string;
+  subgraph: string;
+}
+
+export interface DagEdgeDef {
+  from: string;
+  to: string;
+  condition?: string;
+  branch?: string;
+}
+
+export interface DagConditionalDef {
+  sources: string[];
+  form: string;
+  expression?: string;
+  predicates?: string[];
+  branches?: Record<string, string[]>;
+  elseTargets?: string[];
+}
+
+/** The woven DAG description (server.pojo.DagDefinition) the diagram renders. */
+export interface DagDefinition {
+  graph: string;
+  inputs: string[];
+  channels: DagChannelDef[];
+  nodes: DagNodeDef[];
+  edges: DagEdgeDef[];
+  conditionals: DagConditionalDef[];
+}
+
+/** A registered DAG as the list shows it (server.pojo.DagGraphView). */
+export interface DagGraphView {
+  application: string;
+  graph: string;
+  nodeCount: number;
+  definition: DagDefinition;
+}
+
+/** One DAG run (server.pojo.DagRunView). Times are UTC ISO strings, like every other timestamp. */
+export interface DagRunView {
+  runId: string;
+  parentRunId?: string;
+  application?: string;
+  graph: string;
+  triggeredBy?: string;
+  status: string;
+  startedAt?: string;
+  finishedAt?: string;
+  elapsedMs?: number;
+  nodeCount?: number;
+  failedNode?: string;
+  inputParameter?: string;
+  returnValue?: string;
+  errorDetail?: string;
+}
+
+/** One node execution within a run (server.pojo.DagNodeView). */
+export interface DagNodeView {
+  runId: string;
+  graph: string;
+  node: string;
+  seq: number;
+  status: string;
+  inputParam?: string;
+  output?: string;
+  executor?: string;
+  elapsedMs?: number;
+  errorDetail?: string;
+  loggedAt?: string;
+}
+
+export interface DagRunPage {
+  total: number;
+  items: DagRunView[];
+}
+
+/** A run drilled down: the run, its nodes and any child (subgraph) runs (server.pojo.DagRunDetail). */
+export interface DagRunDetail {
+  run: DagRunView;
+  nodes: DagNodeView[];
+  children: DagRunView[];
+  /** Nodes currently in flight (only while the run is RUNNING) — pulsed on the graph. */
+  running?: string[];
+}
+
+/** Run statuses used for the filter dropdown and status chips. */
+export const DAG_RUN_STATUSES = ['RUNNING', 'SUCCESS', 'FAILED'] as const;

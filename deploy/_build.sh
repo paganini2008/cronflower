@@ -31,8 +31,8 @@ CRONSMITH_REPO="${CRONSMITH_REPO:-$ROOT/../cronsmith}"
 M2_REPO="${M2_REPO:-/usr/local/work/m2_repo}"
 if [ -d "$M2_REPO" ]; then MVN_REPO_ARG="-Dmaven.repo.local=$M2_REPO"; else MVN_REPO_ARG=""; fi
 
-SCHED_JAR="cronsmith-scheduler-example-${VERSION}.jar"
-EXEC_JAR="cronsmith-executor-example-${VERSION}.jar"
+SCHED_JAR="cronflow-scheduler-example-${VERSION}.jar"
+EXEC_JAR="cronflow-executor-example-${VERSION}.jar"
 
 # Executors get a random port in this range (avoids clashing with anything on the usual ports).
 EXEC_PORT_LO="${EXEC_PORT_LO:-50000}"
@@ -75,19 +75,24 @@ read_api_prefix() {
   printf '%s' "$p"
 }
 
-# apply_config_apiprefix <config.json path> <prefix> — set the apiPrefix key, preserving the rest and
-# the formatting (byte-identical when unchanged, so no spurious diff for the /cronsmith default).
+# apply_config_apiprefix <config.json path> <prefix> — patch the SERVED (disposable) config.json for
+# the same-origin web-server.mjs deploy (run-local + run-docker): set apiPrefix, force apiBaseUrl to ""
+# (the browser talks same-origin and the web server proxies to the cluster — no KONG origin), and set
+# cronflowPrefix (default /cronflow) so the DAG console reaches the same backend. The source under
+# frontend/public is never touched.
 apply_config_apiprefix() {
-  local file="$1" prefix="$2"
+  local file="$1" prefix="$2" cfprefix="${CRONFLOW_PREFIX:-/cronflow}"
   [ -f "$file" ] || return 0
   node -e '
     const fs = require("fs");
-    const [f, p] = [process.argv[1], process.argv[2]];
+    const [f, p, cf] = [process.argv[1], process.argv[2], process.argv[3]];
     let j = {};
     try { j = JSON.parse(fs.readFileSync(f, "utf8")); } catch (e) {}
     j.apiPrefix = p;
+    j.apiBaseUrl = "";
+    j.cronflowPrefix = cf;
     fs.writeFileSync(f, JSON.stringify(j, null, 2) + "\n");
-  ' "$file" "$prefix"
+  ' "$file" "$prefix" "$cfprefix"
 }
 
 build_backend() {
@@ -105,8 +110,8 @@ build_backend() {
 
 stage_jars() {
   mkdir -p "$BIN"
-  cp "$BACKEND/cronsmith-scheduler-example/target/$SCHED_JAR" "$BIN/$SCHED_JAR"
-  cp "$BACKEND/cronsmith-executor-example/target/$EXEC_JAR"   "$BIN/$EXEC_JAR"
+  cp "$BACKEND/cronflow-scheduler-example/target/$SCHED_JAR" "$BIN/$SCHED_JAR"
+  cp "$BACKEND/cronflow-executor-example/target/$EXEC_JAR"   "$BIN/$EXEC_JAR"
   echo ">> staged jars into $BIN:"
   echo "     $SCHED_JAR"
   echo "     $EXEC_JAR"

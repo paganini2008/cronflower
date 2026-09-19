@@ -1,96 +1,79 @@
 # cronflower (frontend)
 
-The web console for the **cronsmith** distributed scheduler. Angular 21 (standalone + signals) +
-RxJS + Angular Material + Tailwind. Pages: Dashboard, Tasks (list / detail / create-edit), Executors,
-Cluster, System Health.
+The web console for the **cronsmith** distributed scheduler + **cronflow** DAG add-on. Angular 21
+(standalone + signals) + RxJS + Angular Material + Tailwind. Pages: Dashboard, Tasks (list / detail /
+create-edit), **System** (Executors / Cluster / Health, tabbed) and — when the backend has cronflow —
+**DAG** (Workflows / Runs, tabbed) with a drag-or-JSON/YAML canvas to author DAGs and a live run monitor.
 
 ```
-┌──────────────┐    /cronsmith, /actuator (dev proxy)    ┌─────────────────────┐
-│  cronflower  │ ───────────────────────────────────────▶│  cronsmith scheduler │
-│  :7200 (ng)  │                                          │  :19090 (REST)       │
-└──────────────┘                                          └─────────────────────┘
+┌──────────────┐   /cronsmith /cronflow /actuator   ┌──────────── scheduler cluster ────────────┐
+│  cronflower  │ ─ round-robin + failover ────────▶ │  node · node · node  (random ports)       │
+│  :7200       │   discovers members via            └───────────────────────────────────────────┘
+└──────────────┘   any node's /actuator/health
 ```
 
-The console talks to **one** scheduler endpoint. Any node serves reads locally and routes writes to
-the leader, so a single address is enough for development; in production put a reverse proxy (nginx,
-or the bundled Node proxy in `deploy/`) in front of the node pool and point the console at it.
+The console is the **one entry point** (`:7200`). It needs only a **seed** — any one cluster node — and
+discovers the full member list (and each node's real port) from `/actuator/health`, then load-balances
+across every node with failover. So there is **no fixed backend port and no external nginx/KONG needed**
+(you can still slot one in — see the switch below).
 
 ## Run just the frontend
 
 ```bash
-npm install        # first time only
-npx ng serve       # http://localhost:7200
+cp .env.example .env      # first time; adjust if needed (all frontend config lives here)
+npm install               # first time only
+npm start                 # ng serve on http://localhost:7200 (also regenerates config.json from .env)
 ```
 
-Sign in with the demo credentials **admin / admin**. `ng serve` proxies the API prefix (default
-`/cronsmith`) and `/actuator` to `http://localhost:19090` (see `proxy.conf.cjs`); override the target
-with `SCHEDULER_URL` and the prefix with `API_PREFIX` if your scheduler runs elsewhere or uses a
-different prefix.
+Sign in with the demo credentials **admin / admin**. Everything is configured from **one `.env`**
+(see below); `ng serve`'s proxy (`proxy.conf.cjs`) forwards `/cronsmith` + `/cronflow` + `/actuator`
+to `CF_SEED_URL` (default `http://localhost:19090` for a plain local scheduler).
 
-## Runtime config — `public/config.json`
+## Configuration — one `.env`
 
-Served alongside the app (from `public/`), so it can be edited on a **deployed build without
-recompiling** — just refresh. Same file for local and Docker.
+All frontend config lives in **`.env`** (copy from `.env.example`; `.env` is git-ignored). It is read
+by three things, so there is one place to change: `scripts/gen-config.mjs` writes the browser's
+`public/config.json` from it (run automatically by `npm start` / `build` / `serve`), and both
+`server.mjs` (the standalone server) and `proxy.conf.cjs` (the dev proxy) read it directly.
 
-```json
-{
-  "apiBaseUrl": "",
-  "apiPrefix": "/cronsmith",
-  "auth": { "username": "admin", "password": "admin" }
-}
-```
+| `.env` key | what it does |
+|---|---|
+| `CF_API_BASE_URL` | **the mode switch** — empty = same-origin, the console self-balances the cluster (default); a gateway origin (KONG/nginx) = the browser calls it directly and `server.mjs` serves static only |
+| `CF_API_PREFIX` / `CF_CRONFLOW_PREFIX` | REST prefixes; **must match** the backend `cronsmith.server.api-prefix` / `cronflow.server.api-prefix` (default `/cronsmith` / `/cronflow`) |
+| `CF_AUTH_USER` / `CF_AUTH_PASS` | the demo login (client-side only; not a secret) |
+| `CF_SEED_URL` | one or more seed schedulers (comma-separated) for `server.mjs` + the dev proxy. Blank by default — the launchers inject every node's address; set it only for a manual run |
+| `CF_WEB_PORT` / `CF_WEB_ROOT` / `CF_DISCOVERY_INTERVAL_MS` | `server.mjs` only: listen port (7200), built-SPA dir, member-list refresh period |
 
-- **`apiBaseUrl`** — backend base URL. Defaults to **`http://localhost:19090`** (a local scheduler)
-  when the key is **absent**. Set it to **`""` (empty)** to call the API on the **same origin** as the
-  console — for the dev-server proxy or the deployed Node/nginx proxy, which forward the API prefix +
-  `/actuator` to the backend (zero config, no CORS); this is what the `run-local` / `run-docker`
-  demos use. Set it to any other backend/gateway origin (e.g. `http://localhost:7500/cs` behind KONG)
-  when the console is served **without** a proxy (a static host / CDN); the backend must then allow
-  CORS — **including actuator CORS** (`management.endpoints.web.cors.*`) so the System Health page can
-  read `/actuator/health`.
-- **`apiPrefix`** — the backend's REST API prefix; **must match** the scheduler's
-  `cronsmith.server.api-prefix` (default `/cronsmith`). All API calls go under it; `/actuator` is
-  separate and never prefixed. Change it only if you changed the backend prefix — and then also point
-  the proxies at the new value via the `API_PREFIX` env var (see below).
-- **`auth`** — the client-side demo login credentials (the server ships without auth; this is not a
-  secret — the file is fetched by the browser).
+`gen-config.mjs` produces `public/config.json`, which the browser fetches at runtime (editable on a
+deployed build without recompiling): `{ apiBaseUrl, apiPrefix, cronflowPrefix, auth }`. Same file for
+local and Docker.
 
-> **Changing the API prefix end-to-end.** The dev-server proxy (`proxy.conf.cjs`) and the deployed
-> Node proxy (`deploy/web-server.mjs`) both read the prefix from the **`API_PREFIX`** env var
-> (default `/cronsmith`), so set `API_PREFIX` (and `SCHEDULER_URL` for the target) before `ng serve`
-> or on the web container. All three — backend `cronsmith.server.api-prefix`, the executor's
-> `cronsmith.client.server-api-prefix`, and this `apiPrefix`/`API_PREFIX` — must agree.
+## Standalone server — `server.mjs` (no nginx/KONG)
 
-### Production: point `apiBaseUrl` at an nginx that fronts the cluster
+`npm run serve` starts a zero-dependency Node server that serves the built SPA **and** reverse-proxies
+the API to the cluster, load-balancing across every member with failover. It is handed one or more
+**seeds** (`CF_SEED_URL`) — any reachable node — and discovers the full member list, and each node's
+real port, from `/actuator/health`, refreshing on a timer so nodes joining/leaving are picked up. This
+is what the `run-local` / `run-docker` launchers use; **no external load balancer is required.**
 
-The dev-server proxy and the bundled Node proxy each target the scheduler nodes directly (the Node
-one even fails over across them), which is fine for the demo. **In production, don't let the console
-depend on any single node** — put **nginx** (or any load balancer) in front of the scheduler pool
-with a health-checked upstream, and set **`apiBaseUrl` to that one nginx endpoint**. nginx then
-handles failover (a dead node is dropped and the next is tried) and load-balances reads, so the
-console keeps working when any node — even the leader — dies.
+### Optional: put your own gateway in front
+
+The switch is `CF_API_BASE_URL`: set it to a KONG / nginx origin that fronts the scheduler pool, and
+the browser calls that directly while `server.mjs` serves only the static SPA (its own discovery +
+proxy switch off). The backend must then allow CORS for the console's origin — **including actuator
+CORS** (`management.endpoints.web.cors.*`) so the System page can read `/actuator/health`.
 
 ```nginx
-# nginx in front of the scheduler pool
+# nginx in front of the scheduler pool (only if you set CF_API_BASE_URL to it)
 upstream cronsmith { server node-a:8080; server node-b:8080; server node-c:8080; }  # + health checks
-
 server {
-  listen 80;
-  server_name console.example.com;
+  listen 80; server_name console.example.com;
   location /cronsmith/ { proxy_pass http://cronsmith; }
+  location /cronflow/  { proxy_pass http://cronsmith; }
   location /actuator/  { proxy_pass http://cronsmith; }
-  location /           { root /var/www/cronflower; try_files $uri /index.html; }   # if serving the SPA here too
+  location /           { root /var/www/cronflower; try_files $uri /index.html; }
 }
 ```
-
-Then, in `public/config.json`:
-
-- serve the console from the **same** nginx → keep `"apiBaseUrl": ""` (same-origin, no CORS); or
-- serve the console elsewhere (a static host / CDN) → `"apiBaseUrl": "https://console.example.com"`
-  (the scheduler must allow CORS for that origin).
-
-Either way the console talks to **one stable URL** that survives node failure — no per-node proxy
-target, no leader dependency.
 
 ## Run the whole stack (backend + this console)
 

@@ -42,3 +42,9 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# local env (frontend config; .env.example is tracked)
+.env
+
+# daily dev change logs (not committed)
+change_logs/
