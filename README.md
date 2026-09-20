@@ -32,7 +32,6 @@ cronflower = cronsmith (distributed scheduling) + cronflow (DAG orchestration)
 - [Quickstart](#quickstart)
 - [Distributed task scheduling](#distributed-task-scheduling)
 - [DAG workflow orchestration](#dag-workflow-orchestration)
-- [Installation](#installation)
 - [Time zones](#time-zones)
 - [Configuration & production HA](#configuration--production-ha)
 - [Documentation](#documentation)
@@ -285,39 +284,6 @@ Below the graph each node is a row showing what it invoked, its result, its timi
 node to a live executor, so a wide fan-out really runs in parallel on different machines:
 
 ![Per-node results, including which executor ran each node](docs/images/dag-run-nodes.jpg)
-
-## Installation
-
-Two starters cover scheduling; two more add the DAG orchestrator. All are Spring Boot auto-configured.
-
-**Scheduler** (runs the cluster, needs a datasource):
-
-```xml
-<dependency>
-    <groupId>com.github.paganini2008</groupId>
-    <artifactId>cronsmith-spring-boot-starter</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-</dependency>
-```
-
-**Executor** (your app, declares `@Task` beans and points at the scheduler):
-
-```xml
-<dependency>
-    <groupId>com.github.paganini2008</groupId>
-    <artifactId>cronsmith-executor-spring-boot-starter</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-</dependency>
-```
-
-```properties
-spring.application.name=orders-worker
-cronsmith.client.server-urls=http://scheduler-1:8080,http://scheduler-2:8080
-```
-
-**DAG add-on** (optional): add `cronflow-spring-boot-starter` on the scheduler and
-`cronflow-executor-spring-boot-starter` on the executor that hosts your `@Dag` beans, pointed with
-`cronflow.client.server-urls`. Start it, declare a `@Dag`, and it appears in the console ready to run.
 
 ## Time zones
 
