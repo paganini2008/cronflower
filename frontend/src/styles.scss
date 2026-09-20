@@ -52,7 +52,9 @@ body {
   /* Design tokens shared across pages */
   --cf-ink: #0f2c4d;          /* headings */
   --cf-ink-2: #3d5372;        /* body strong */
-  --cf-muted: #64748b;        /* secondary text */
+  --cf-muted: #3d5372;        /* secondary text — kept dark for readability (no light gray) */
+  /* Darken Material's default gray secondary text (hints, labels, paginator, options, etc.). */
+  --mat-sys-on-surface-variant: #3d5372;
   --cf-line: #e6edf6;         /* hairline borders */
   --cf-surface: #ffffff;
   --cf-surface-2: #f6f9fd;    /* subtle fills */
@@ -135,21 +137,21 @@ body {
   border-radius: 50%;
   background: currentColor;
 }
-.st-standby   { color: #64748b; background: #f1f5f9; }
+.st-standby   { color: #3d5372; background: #f1f5f9; }
 .st-scheduled { color: #1565c0; background: #e8f1fd; }
 .st-running   { color: #0f9d58; background: #e6f4ea; }
 .st-paused    { color: #b7791f; background: #fdf6e3; }
 .st-finished  { color: #0891b2; background: #e0f7fa; }
 .st-canceled  { color: #d93025; background: #fce8e6; }
-.st-none      { color: #94a3b8; background: #f1f5f9; }
+.st-none      { color: #3d5372; background: #f1f5f9; }
 
 /* DAG run/node status chips — a cleaner, more saturated palette than the old pastels; the hues match
    the cytoscape node colours used on the dark canvas in cf-dag-graph. */
 .dg-success { color: #067a55; background: #d9f5ea; }
 .dg-failed  { color: #c02b4b; background: #ffe4e9; }
 .dg-running { color: #0b74b8; background: #dcf1fd; }
-.dg-skipped { color: #55627a; background: #eef1f6; }
-.dg-none    { color: #94a3b8; background: #f1f5f9; }
+.dg-skipped { color: #3d5372; background: #eef1f6; }
+.dg-none    { color: #3d5372; background: #f1f5f9; }
 
 .ok   { color: #0f9d58; font-weight: 600; }
 .bad  { color: #d93025; font-weight: 600; }
@@ -161,12 +163,17 @@ table.mat-mdc-table {
   width: 100%;
   background: transparent;
 }
+/* A subtle blue header band (blue-white theme) — sets tables apart from the white card body and
+   improves column scannability without shouting. */
+.mat-mdc-header-row { background: var(--cf-blue-light); }
 .mat-mdc-header-cell {
-  color: var(--cf-muted);
+  color: #2a4a72;
   font-weight: 600;
   font-size: 0.72rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  background: transparent;
+  border-bottom: 1px solid #d3e2f5;
 }
 .mat-mdc-row:hover .mat-mdc-cell { background: var(--cf-surface-2); }
 .mat-mdc-row .mat-mdc-cell { border-bottom-color: var(--cf-line); }

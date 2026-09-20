@@ -19,6 +19,7 @@ import { MatIconModule } from '@angular/material/icon';
       <a routerLink="/system/executors" routerLinkActive="on"><mat-icon>memory</mat-icon> Executors</a>
       <a routerLink="/system/cluster" routerLinkActive="on"><mat-icon>hub</mat-icon> Cluster</a>
       <a routerLink="/system/health" routerLinkActive="on"><mat-icon>monitor_heart</mat-icon> Health</a>
+      <a routerLink="/system/api" routerLinkActive="on"><mat-icon>api</mat-icon> API</a>
     </nav>
 
     <div class="tab-body">
@@ -30,7 +31,7 @@ import { MatIconModule } from '@angular/material/icon';
     .page-sub { margin: 0.15rem 0 1rem; }
     .tabs { display: flex; gap: 0.3rem; border-bottom: 1px solid #e3eaf3; margin-bottom: 1.25rem; }
     .tabs a { display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none;
-      color: #64748b; font-weight: 600; font-size: 0.9rem; padding: 0.6rem 0.9rem; border-bottom: 2px solid transparent;
+      color: #3d5372; font-weight: 600; font-size: 0.9rem; padding: 0.6rem 0.9rem; border-bottom: 2px solid transparent;
       margin-bottom: -1px; }
     .tabs a:hover { color: #0f2c4d; }
     .tabs a.on { color: #1565c0; border-bottom-color: #1565c0; }

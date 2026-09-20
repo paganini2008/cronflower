@@ -54,14 +54,14 @@ public class CronsmithServerProperties {
         private int claimIntervalSeconds = 15;
 
         /**
-         * Group sharding — an opt-in optimization. When {@code true} <b>and</b> the storage is shared
-         * ({@code cronsmith.server.storage.shared=true}), every node runs the scheduler and triggers
-         * only the task groups that consistent-hash to it, spreading load and fail-over across the
-         * cluster. When {@code false} (default), only the leader triggers, exactly as before. Turned on
-         * without a shared store it warns and stays leader-only, since sharding relies on the shared
-         * store's cluster-wide compare-and-set to keep a task from firing twice during re-sharding.
+         * Group sharding. When {@code true} (default) <b>and</b> the storage is shared, every node runs
+         * the scheduler and triggers only the task groups that consistent-hash to it, spreading load and
+         * fail-over across the cluster. On a node-local store it automatically falls back to leader-only
+         * (with a warning), since sharding relies on the shared store's cluster-wide compare-and-set to
+         * keep a task from firing twice during re-sharding — so this default is safe everywhere: it
+         * simply activates once a shared DB is configured. Set {@code false} to force leader-only.
          */
-        private boolean sharding = false;
+        private boolean sharding = true;
 
         /**
          * The time zone the scheduler computes fire times in. It MUST be the same on every node —

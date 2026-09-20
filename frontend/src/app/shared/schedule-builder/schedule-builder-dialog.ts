@@ -191,19 +191,19 @@ import { buildCron, CronSpec, describeIso, describeSpec, Freq } from './cron';
     .builder { min-width: 480px; max-width: 580px; }
     .tab-body { padding: 1.25rem 0.25rem 0.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
     .row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-    .row span { color: #475569; }
+    .row span { color: #3d5372; }
     .w-full { width: 100%; } .w-28 { width: 7rem; } .w-32 { width: 8rem; }
     .num { width: 5rem; }
     .wd-group { flex-wrap: wrap; }
     .adv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
-    .hint { color: #7a8aa0; font-size: 0.82rem; margin: 0; }
+    .hint { color: #3d5372; font-size: 0.82rem; margin: 0; }
     code { background: #eef2f7; padding: 0 0.3rem; border-radius: 4px; }
     .err { color: #d93025; font-size: 0.82rem; margin: 0.25rem 0 0; }
     .preview { margin-top: 0.5rem; padding: 0.9rem 1rem; background: #f0f6ff; border: 1px solid #d6e6fb; border-radius: 10px; }
     .pv-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
-    .pv-label { font-size: 0.72rem; color: #5b6b7f; text-transform: uppercase; letter-spacing: .4px; }
+    .pv-label { font-size: 0.72rem; color: #3d5372; text-transform: uppercase; letter-spacing: .4px; }
     .pv-expr { font-size: 1.1rem; font-weight: 600; color: #0f2c4d; margin: 0.2rem 0; word-break: break-all; }
-    .pv-desc { font-size: 0.85rem; color: #475569; }
+    .pv-desc { font-size: 0.85rem; color: #3d5372; }
     .pv-times ol { margin: 0.35rem 0 0; padding-left: 1.25rem; }
     .pv-times li { color: #0f2c4d; padding: 0.1rem 0; }
     button mat-spinner { display: inline-block; margin-right: 0.25rem; }

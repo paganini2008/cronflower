@@ -36,7 +36,7 @@ export interface Bar {
     .bar-track { height: 8px; background: #eef2f7; border-radius: 999px; overflow: hidden; }
     .bar-fill { height: 100%; border-radius: 999px;
       background: linear-gradient(90deg, #1565c0, #42a5f5); transition: width .4s ease; }
-    .bar-sub { font-size: 0.72rem; color: #94a3b8; margin-top: 0.15rem; }
+    .bar-sub { font-size: 0.72rem; color: #3d5372; margin-top: 0.15rem; }
   `],
 })
 export class BarChart {

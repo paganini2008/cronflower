@@ -1,7 +1,7 @@
 import {
   AfterViewInit, Component, ElementRef, OnDestroy, effect, input, output, viewChild,
 } from '@angular/core';
-import cytoscape, { Core, ElementDefinition, NodeSingular } from 'cytoscape';
+import cytoscape, { Core, ElementDefinition, NodeCollection } from 'cytoscape';
 import dagre from 'cytoscape-dagre';
 import { DagDefinition } from '../core/models';
 
@@ -44,7 +44,7 @@ export class DagGraph implements AfterViewInit, OnDestroy {
 
   private readonly host = viewChild.required<ElementRef<HTMLElement>>('host');
   private cy?: Core;
-  private pulsing?: NodeSingular;
+  private pulsing?: NodeCollection;
 
   constructor() {
     effect(() => {
@@ -98,29 +98,31 @@ export class DagGraph implements AfterViewInit, OnDestroy {
     this.startPulse();
   }
 
-  /** Loop a soft glow on the RUNNING node so the live position of the flow is unmistakable. */
+  /** Loop a strong glow on every RUNNING node so the live position of the flow is unmistakable. */
   private startPulse(): void {
     if (!this.cy) {
       return;
     }
-    const running = this.cy.nodes('[status = "RUNNING"]').first();
+    const running = this.cy.nodes('[status = "RUNNING"]');
     if (!running || running.empty()) {
       return;
     }
     this.pulsing = running;
     const beat = (): void => {
-      if (!this.pulsing || this.pulsing.removed()) {
+      if (!this.pulsing || this.pulsing.length === 0) {
         return;
       }
       this.pulsing
-        .animate({ style: { 'border-width': 5, 'shadow-blur': 34 } }, { duration: 620 })
-        .animate({ style: { 'border-width': 2.5, 'shadow-blur': 16 } }, { duration: 620, complete: beat });
+        .animate({ style: { 'border-width': 9, 'shadow-blur': 60, 'shadow-opacity': 0.95 } },
+          { duration: 560 })
+        .animate({ style: { 'border-width': 4, 'shadow-blur': 22, 'shadow-opacity': 0.75 } },
+          { duration: 560, complete: beat });
     };
     beat();
   }
 
   private stopPulse(): void {
-    if (this.pulsing && !this.pulsing.removed()) {
+    if (this.pulsing && this.pulsing.length > 0) {
       this.pulsing.stop();
     }
     this.pulsing = undefined;
@@ -228,8 +230,9 @@ const STYLE: any = [
   {
     selector: 'node[status = "RUNNING"]',
     style: {
-      'background-color': '#0e2740', 'border-color': '#38bdf8', 'border-width': 2.5, color: '#d5efff',
-      'shadow-blur': 18, 'shadow-color': '#38bdf8', 'shadow-opacity': 0.55,
+      'background-color': '#7a1420', 'border-color': '#ff3b30', 'border-width': 4, color: '#ffe9e7',
+      'font-weight': 'bold',
+      'shadow-blur': 26, 'shadow-color': '#ff3b30', 'shadow-opacity': 0.85,
     },
   },
   {

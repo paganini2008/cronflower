@@ -1,5 +1,6 @@
 package com.github.cronflow.springapp.server.jpa;
 
+import com.github.cronflow.springapp.server.DagIds;
 import com.github.cronflow.springapp.server.DagStore;
 import com.github.cronflow.springapp.server.pojo.StoredDag;
 import java.time.LocalDateTime;
@@ -24,7 +25,7 @@ public class JpaDagStore implements DagStore {
     @Override
     @Transactional
     public void save(String application, String graph, String definition, String format) {
-        String id = TaskDagEntity.idOf(application, graph);
+        String id = DagIds.taskDagId(application, graph);
         TaskDagEntity entity = entityManager.find(TaskDagEntity.class, id);
         if (entity == null) {
             entity = new TaskDagEntity();

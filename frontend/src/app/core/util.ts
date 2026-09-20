@@ -165,3 +165,28 @@ export function localZoneOffset(): string {
 export function tzLabel(): string {
   return tzMode() === 'utc' ? 'UTC' : `${localZone()} · ${localZoneOffset()}`;
 }
+
+/**
+ * Stable, human-friendly ordering for a metadata map whose JSON key order is not guaranteed (the
+ * backend serializes a HashMap, so the order can change between polls and make fields jump around).
+ * Known keys come first in a curated order; anything else follows alphabetically.
+ */
+const STORE_META_ORDER = [
+  'productName', 'productVersion', 'driverName', 'driverVersion', 'url', 'userName', 'kind',
+  'shared', 'replicated',
+];
+export function orderedEntries(
+  obj: Record<string, unknown> | undefined,
+  order: string[] = STORE_META_ORDER,
+): { k: string; v: string }[] {
+  return Object.entries(obj ?? {})
+    .sort(([a], [b]) => {
+      const ia = order.indexOf(a);
+      const ib = order.indexOf(b);
+      if (ia !== -1 && ib !== -1) { return ia - ib; }
+      if (ia !== -1) { return -1; }
+      if (ib !== -1) { return 1; }
+      return a.localeCompare(b);
+    })
+    .map(([k, v]) => ({ k, v: String(v) }));
+}

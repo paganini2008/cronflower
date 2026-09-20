@@ -8,7 +8,7 @@
   -n  number of scheduler (server) nodes   (default 1)
   -e  number of executor (client) nodes    (default 0 = none)
 
-  Store is always the embedded H2 file; edit conf\scheduler.properties for a real (shared) DB.
+  Store is always the embedded H2 file; edit conf\server.properties for a real (shared) DB.
   Ports on the host: schedulers 19090.. . web console 7200 . executors random 50000-60000.
 
   If scripts are blocked, run:  powershell -ExecutionPolicy Bypass -File .\run-docker.ps1 -n 2 -e 1
@@ -42,9 +42,9 @@ function Generate-Compose([int]$nodes, [int]$execs, [int[]]$execPorts) {
     $L.Add('    image: cronsmith-scheduler:local')
     $L.Add('    environment:')
     $L.Add("      SPRING_APPLICATION_JSON: '$json'")
-    $L.Add('      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/config/scheduler.properties')
+    $L.Add('      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/config/server.properties')
     $L.Add('    volumes:')
-    $L.Add('      - ./conf/scheduler.properties:/config/scheduler.properties:ro')
+    $L.Add('      - ./conf/server.properties:/config/server.properties:ro')
     $L.Add("      - sched-data-${i}:/data")
     $L.Add("    ports: [`"${port}:8080`"]")
     $L.Add('    healthcheck:')
@@ -115,7 +115,7 @@ function Do-Up {
   Write-Host "  console    : http://localhost:$WebPort"
   Write-Host "  schedulers : $n node(s) on :$SchedBasePort..$($SchedBasePort + $n - 1)   (H2 file)"
   if ($e -gt 0) { Write-Host "  executors  : $e node(s) on random host ports: $($execPorts -join ' ')" }
-  Write-Host "  real DB?   : edit conf\scheduler.properties (MySQL/PostgreSQL) - mounted into every node; default is H2"
+  Write-Host "  real DB?   : edit conf\server.properties (MySQL/PostgreSQL) - mounted into every node; default is H2"
 
   $names = if ($n -gt 1) { "scheduler-1..$n" } else { 'scheduler-1' }
   $names += ' | cronflower'

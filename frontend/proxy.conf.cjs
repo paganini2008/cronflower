@@ -44,4 +44,9 @@ module.exports = {
   [prefix]: { target, secure: false, changeOrigin: true },
   [cfPrefix]: { target, secure: false, changeOrigin: true },
   '/actuator': { target, secure: false, changeOrigin: true },
+  // Login / identity endpoints live at the root, outside the API prefixes.
+  '/auth': { target, secure: false, changeOrigin: true },
+  // Embedded API explorer (System -> API tab).
+  '/swagger-ui': { target, secure: false, changeOrigin: true },
+  '/v3/api-docs': { target, secure: false, changeOrigin: true },
 };

@@ -44,7 +44,10 @@ const CRONFLOW_PREFIX = (() => {
   if (!p.startsWith('/')) p = '/' + p;
   return p.replace(/\/+$/, '') || '/cronflow';
 })();
-const PROXY_PREFIXES = [API_PREFIX, CRONFLOW_PREFIX, '/actuator'];
+// /auth holds the login/identity endpoints (bearer token), at the root outside the API prefixes.
+// /swagger-ui + /v3/api-docs back the embedded API explorer (System -> API tab).
+const PROXY_PREFIXES =
+  [API_PREFIX, CRONFLOW_PREFIX, '/actuator', '/auth', '/swagger-ui', '/v3/api-docs'];
 
 // The HTTP port every scheduler is assumed to listen on (see SCHED_HTTP_PORT note above).
 const HTTP_PORT = String(process.env.SCHED_HTTP_PORT || SEEDS[0].port || 80);

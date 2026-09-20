@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import com.github.cronflow.springapp.executor.pojo.DagHeartbeatRequest;
+import com.github.cronflow.springapp.executor.pojo.DagHeartbeatResponse;
 import com.github.cronflow.springapp.executor.pojo.DagRegistrationRequest;
 import com.github.cronflow.springapp.executor.pojo.DagRegistrationResponse;
 
@@ -39,11 +40,11 @@ public class WebClientCronflowServerClient implements CronflowServerClient {
 
     @Override
     public boolean heartbeat(DagHeartbeatRequest request) {
-        Boolean ok = overServers(apiPath(HEARTBEAT_SUBPATH), url -> {
-            http.post(url, request);
-            return Boolean.TRUE;
-        }, Boolean.FALSE);
-        return Boolean.TRUE.equals(ok);
+        // Returns true only when a server confirms it still knows this instance. A false (unknown
+        // instance, or all servers unreachable) tells the registrar to re-register its definitions.
+        DagHeartbeatResponse resp = overServers(apiPath(HEARTBEAT_SUBPATH),
+                url -> http.post(url, request, DagHeartbeatResponse.class), null);
+        return resp != null && resp.known();
     }
 
     /** Try {@code call} against each configured server URL + path until one succeeds; a 4xx stops

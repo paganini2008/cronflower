@@ -49,6 +49,7 @@ import { dagStatusClass, fmt } from '../../core/util';
     </div>
 
     <div class="card overflow-hidden">
+      <div class="table-scroll">
       <table mat-table [dataSource]="page()?.items ?? []">
         <ng-container matColumnDef="status">
           <th mat-header-cell *matHeaderCellDef>Status</th>
@@ -87,6 +88,7 @@ import { dagStatusClass, fmt } from '../../core/util';
         <tr mat-row *matRowDef="let row; columns: columns" class="clickable"
             (click)="open(row.runId)"></tr>
       </table>
+      </div>
       @if ((page()?.items?.length ?? 0) === 0) {
         <div class="empty"><mat-icon>history</mat-icon><p>No runs yet.</p></div>
       }
@@ -96,6 +98,9 @@ import { dagStatusClass, fmt } from '../../core/util';
     </div>
   `,
   styles: [`
+    .table-scroll { overflow-x: auto; }
+    .table-scroll table { min-width: 900px; }
+    .table-scroll th, .table-scroll td { white-space: nowrap; }
     .toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
     .f { width: 220px; }
     .f ::ng-deep .mat-mdc-form-field-subscript-wrapper { display: none; }
@@ -104,7 +109,7 @@ import { dagStatusClass, fmt } from '../../core/util';
     .clickable:hover { background: #f6f9fd; }
     .sub-tag { margin-left: 0.5rem; font-size: 0.68rem; font-weight: 600; color: #7e57c2;
       background: #f3ecfb; border-radius: 999px; padding: 0.05rem 0.45rem; }
-    .empty { padding: 2.5rem; text-align: center; color: #94a3b8; }
+    .empty { padding: 2.5rem; text-align: center; color: #3d5372; }
     .empty mat-icon { font-size: 2.5rem; width: 2.5rem; height: 2.5rem; }
   `],
 })
@@ -122,12 +127,12 @@ export class DagRuns {
   protected pageSize = 25;
 
   protected readonly columns =
-    ['status', 'graph', 'triggeredBy', 'startedAt', 'elapsed', 'nodes', 'runId'];
+    ['runId', 'status', 'graph', 'triggeredBy', 'startedAt', 'elapsed', 'nodes'];
   protected readonly fmt = fmt;
   protected readonly dagStatusClass = dagStatusClass;
 
   constructor() {
-    this.api.dags().subscribe((d) => this.dags.set(d));
+    this.api.dags({ limit: 1000 }).subscribe((p) => this.dags.set(p.items));
     const g = this.route.snapshot.queryParamMap.get('graph');
     if (g) {
       this.graph.set(g);

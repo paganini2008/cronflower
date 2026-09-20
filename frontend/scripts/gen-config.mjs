@@ -45,10 +45,6 @@ const config = {
   apiBaseUrl,
   apiPrefix: pick('CF_API_PREFIX', '/cronsmith'),
   cronflowPrefix: pick('CF_CRONFLOW_PREFIX', '/cronflow'),
-  auth: {
-    username: pick('CF_AUTH_USER', 'admin'),
-    password: pick('CF_AUTH_PASS', 'admin'),
-  },
 };
 
 const outDir = resolve(root, 'public');

@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import com.github.cronflow.springapp.server.ClusterDagRegistry;
 import com.github.cronflow.springapp.server.pojo.DagHeartbeatRequest;
+import com.github.cronflow.springapp.server.pojo.DagHeartbeatResponse;
 import com.github.cronflow.springapp.server.pojo.DagRegistrationRequest;
 import com.github.cronflow.springapp.server.pojo.DagRegistrationResponse;
 
@@ -34,8 +35,8 @@ public class DagRegistrationController {
     }
 
     @PostMapping(HEARTBEAT_PATH)
-    public void heartbeat(@RequestBody DagHeartbeatRequest request) {
-        registry.heartbeat(request);
+    public DagHeartbeatResponse heartbeat(@RequestBody DagHeartbeatRequest request) {
+        return new DagHeartbeatResponse(registry.heartbeat(request));
     }
 
 }

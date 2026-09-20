@@ -48,8 +48,4 @@ public class TaskDagEntity {
     @Column(name = "last_modified")
     private LocalDateTime lastModified;
 
-    public static String idOf(String application, String graph) {
-        return com.github.cronflow.springapp.server.DagIds.taskDagId(application, graph);
-    }
-
 }

@@ -43,16 +43,19 @@ public class OrderFlow {
 
     @DagNode(entry = true, to = {"reserve", "charge"})
     public Map<String, Object> validate(DagState state) {
+        pause();
         return Map.of("steps", List.of("validated:" + state.getString("input")), "amount", 500L);
     }
 
     @DagNode(to = {"riskScore"})
     public Map<String, Object> reserve(DagState state) {
+        pause();
         return Map.of("steps", List.of("reserved"));
     }
 
     @DagNode(to = {"riskScore"})
     public Map<String, Object> charge(DagState state) {
+        pause();
         return Map.of("steps", List.of("charged:" + state.getLong("amount")));
     }
 
@@ -60,12 +63,14 @@ public class OrderFlow {
     // humanReview / fulfilment runs, the other is skipped.
     @DagNode(when = @When(expr = "#risk > 80", to = "humanReview"), otherwise = {"fulfilment"})
     public Map<String, Object> riskScore(DagState state) {
+        pause();
         long risk = state.getLong("amount") > 1000 ? 90 : 10;
         return Map.of("risk", risk, "steps", List.of("scored:risk=" + risk));
     }
 
     @DagNode(to = {"notify"})
     public Map<String, Object> humanReview(DagState state) {
+        pause();
         return Map.of("steps", List.of("queued-for-review"));
     }
 
@@ -78,7 +83,17 @@ public class OrderFlow {
     // Any-of: whichever branch ran, notify once.
     @DagNode(trigger = "ANY")
     public Map<String, Object> notify(DagState state) {
+        pause();
         return Map.of("steps", List.of("notified"));
+    }
+
+    /** Simulated work so each node stays RUNNING long enough to see the live pulse on the graph. */
+    private void pause() {
+        try {
+            Thread.sleep(3000L);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
 }

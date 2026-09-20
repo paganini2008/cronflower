@@ -9,6 +9,10 @@
 
 VERSION="${VERSION:-1.0.0-SNAPSHOT}"
 
+# Build-time environment for the server module: dev (default, embedded H2) or prod (shared MySQL).
+# `mvn -P$DEPLOY_ENV` selects which application-<env>.properties is emitted as conf/server.properties.
+DEPLOY_ENV="${DEPLOY_ENV:-dev}"
+
 # Maven: prefer the project's Maven Wrapper (backend/mvnw — no system Maven required), then honour
 # an explicit $MVN, then `mvn` on PATH, then the known local install.
 if [ -z "${MVN:-}" ]; then
@@ -31,7 +35,7 @@ CRONSMITH_REPO="${CRONSMITH_REPO:-$ROOT/../cronsmith}"
 M2_REPO="${M2_REPO:-/usr/local/work/m2_repo}"
 if [ -d "$M2_REPO" ]; then MVN_REPO_ARG="-Dmaven.repo.local=$M2_REPO"; else MVN_REPO_ARG=""; fi
 
-SCHED_JAR="cronflow-scheduler-example-${VERSION}.jar"
+SCHED_JAR="cronflow-server-api-${VERSION}.jar"
 EXEC_JAR="cronflow-executor-example-${VERSION}.jar"
 
 # Executors get a random port in this range (avoids clashing with anything on the usual ports).
@@ -41,6 +45,10 @@ EXEC_PORT_HI="${EXEC_PORT_HI:-60000}"
 # JVM heap per node, in whole GB (applied as -Xmx). Default 1G each. Also drives the capacity guard.
 SCHED_XMX_GB="${SCHED_XMX_GB:-1}"
 EXEC_XMX_GB="${EXEC_XMX_GB:-1}"
+# The exact -Xmx value emitted into the containers. Defaults to the whole-GB figures above, but can be
+# overridden with an explicit JVM size (e.g. SCHED_XMX=640m) to fit a RAM-constrained Docker engine.
+SCHED_XMX="${SCHED_XMX:-${SCHED_XMX_GB}g}"
+EXEC_XMX="${EXEC_XMX:-${EXEC_XMX_GB}g}"
 MEM_BUDGET_PCT="${MEM_BUDGET_PCT:-70}"   # cap total requested heap at this % of available RAM
 
 # Echo a random free port in [EXEC_PORT_LO, EXEC_PORT_HI], skipping any in the space-separated
@@ -57,13 +65,13 @@ rand_free_port() {
   done
 }
 
-# Read cronsmith.server.api-prefix from conf/scheduler.properties (default /cronsmith), normalized to a
+# Read cronsmith.server.api-prefix from conf/server.properties (default /cronsmith), normalized to a
 # leading slash and no trailing slash; blank or "/" falls back to /cronsmith (the proxies need a
 # non-empty prefix). The scheduler reads the property itself; this lets the runners propagate the SAME
 # value to the executor (server-api-prefix), the console proxy (API_PREFIX env) and the served
 # config.json (apiPrefix), so changing it in ONE place flows through the whole chain.
 read_api_prefix() {
-  local conf="$HERE/conf/scheduler.properties" p=""
+  local conf="$HERE/conf/server.properties" p=""
   if [ -f "$conf" ]; then
     p=$(grep -E '^[[:space:]]*cronsmith\.server\.api-prefix[[:space:]]*=' "$conf" 2>/dev/null \
         | tail -1 | sed -E 's/^[^=]*=[[:space:]]*//; s/[[:space:]]*$//')
@@ -104,17 +112,27 @@ build_backend() {
   else
     echo ">> base engine checkout not found at $CRONSMITH_REPO — assuming 'cronsmith' is already in $M2_REPO"
   fi
-  echo ">> building backend (4-module reactor), local repo: ${M2_REPO:-default}"
-  "$MVN" -q $MVN_REPO_ARG -f "$BACKEND/pom.xml" clean install -DskipTests -Djacoco.skip=true
+  echo ">> building backend (4-module reactor, env=$DEPLOY_ENV), local repo: ${M2_REPO:-default}"
+  # -P$DEPLOY_ENV selects which application-<env>.properties the server module emits as
+  # target/conf/server.properties (dev = H2, prod = MySQL). See stage_jars for staging it.
+  "$MVN" -q $MVN_REPO_ARG -P"$DEPLOY_ENV" -f "$BACKEND/pom.xml" clean install -DskipTests -Djacoco.skip=true
 }
 
 stage_jars() {
   mkdir -p "$BIN"
-  cp "$BACKEND/cronflow-scheduler-example/target/$SCHED_JAR" "$BIN/$SCHED_JAR"
+  cp "$BACKEND/cronflow-server-api/target/$SCHED_JAR" "$BIN/$SCHED_JAR"
   cp "$BACKEND/cronflow-executor-example/target/$EXEC_JAR"   "$BIN/$EXEC_JAR"
   echo ">> staged jars into $BIN:"
   echo "     $SCHED_JAR"
   echo "     $EXEC_JAR"
+  # Stage the env config the build selected (mvn -P$DEPLOY_ENV emitted target/conf/server.properties)
+  # into the deploy conf the launchers load. For dev this matches the checked-in file (no change); for
+  # prod it swaps in the MySQL overrides. The launchers pass it via --spring.config.additional-location.
+  local emitted="$BACKEND/cronflow-server-api/target/conf/server.properties"
+  if [ -f "$emitted" ]; then
+    cp "$emitted" "$HERE/conf/server.properties"
+    echo ">> staged conf/server.properties (env=$DEPLOY_ENV)"
+  fi
 }
 
 build_frontend_dist() {

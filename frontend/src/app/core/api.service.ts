@@ -2,8 +2,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, timeout } from 'rxjs';
 import {
-  ClusterView, DagDefinition, DagGraphView, DagRunDetail, DagRunPage, Executor, HealthView, LogView,
-  Stats, TaskListResponse, TaskMetadata, TaskView,
+  ClusterView, DagDefinition, DagGraphPage, DagGraphView, DagRunDetail, DagRunPage, Executor,
+  HealthView, LogView, NodeHealth, Stats, TaskListResponse, TaskMetadata, TaskView,
 } from './models';
 import { ConfigService } from './runtime-config';
 
@@ -13,6 +13,22 @@ export interface TaskQuery {
   status?: string;
   limit?: number;
   offset?: number;
+}
+
+/** Body for scheduling a DAG trigger (mirrors DagTriggerController.DagScheduleRequest). */
+export interface DagScheduleRequest {
+  taskGroup: string;
+  taskName: string;
+  cron: string;
+  parser?: string;
+  description?: string;
+  seed?: Record<string, unknown>;
+  timeout?: number;
+  maxRetryCount?: number;
+  retryInterval?: number;
+  repeatCount?: number;
+  misfirePolicy?: string;
+  stopAt?: string;
 }
 
 export interface DagRunQuery {
@@ -59,6 +75,16 @@ export class CronsmithApi {
     return this.http.get<HealthView>(`${this.root()}/actuator/health`);
   }
 
+  /** Per-node liveness + live JVM memory across the scheduler cluster. */
+  nodesHealth(): Observable<NodeHealth[]> {
+    return this.http.get<NodeHealth[]>(`${this.cronflowBase}/nodes/health`);
+  }
+
+  /** Deployment metadata for the header: environment label (dev / prod) and app name. */
+  meta(): Observable<{ env: string; application?: string }> {
+    return this.http.get<{ env: string; application?: string }>(`${this.cronflowBase}/meta`);
+  }
+
   tasks(query: TaskQuery = {}): Observable<TaskListResponse> {
     let params = new HttpParams();
     for (const [k, v] of Object.entries(query)) {
@@ -78,9 +104,11 @@ export class CronsmithApi {
     return this.http.get<LogView[]>(`${this.base}/tasks/${enc(group)}/${enc(name)}/logs`, { params });
   }
 
-  runNow(group: string, name: string): Observable<Record<string, unknown>> {
+  /** Run a task once now. An optional `parameter` overrides the stored initial parameter for this run. */
+  runNow(group: string, name: string, parameter?: string): Observable<Record<string, unknown>> {
+    const body = parameter != null ? { parameter } : {};
     return this.http.post<Record<string, unknown>>(
-      `${this.base}/tasks/${enc(group)}/${enc(name)}/run`, {});
+      `${this.base}/tasks/${enc(group)}/${enc(name)}/run`, body);
   }
 
   cronPreview(expr: string, count = 5): Observable<{ valid: boolean; next?: string[]; error?: string }> {
@@ -103,9 +131,19 @@ export class CronsmithApi {
 
   // ---- cronflow (DAG) — under the separate cronflow prefix -------------------------------------
 
-  /** Every registered DAG with its definition (for the DAG list and diagram). */
-  dags(): Observable<DagGraphView[]> {
-    return this.http.get<DagGraphView[]>(`${this.cronflowBase}/dags`);
+  /** A page of registered DAGs (server-side paged), optionally filtered by name. */
+  dags(query: { q?: string; limit?: number; offset?: number } = {}): Observable<DagGraphPage> {
+    let params = new HttpParams();
+    if (query.q) {
+      params = params.set('q', query.q);
+    }
+    if (query.limit != null) {
+      params = params.set('limit', String(query.limit));
+    }
+    if (query.offset != null) {
+      params = params.set('offset', String(query.offset));
+    }
+    return this.http.get<DagGraphPage>(`${this.cronflowBase}/dags`, { params });
   }
 
   /** One DAG's definition. */
@@ -143,6 +181,16 @@ export class CronsmithApi {
   triggerDag(graph: string, initialState?: Record<string, unknown>): Observable<{ runId: string }> {
     return this.http.post<{ runId: string }>(
       `${this.cronflowBase}/dags/${enc(graph)}/trigger`, initialState ?? {});
+  }
+
+  /**
+   * Register a scheduled trigger for a DAG: creates a cronsmith task that fires the graph on a cron.
+   * The task then shows up in the task list and is paused/resumed/cancelled like any other.
+   */
+  scheduleDag(graph: string, req: DagScheduleRequest):
+    Observable<{ graph: string; taskGroup: string; taskName: string }> {
+    return this.http.post<{ graph: string; taskGroup: string; taskName: string }>(
+      `${this.cronflowBase}/dags/${enc(graph)}/schedule`, req);
   }
 }
 

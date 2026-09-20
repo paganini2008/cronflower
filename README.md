@@ -111,12 +111,12 @@ cronflower/
 │   ├── cronsmith-executor-spring-boot-starter/    # executor (client) starter
 │   ├── cronflow-spring-boot-starter/              # DAG (server) starter — optional add-on
 │   ├── cronflow-executor-spring-boot-starter/     # DAG (executor) starter — optional add-on
-│   ├── cronflow-scheduler-example/                # runnable scheduler (cronsmith + optional cronflow DAG)
+│   ├── cronflow-server-api/                # runnable scheduler (cronsmith + optional cronflow DAG)
 │   └── cronflow-executor-example/                 # runnable executor (@Task showcase + optional DAG nodes)
 ├── frontend/                                  # the cronflower Angular console
 ├── deploy/                                    # one-click runners (local + docker), Dockerfiles, web server
 │   ├── run-local.sh   ·   run-docker.sh
-│   ├── conf/scheduler.properties              # externalised advanced config (no rebuild)
+│   ├── conf/server.properties              # externalised advanced config (no rebuild)
 │   └── bin/                                   # staged runnable jars (build output)
 ├── docs/                                      # architecture, configuration, screenshots
 └── README.md
@@ -139,7 +139,7 @@ cd cronflower/deploy
 ./run-local.sh -e 1          # scheduler + console + 1 executor  (embedded H2)
 ```
 
-Open **<http://localhost:7200>**, sign in **admin / admin** — done.
+Open **<http://localhost:7200>**, sign in **admin / admin123** — done.
 
 ```bash
 ./run-local.sh -n 3 -e 2     # scale up: 3 schedulers (leader + 2 followers) + 2 executors
@@ -155,7 +155,7 @@ cd cronflower/deploy
 ```
 
 `-n` = scheduler nodes, `-e` = executor nodes. The store is **H2, zero-config**; for MySQL/PostgreSQL
-just edit `deploy/conf/scheduler.properties` (no rebuild, no flag). More:
+just edit `deploy/conf/server.properties` (no rebuild, no flag). More:
 [`deploy/README.md`](deploy/README.md).
 
 ## Creating & running tasks
@@ -247,7 +247,7 @@ per browser.
 ## Configuration & production HA
 
 Best-practice defaults ship in each example; tune the scheduler at deploy time (no rebuild) via
-`deploy/conf/scheduler.properties`. Full key reference and the `@Task` cheatsheet:
+`deploy/conf/server.properties`. Full key reference and the `@Task` cheatsheet:
 [`docs/configuration.md`](docs/configuration.md).
 
 Every node exposes Spring Boot Actuator health — including a `spreaderCluster` component — which the

@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth.guard';
 import { cronflowGuard } from './core/cronflow-feature';
+import { roleGuard } from './core/role.guard';
 
 export const routes: Routes = [
   {
@@ -22,21 +23,25 @@ export const routes: Routes = [
       {
         path: 'tasks',
         title: 'Tasks · cronflower',
+        canActivate: [roleGuard('ADMIN', 'SCHEDULER_ADMIN')],
         loadComponent: () => import('./pages/task-list/task-list').then((m) => m.TaskList),
       },
       {
         path: 'tasks/new',
         title: 'New Task · cronflower',
+        canActivate: [roleGuard('ADMIN', 'SCHEDULER_ADMIN')],
         loadComponent: () => import('./pages/task-form/task-form').then((m) => m.TaskForm),
       },
       {
         path: 'tasks/:group/:name/edit',
         title: 'Edit Task · cronflower',
+        canActivate: [roleGuard('ADMIN', 'SCHEDULER_ADMIN')],
         loadComponent: () => import('./pages/task-form/task-form').then((m) => m.TaskForm),
       },
       {
         path: 'tasks/:group/:name',
         title: 'Task · cronflower',
+        canActivate: [roleGuard('ADMIN', 'SCHEDULER_ADMIN')],
         loadComponent: () => import('./pages/task-detail/task-detail').then((m) => m.TaskDetail),
       },
       // Executors, Cluster and Health are unified under one "System" section (a tabbed page). The old
@@ -47,6 +52,7 @@ export const routes: Routes = [
       {
         path: 'system',
         title: 'System · cronflower',
+        canActivate: [roleGuard('ADMIN')],
         loadComponent: () => import('./pages/system/system').then((m) => m.SystemPage),
         children: [
           { path: '', redirectTo: 'executors', pathMatch: 'full' },
@@ -65,6 +71,11 @@ export const routes: Routes = [
             title: 'System Health · cronflower',
             loadComponent: () => import('./pages/health/health').then((m) => m.Health),
           },
+          {
+            path: 'api',
+            title: 'API · cronflower',
+            loadComponent: () => import('./pages/api-docs/api-docs').then((m) => m.ApiDocs),
+          },
         ],
       },
       // Workflows + Runs are unified under one "DAG" section (a tabbed page). Old paths redirect in.
@@ -76,13 +87,13 @@ export const routes: Routes = [
         // Full-screen canvas editor, outside the DAG tab shell. Declared before the 'dag' parent.
         path: 'dag/new',
         title: 'New workflow · cronflower',
-        canActivate: [cronflowGuard],
+        canActivate: [cronflowGuard, roleGuard('ADMIN', 'WORKFLOW_ADMIN')],
         loadComponent: () => import('./pages/dag-new/dag-new').then((m) => m.DagNewPage),
       },
       {
         path: 'dag',
         title: 'DAG · cronflower',
-        canActivate: [cronflowGuard],
+        canActivate: [cronflowGuard, roleGuard('ADMIN', 'WORKFLOW_ADMIN')],
         loadComponent: () => import('./pages/dag/dag').then((m) => m.DagPage),
         children: [
           { path: '', redirectTo: 'workflows', pathMatch: 'full' },

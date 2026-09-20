@@ -2,6 +2,7 @@ package com.github.cronflow.springapp.server;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import com.github.cronflow.springapp.server.pojo.DagNodeView;
 import com.github.cronflow.springapp.server.pojo.DagRunView;
 
@@ -50,5 +51,23 @@ public interface DagRunLog {
 
     /** Child (subgraph) runs whose {@code parentRunId} is {@code runId}, newest first. */
     List<DagRunView> childRuns(String parentRunId);
+
+    // ---- live frontier (in-flight nodes) — transient, cluster-replicated, not persisted -----------
+    // The console pulses these nodes on the graph. Default no-ops so plain stores (JPA/jOOQ) need not
+    // implement it; ClusterDagRunLog overrides them to gossip the frontier so ANY node can answer the
+    // run-detail query behind the round-robin console proxy (single-node just keeps a local copy).
+
+    /** Replace the set of in-flight nodes for a run (empty = none right now). */
+    default void frontier(String runId, Set<String> running) {
+    }
+
+    /** The in-flight nodes for a run (empty if unknown here). */
+    default Set<String> frontierOf(String runId) {
+        return Set.of();
+    }
+
+    /** Drop the frontier for a finished run. */
+    default void clearFrontier(String runId) {
+    }
 
 }

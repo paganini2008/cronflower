@@ -1,1 +1,0 @@
-Cronsmith Spring ${application.version}

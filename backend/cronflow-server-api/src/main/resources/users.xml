@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Cronflow user store. Cronflower has NO self-registration: accounts are provisioned here by an admin.
+
+  Attributes per <user>:
+    username  login name
+    password  a raw password (bcrypt-encoded on load) OR an already-encoded value with an id prefix,
+              e.g. {bcrypt}$2a$10$....  (recommended for production)
+    roles     comma-separated, from: admin | scheduler_admin | workflow_admin | user
+
+  This packaged file is the DEV default. In a real deployment, provision your own accounts and point at
+  them without rebuilding:  cronflow.security.users-file=file:/opt/cronflow/conf/users.xml
+-->
+<users>
+    <user username="admin" password="admin123" roles="admin"/>
+    <user username="scheduler" password="scheduler123" roles="scheduler_admin"/>
+    <user username="workflow" password="workflow123" roles="workflow_admin"/>
+    <user username="fred" password="fred" roles="user"/>
+</users>

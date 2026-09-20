@@ -1,5 +1,6 @@
 package com.github.cronflow.springapp.server.web;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.github.cronflow.springapp.server.DagExecutorRegistry;
 import com.github.cronflow.springapp.server.DagRunLog;
 import com.github.cronflow.springapp.server.EngineDagRunner;
+import com.github.cronflow.springapp.server.pojo.DagGraphPage;
 import com.github.cronflow.springapp.server.pojo.DagGraphView;
 import com.github.cronflow.springapp.server.pojo.DagRunDetail;
 import com.github.cronflow.springapp.server.pojo.DagRunPage;
@@ -37,10 +39,21 @@ public class DagQueryController {
         this.coordinator = coordinator;
     }
 
-    /** Every registered graph with its definition (for the DAG list and diagram). */
+    /** A page of registered graphs (for the DAG list + diagram), newest-name first, optionally filtered
+     *  by a substring of the graph or application name. Server-side paged like the Tasks / Runs lists. */
     @GetMapping("/dags")
-    public List<DagGraphView> dags() {
-        return registry.graphs().stream().map(DagGraphView::of).toList();
+    public DagGraphPage dags(@RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+        String needle = q == null ? "" : q.trim().toLowerCase();
+        List<DagGraphView> all = registry.graphs().stream().map(DagGraphView::of)
+                .filter(v -> needle.isEmpty() || v.graph().toLowerCase().contains(needle)
+                        || v.application().toLowerCase().contains(needle))
+                .sorted(java.util.Comparator.comparing(DagGraphView::graph))
+                .toList();
+        int from = Math.min(Math.max(offset, 0), all.size());
+        int to = limit <= 0 ? all.size() : Math.min(from + limit, all.size());
+        return new DagGraphPage(all.size(), all.subList(from, to));
     }
 
     /** One graph's definition, or 404 when unknown. */
@@ -73,12 +86,12 @@ public class DagQueryController {
         if (run == null) {
             return ResponseEntity.notFound().build();
         }
-        // Live frontier (in-flight nodes) only makes sense while the run is still going; on this node
-        // it is known only when this scheduler is the one coordinating the run.
+        // Live frontier (in-flight nodes), read from the run-log which replicates it across the cluster,
+        // so this query answers correctly on ANY node behind the round-robin console proxy — not only on
+        // the node that coordinated the run. Only meaningful while the run is still going.
         List<String> running = List.of();
-        EngineDagRunner engine = coordinator.getIfAvailable();
-        if (engine != null && "RUNNING".equalsIgnoreCase(run.status())) {
-            running = new java.util.ArrayList<>(engine.runningNodesOf(runId));
+        if ("RUNNING".equalsIgnoreCase(run.status())) {
+            running = new ArrayList<>(runLog.frontierOf(runId));
         }
         return ResponseEntity.ok(
                 new DagRunDetail(run, runLog.nodesOf(runId), runLog.childRuns(runId), running));

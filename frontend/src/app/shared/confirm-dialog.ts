@@ -47,7 +47,7 @@ export interface ConfirmData {
     .cd-head mat-icon { color: #1565c0; }
     .cd-head.danger mat-icon { color: #d93025; }
     .cd-msg { margin: 0.25rem 0 0; color: #3d5372; line-height: 1.5; }
-    .cd-note { margin: 0.6rem 0 0; font-size: 0.85rem; color: #7a8aa0; line-height: 1.45; }
+    .cd-note { margin: 0.6rem 0 0; font-size: 0.85rem; color: #3d5372; line-height: 1.45; }
     .danger-btn { --mdc-filled-button-container-color: #d93025; --mdc-filled-button-label-text-color: #fff; }
   `],
 })

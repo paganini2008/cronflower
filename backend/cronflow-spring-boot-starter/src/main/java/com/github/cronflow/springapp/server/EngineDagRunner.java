@@ -102,6 +102,7 @@ public class EngineDagRunner implements DagCoordinator, SubGraphResolver {
         } finally {
             nodeSeq.remove(runId);
             running.remove(runId);
+            runLog.clearFrontier(runId);
         }
         return runId;
     }
@@ -111,6 +112,18 @@ public class EngineDagRunner implements DagCoordinator, SubGraphResolver {
     public java.util.Set<String> runningNodesOf(String runId) {
         java.util.Set<String> s = running.get(runId);
         return s == null ? java.util.Set.of() : new java.util.HashSet<>(s);
+    }
+
+    /** Mirror the local in-flight set into the run-log so it replicates across the cluster: behind the
+     *  round-robin console proxy, the run-detail query may land on a node that did not coordinate the
+     *  run, and it still needs the frontier to pulse the live node(s). */
+    private void pushFrontier(String runId) {
+        java.util.Set<String> s = running.get(runId);
+        try {
+            runLog.frontier(runId, s == null ? java.util.Set.of() : new java.util.HashSet<>(s));
+        } catch (RuntimeException e) {
+            log.debug("cronflow: frontier push failed for {}: {}", runId, e.toString());
+        }
     }
 
     @Override
@@ -146,6 +159,7 @@ public class EngineDagRunner implements DagCoordinator, SubGraphResolver {
         } finally {
             nodeSeq.remove(subRunId);
             running.remove(subRunId);
+            runLog.clearFrontier(subRunId);
         }
     }
 
@@ -355,6 +369,7 @@ public class EngineDagRunner implements DagCoordinator, SubGraphResolver {
         @Override
         public void onStart(String runId, CompiledGraph flow, GraphState initial) {
             running.computeIfAbsent(runId, k -> ConcurrentHashMap.newKeySet());
+            pushFrontier(runId);
         }
 
         @Override
@@ -362,6 +377,7 @@ public class EngineDagRunner implements DagCoordinator, SubGraphResolver {
             // 'to' is about to run — mark it the live frontier so the console can pulse it.
             if (to != null) {
                 running.computeIfAbsent(runId, k -> ConcurrentHashMap.newKeySet()).add(to);
+                pushFrontier(runId);
             }
         }
 
@@ -373,6 +389,7 @@ public class EngineDagRunner implements DagCoordinator, SubGraphResolver {
             if (frontier != null) {
                 frontier.remove(outcome.node());
             }
+            pushFrontier(runId);
             int seq = nodeSeq.computeIfAbsent(runId, k -> new java.util.concurrent.atomic.AtomicInteger())
                     .getAndIncrement();
             String status = outcome.ok() ? "SUCCESS" : "FAILED";

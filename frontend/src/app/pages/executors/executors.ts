@@ -12,6 +12,7 @@ import { fmt, poll } from '../../core/util';
     <p class="page-sub">Worker instances registered with the scheduler. Updated live.</p>
 
     <div class="card overflow-hidden">
+      <div class="table-scroll">
       <table mat-table [dataSource]="executors() ?? []">
         <ng-container matColumnDef="health">
           <th mat-header-cell *matHeaderCellDef>Health</th>
@@ -44,13 +45,17 @@ import { fmt, poll } from '../../core/util';
         <tr mat-header-row *matHeaderRowDef="columns"></tr>
         <tr mat-row *matRowDef="let row; columns: columns"></tr>
       </table>
+      </div>
       @if ((executors()?.length ?? 0) === 0) {
         <div class="empty"><mat-icon>memory</mat-icon><p>No executors registered.</p></div>
       }
     </div>
   `,
   styles: [`
-    .empty { padding: 2.5rem; text-align: center; color: #94a3b8; }
+    .table-scroll { overflow-x: auto; }
+    .table-scroll table { min-width: 900px; }
+    .table-scroll th, .table-scroll td { white-space: nowrap; }
+    .empty { padding: 2.5rem; text-align: center; color: #3d5372; }
     .empty mat-icon { font-size: 2.5rem; width: 2.5rem; height: 2.5rem; }
   `],
 })

@@ -18,6 +18,13 @@ public class CronflowServerProperties {
     private boolean enabled = true;
 
     /**
+     * Deployment environment label shown in the console header ({@code dev} / {@code prod}). Set per
+     * environment in the staged {@code server.properties} (from application-dev/prod.properties); the
+     * jar default is {@code dev}.
+     */
+    private String env = "dev";
+
+    /**
      * REST API prefix for the cronflow endpoints (registration). Must match the executor's
      * {@code cronflow.client.server-api-prefix}. Default {@code /cronflow}; blank or {@code /} serves
      * at the root. Scoped to the cronflow controllers only, so it never affects cronsmith's paths.

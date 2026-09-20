@@ -72,8 +72,15 @@ public class CronflowClientRegistrar
                             scan.dags().size(), runUrl);
                 }
             } else {
-                serverClient.heartbeat(new DagHeartbeatRequest(application(), identity.getInstanceId(),
-                        runUrl, healthUrl, properties.getWeight()));
+                boolean known = serverClient.heartbeat(new DagHeartbeatRequest(application(),
+                        identity.getInstanceId(), runUrl, healthUrl, properties.getWeight()));
+                if (!known) {
+                    // The server no longer knows this instance (e.g. the cluster restarted and lost its
+                    // in-memory registry). Drop back to a full re-register next tick so the DAG's live
+                    // host mapping is rebuilt and the graph is runnable again.
+                    registered = false;
+                    log.info("cronflow: server does not recognise this instance; will re-register");
+                }
             }
         } catch (RuntimeException e) {
             registered = false; // fall back to a full re-register next tick
