@@ -158,6 +158,10 @@
 								<copy file="${project.basedir}/src/main/resources/application-${deploy.env}.properties"
 									tofile="${project.build.directory}/conf/server.properties"
 									overwrite="true" />
+					<!-- Activate the matching Spring profile at runtime. Set here (a non-profile
+					     file loaded via spring.config.additional-location), because Spring forbids
+					     spring.profiles.active inside a profile-specific document. -->
+					<echo file="${project.build.directory}/conf/server.properties" append="true">${line.separator}# Runtime Spring profile (matches the build environment).${line.separator}spring.profiles.active=${deploy.env}${line.separator}</echo>
 							</target>
 						</configuration>
 					</execution>
