@@ -1,69 +1,65 @@
-# cronsmith · cronflower
+# cronflower
 
 ![Java](https://img.shields.io/badge/Java-17-007396?logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F?logo=springboot&logoColor=white)
 ![Angular](https://img.shields.io/badge/Angular-21-DD0031?logo=angular&logoColor=white)
 ![Store](https://img.shields.io/badge/store-H2%20·%20SQLite%20·%20MySQL%20·%20PostgreSQL-4479A1?logo=databricks&logoColor=white)
 ![Build](https://img.shields.io/badge/build-Maven%20Wrapper-C71A36?logo=apachemaven&logoColor=white)
-![License](https://img.shields.io/badge/license-see%20LICENSE-lightgrey)
+![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 
-> **Run massive scheduled workloads on a cluster that forms itself — decentralized, and dependent on
-> nothing external.** A distributed, stateful cron scheduler for the JVM: nodes gossip and elect a
-> leader among themselves (no ZooKeeper/etcd), the store is embedded (no separate database required),
-> and the console load-balances the cluster on its own (no nginx/KONG). Add a year-aware schedule
-> syntax, an auto-detecting multi-database store, group sharding & weighted dispatch, and a
-> first-class web console. Drop `@Task` on a Spring bean; the cluster owns the schedule and calls you back.
+**cronflower is an open-source, distributed cron scheduler for the JVM, with a web console, that
+forms its own cluster and depends on nothing external.** Drop `@Task` on a Spring bean and the
+cluster owns the schedule and calls you back; declare a `@Dag` and the same cluster runs a whole
+workflow across your machines. One command takes you from `git clone` to a live, distributed
+scheduler cluster with a UI, with no database, broker, or ZooKeeper/etcd to stand up.
 
-**cronsmith** is the engine and its Spring Boot starters. **cronflower** is the Angular operator
-console and the monorepo that packages everything into a one-click, runnable demo — so you can go
-from `git clone` to a live, **distributed** scheduler cluster with a UI in a single command:
+cronflower brings two engines together under one console:
 
-- **Scales to massive task volumes** — a timing wheel drives large numbers of tasks; **group sharding**
-  spreads them across nodes and **weighted dispatch** fans runs out to executors by capacity.
-- **Self-clustering & decentralized** — every node is a peer that can become leader; membership and
-  leadership are gossiped, not handed down by a central coordinator.
-- **Zero external dependencies** — no separate database, message broker, coordination service, or load
-  balancer to stand up. Embedded store, self-forming cluster, self-balancing console.
+```
+cronflower = cronsmith (distributed scheduling) + cronflow (DAG orchestration)
+```
 
-![Dashboard](docs/images/dashboard.jpg)
+![Tasks list](docs/images/tasks-list.jpg)
 
 ---
 
 ## Table of contents
 
-- [Highlights](#highlights)
+- [Why](#why)
 - [Tech stack](#tech-stack)
 - [Architecture](#architecture)
 - [Repository layout](#repository-layout)
 - [Quickstart](#quickstart)
-- [Creating & running tasks](#creating--running-tasks)
+- [Distributed task scheduling](#distributed-task-scheduling)
+- [DAG workflow orchestration](#dag-workflow-orchestration)
+- [Installation](#installation)
 - [Time zones](#time-zones)
 - [Configuration & production HA](#configuration--production-ha)
 - [Documentation](#documentation)
 - [License](#license)
 
-## Highlights
+## Why
+
+`@Scheduled` runs in one JVM, so it fires twice the moment you scale out, and it has no retry, no
+timeout, no history, and no view of what ran. The usual fix is to bolt on Quartz, a database, a lock
+table, and a dashboard you wrote yourself. cronsmith is that whole stack behind two dependencies:
 
 - **Zero external infrastructure** — no separate database, message broker, or coordination service.
   The store is an embedded **H2** file and the cluster elects a leader on its own.
 - **Truly distributed & HA** — nodes form a cluster (leader election via *openspreader*); the leader
-  schedules and dispatches, followers fail over. No single point of failure.
-- **Stateful & durable** — schedules and execution history live in a store that is **auto-detected**
-  from the JDBC connection (in-memory → H2/SQLite → MySQL/PostgreSQL). Nothing to configure to switch.
-- **Scales horizontally** — **group sharding** partitions work across nodes over a shared store;
-  **weighted dispatch** sends runs to executors by capacity.
-- **YCRON — year-based schedules** — express "the 200th day of the year" or "the first ISO week",
-  which no traditional cron field can. Opt in per task; fully isolated from the classic parser.
+  schedules and dispatches, followers fail over. No single point of failure, no cron fired twice.
+- **Stateful & durable** — schedules and execution history live in a store **auto-detected** from the
+  JDBC connection (in-memory → H2/SQLite → MySQL/PostgreSQL). Nothing to configure to switch.
+- **Scales horizontally** — a timing wheel drives large task volumes; **group sharding** partitions
+  work across nodes over a shared store and **weighted dispatch** fans runs out to executors by capacity.
 - **Rich `@Task` model** — cron / YCRON / fixed-interval / ISO-8601 duration, plus retry with
-  back-off, per-run timeout, misfire policy, and **repeat count / stop-at** limits — all declarative.
-- **Fluent, self-validating schedules** — build cron with cronsmith's `CronBuilder`
-  (`new CronBuilder().everyWeekday().at(9, 0)`) instead of error-prone hand-written strings, and drive
-  a task's *entire* schedule from a `CronExpressionBuilder` bean computed at runtime.
-- **Two invocation styles** — call a **Spring bean** method on an executor, or have the scheduler
-  hit an **HTTP endpoint** directly. Both are first-class in the API and the console.
-- **Operator console** — Dashboard, Tasks (create/edit with a live schedule builder), Executors,
-  Cluster, and System Health — talking to a single endpoint, with a **UTC-first, per-viewer
-  time-zone toggle**.
+  back-off, per-run timeout, misfire policy, and repeat-count / stop-at limits, all declarative.
+- **YCRON — year-based schedules** — express "the 200th day of the year", which no traditional cron
+  field can. Opt in per task; fully isolated from the classic parser.
+- **DAG orchestration (cronflow)** — declare a workflow of `@Dag` nodes with typed channels,
+  branching, joins, subgraphs, and dynamic fan-out; the cluster drives the graph across executors.
+- **Operator console** — Tasks, Executors, Cluster, DAG workflows & runs, and System Health, all
+  talking to a single endpoint, with a **UTC-first, per-viewer time-zone toggle**.
 
 ## Tech stack
 
@@ -72,32 +68,30 @@ from `git clone` to a live, **distributed** scheduler cluster with a UI in a sin
 | Engine | Java 17, an ANTLR 4 cron/YCRON grammar, a timing wheel, `openspreader` clustering |
 | Starters | Spring Boot 4.1, Spring MVC, JPA/Hibernate + jOOQ storage tiers, Actuator |
 | Stores | H2 · SQLite · MySQL · PostgreSQL (auto-detected) |
-| Console | Angular 21 (standalone + signals), RxJS, Angular Material, Tailwind |
+| Console | Angular 21 (standalone + signals), RxJS, Angular Material, cytoscape (DAG graph) |
 | Delivery | Maven Wrapper build · Docker / docker-compose · a zero-dependency Node static+proxy server |
 
 ## Architecture
 
 ```
-   cronflower (Angular)  ──/cronsmith,/actuator──▶  scheduler cluster  ──dispatch──▶  executors
-     Dashboard/Tasks/…                              scheduler-1 (leader)             @Task beans
-                                                     scheduler-2/3 (followers)        :5xxxx (random)
-                                                            │
-                                              shared store (H2 · MySQL · PostgreSQL)
+   cronflower (Angular)  ──/cronsmith,/cronflow,/actuator──▶  scheduler cluster  ──dispatch──▶  executors
+     Tasks/Cluster/DAG/…                                       scheduler-1 (leader)             @Task / @Dag beans
+                                                               scheduler-2/3 (followers)        :5xxxx (random)
+                                                                       │
+                                                          shared store (H2 · MySQL · PostgreSQL)
 ```
 
 - The **scheduler** owns time: it parses the schedule, keeps the next-fire wheel, and dispatches due
-  runs. The **leader** dispatches; **followers** stand by and take over on failure — the Cluster view
+  runs. The **leader** dispatches; **followers** stand by and take over on failure. The Cluster view
   shows who leads, the detected store, and whether sharding is on.
 
-![Cluster view](docs/images/cluster.jpg)
+![Cluster view: three scheduler nodes, one leader over a shared store](docs/images/cluster.jpg)
 
-- An **executor** registers with the cluster, advertises the URL the scheduler calls back, and runs
-  `@Task` bean methods. HTTP-API tasks are called by the scheduler directly, with no executor.
+- An **executor** registers with the cluster, advertises the URL the scheduler calls back, heartbeats,
+  and runs `@Task` and `@Dag` bean methods. HTTP-API tasks are called by the scheduler directly, with
+  no executor.
 
 ![Executors view](docs/images/executors.jpg)
-
-- The **store** holds task definitions and execution history. It is auto-detected from the JDBC URL,
-  and the timestamps it records are **UTC**.
 
 Full write-up, component responsibilities, and the persistence/serialization model:
 [`docs/architecture.md`](docs/architecture.md).
@@ -111,13 +105,13 @@ cronflower/
 │   ├── cronsmith-executor-spring-boot-starter/    # executor (client) starter
 │   ├── cronflow-spring-boot-starter/              # DAG (server) starter — optional add-on
 │   ├── cronflow-executor-spring-boot-starter/     # DAG (executor) starter — optional add-on
-│   ├── cronflow-server-api/                # runnable scheduler (cronsmith + optional cronflow DAG)
-│   └── cronflow-executor-example/                 # runnable executor (@Task showcase + optional DAG nodes)
+│   ├── cronflow-server-api/                       # runnable scheduler (cronsmith + optional cronflow)
+│   └── cronflow-executor-example/                 # runnable executor (@Task showcase + example DAGs)
 ├── frontend/                                  # the cronflower Angular console
 ├── deploy/                                    # one-click runners (local + docker), Dockerfiles, web server
 │   ├── run-local.sh   ·   run-docker.sh
-│   ├── conf/server.properties              # externalised advanced config (no rebuild)
-│   └── bin/                                   # staged runnable jars (build output)
+│   ├── conf/server.properties                     # externalised advanced config (no rebuild)
+│   └── bin/                                        # staged runnable jars (build output)
 ├── docs/                                      # architecture, configuration, screenshots
 └── README.md
 ```
@@ -158,47 +152,60 @@ cd cronflower/deploy
 just edit `deploy/conf/server.properties` (no rebuild, no flag). More:
 [`deploy/README.md`](deploy/README.md).
 
-## Creating & running tasks
+## Distributed task scheduling
 
-The console lists every task with its schedule, run counts, and next fire — browse, filter by group /
-name / status, and drill into any one:
-
-![Tasks list](docs/images/tasks-list.jpg)
+There are two kinds of process: a **scheduler** owns the schedule (keeps state in a store, decides
+when each task is due, and calls out to run it), and an **executor** is your application, which
+declares tasks with `@Task` and runs the code when the scheduler says it's time. Run several
+schedulers and they elect a leader over gossip; state lives in the store, so a restart or failover
+loses nothing.
 
 ### Declare with `@Task`
 
-Annotate a Spring bean method and the cluster owns the schedule:
+Annotate a Spring bean method on an executor and the cluster owns the schedule from startup:
 
 ```java
-@Task(
-    cron = "0 0 12 * * ?",          // Quartz cron — or interval / iso / a builder bean
-    description = "daily rollup",
-    maxRetryCount = 2,               // retry with back-off on failure
-    retryInterval = 1000,
-    timeout = 30_000,                // per-run timeout (ms)
-    repeatCount = 30,                // finish after 30 fires (<= 0 = unlimited)
-    misfirePolicy = MisfirePolicy.FIRE_ONCE_NOW)
-public void nightlyRollup() { ... }
+@Component
+public class DemoTasks {
+
+    // classic cron, retried with back-off, timed out per run, finishing after 30 fires
+    @Task(cron = "0 0 12 * * ?", group = "showcase", name = "nightlyRollup",
+          maxRetryCount = 2, retryInterval = 1000, timeout = 30_000, repeatCount = 30,
+          misfirePolicy = MisfirePolicy.FIRE_ONCE_NOW)
+    public void nightlyRollup() { ... }
+
+    // a String parameter, constant or a SpEL template evaluated fresh on every fire
+    @Task(cron = "0 0 * * * ?", group = "showcase", name = "heartbeatTick",
+          initialParameter = "#{T(java.time.LocalDate).now().toString()}")
+    public void heartbeatTick(String today) { ... }
+
+    // a schedule the month-based grammar can't say: noon on the 200th day of the year
+    @Task(cron = "0 0 12 ? ? 200", parser = "ycron", group = "showcase", name = "dayOfYear200")
+    public void dayOfYear200() { ... }
+}
 ```
 
-- **Schedule syntax** — classic `cron`, year-aware `ycron`, a fixed `interval`, an `iso` duration
-  (e.g. `PT1H30M`), or a `builder` bean (see below).
-- **Limits** — `repeatCount` finishes a periodic task after N fires; `stopAt` (builder-only, since it
-  is a future instant) finishes it after a deadline. Either one, both, or neither.
-- **Group** — blank defaults to the app's `spring.application.name` on Spring Boot, or `"default"`
-  otherwise.
+| Attribute | What it does |
+|-----------|--------------|
+| `cron` / `parser` | a cron schedule, or YCRON with `parser = "ycron"` |
+| `interval` + `intervalUnit` | a fixed interval, e.g. every 10 seconds |
+| `iso` | a fixed interval as an ISO-8601 duration, e.g. `PT1H30M` |
+| `builder` | a `CronExpressionBuilder` bean that builds the schedule in code (takes precedence over `cron`) |
+| `initialParameter` | a constant, or a SpEL template evaluated on each fire |
+| `group` / `name` / `description` | identity, and the label the console shows |
+| `maxRetryCount` / `retryInterval` | retry a failed run, with back-off |
+| `timeout` | fail a run that overruns, in milliseconds |
+| `misfirePolicy` | `FIRE_ONCE_NOW` (default) / `FIRE_ALL` / `SKIP` |
+| `repeatCount` / `stopAt` | finish after N fires, or after a deadline |
 
 ### Build schedules fluently — no hand-written cron
 
 Point a task at a `CronExpressionBuilder` bean and build the schedule with cronsmith's fluent,
-self-validating `CronBuilder` instead of error-prone cron strings. The builder can also supply the
-parser, `repeatCount`, and a computed future `stopAt`; when `builder` is set it takes precedence over
-the annotation's own `cron` / `parser`:
+self-validating `CronBuilder` instead of an error-prone string:
 
 ```java
 @Bean
 CronExpressionBuilder mondayMornings() {
-    // constructed and validated in code — not a hand-typed "0 0 9 ? * MON" string
     return () -> new CronBuilder().everyWeek().Mon().at(9, 0).toString();
 }
 
@@ -206,43 +213,119 @@ CronExpressionBuilder mondayMornings() {
 public void weeklyReport() { ... }
 ```
 
-### Create & edit in the console
+### Tasks without an executor, and operating them
 
-Choose **Spring Bean** or **HTTP API** (the scheduler calls the endpoint directly, no executor
-needed) and set the schedule with a live builder:
+Some jobs are just "call this URL on a schedule". Create an **HTTP-API task** from the console's
+*New task* form or the REST API and the scheduler makes the call itself, no executor involved, which
+is also how an operator adds or edits any task without a redeploy. Every task can be run once now,
+paused, resumed, or canceled, over the console or the REST API.
 
-![Create a task](docs/images/task-form.jpg)
+Every run is recorded with its result, timing, and attempt number (so retries are visible), plus
+which scheduler dispatched it and which executor ran it:
 
-### Inspect a task
+![Execution history with retry attempts and the node that ran each one](docs/images/execution-history.jpg)
 
-Each task's page shows its full definition, including the periodic **repeat count** and **stop-at**:
+## DAG workflow orchestration
 
-![Task detail](docs/images/task-detail.jpg)
+Plain cron schedules single jobs; it can't orchestrate a flow of them. **cronflow** (the optional
+add-on) lets you declare the steps and how they depend on each other as a graph, and the same cluster
+runs the graph node by node, with data flowing between nodes over typed channels.
 
-### Edit a task
+A DAG is a Spring bean: `@Dag` names it, each `@DagNode` method is a step, and the `to` list is the
+edges. Nodes hand data to each other by returning a `Map` of named channel writes and read upstream
+values from the `DagState`; a `@Channel` says how concurrent writes to it are merged by a reducer:
 
-Editing re-opens the same form with every value filled in — periodic limits included:
+```java
+@Dag(name = "scoring-flow", inputs = {"input"}, channels = {
+        @Channel(name = "score",   reducer = ChannelReducer.SUM_INT),
+        @Channel(name = "factors", reducer = ChannelReducer.JOIN_CSV)})
+@Component
+public class ScoringFlow {
 
-![Edit a task](docs/images/task-edit.jpg)
+    @DagNode(entry = true, to = {"credit", "income", "collateral"})   // fan out to 3 parallel scorers
+    public Map<String, Object> intake(DagState state) {
+        return Map.of("applicant", state.getString("input"));
+    }
 
-### Watch runs & retries
+    @DagNode(to = {"decide"})
+    public Map<String, Object> credit(DagState state) {
+        return Map.of("score", 40, "factors", "credit");
+    }
+    // income(), collateral() … same shape, writing to the same channels
 
-Every run is recorded with its result, timing, attempt number (so retries are visible), and which
-scheduler and executor handled it:
+    @DagNode(trigger = "ALL")                                         // join: wait for all three
+    public Map<String, Object> decide(DagState state) {
+        long total = state.getLong("score");                         // reducer already summed them
+        return Map.of("decision", total >= 70 ? "APPROVED" : "REJECTED");
+    }
+}
+```
 
-![Execution history with retries](docs/images/execution-history.jpg)
+The console renders exactly what you declared, so you see the shape before you run it:
 
-Full `@Task` cheatsheet and the REST API: [`docs/configuration.md`](docs/configuration.md).
+![The registered workflows and the selected graph's shape](docs/images/dag-workflows.jpg)
+
+The edges aren't just straight lines: `when = @When(expr = "#risk > 80", to = "review")` routes by a
+SpEL expression, `trigger = "ANY"` joins on the first arrival, `subgraph = "..."` nests a whole other
+DAG, and `@Shard(input, output)` fans a node out once per list element at run time. Reducers cover
+the usual merges (`SUM_INT`, `MAX`/`MIN`, `AND`/`OR`, `CONCAT_LIST`, `MERGE_MAP`, `JOIN_CSV`, …), or
+point a channel at your own bean with `customReducer`.
+
+A workflow starts three ways: **by hand** from the console (with an optional JSON seed), **from a
+finished `@Task`** whose return value becomes the DAG input, or **on a schedule directly** by picking
+*Trigger DAG* in the *Create Task* form.
+
+A run is not a black box. Open it and the graph lights up node by node, with a panel showing what
+triggered it and how long it took:
+
+![A completed run: the graph and how it was triggered](docs/images/dag-run.jpg)
+
+Below the graph each node is a row showing what it invoked, its result, its timing, and crucially
+**which executor ran it** — the engine drives the graph across the whole cluster and dispatches each
+node to a live executor, so a wide fan-out really runs in parallel on different machines:
+
+![Per-node results, including which executor ran each node](docs/images/dag-run-nodes.jpg)
+
+## Installation
+
+Two starters cover scheduling; two more add the DAG orchestrator. All are Spring Boot auto-configured.
+
+**Scheduler** (runs the cluster, needs a datasource):
+
+```xml
+<dependency>
+    <groupId>com.github.paganini2008</groupId>
+    <artifactId>cronsmith-spring-boot-starter</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+</dependency>
+```
+
+**Executor** (your app, declares `@Task` beans and points at the scheduler):
+
+```xml
+<dependency>
+    <groupId>com.github.paganini2008</groupId>
+    <artifactId>cronsmith-executor-spring-boot-starter</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+</dependency>
+```
+
+```properties
+spring.application.name=orders-worker
+cronsmith.client.server-urls=http://scheduler-1:8080,http://scheduler-2:8080
+```
+
+**DAG add-on** (optional): add `cronflow-spring-boot-starter` on the scheduler and
+`cronflow-executor-spring-boot-starter` on the executor that hosts your `@Dag` beans, pointed with
+`cronflow.client.server-urls`. Start it, declare a `@Dag`, and it appears in the console ready to run.
 
 ## Time zones
 
 The scheduler works entirely in **UTC** — every timestamp it stores and returns (next fire, previous
-fire, execution logs, `stopAt`) is UTC. The console shows **UTC by default** so what you see always
-matches what the cluster stored, and a one-click toggle in the top bar switches every time on screen —
-and the datetime pickers in the task form — to the **viewer's local zone**. The choice is remembered
-per browser.
-
-![Time-zone toggle](docs/images/timezone-toggle.jpg)
+fire, execution logs, `stopAt`) is UTC, computed in `cronsmith.server.scheduler.zone` (UTC by
+default), which must match across nodes. The console shows **UTC by default** so what you see matches
+what the cluster stored, and a one-click toggle in the top bar switches every time on screen, and the
+task form's datetime pickers, to the **viewer's local zone**. The choice is remembered per browser.
 
 ## Configuration & production HA
 
@@ -250,18 +333,24 @@ Best-practice defaults ship in each example; tune the scheduler at deploy time (
 `deploy/conf/server.properties`. Full key reference and the `@Task` cheatsheet:
 [`docs/configuration.md`](docs/configuration.md).
 
-Every node exposes Spring Boot Actuator health — including a `spreaderCluster` component — which the
-console surfaces on the System Health page:
+- **Store** is auto-detected from the datasource. A **node-local** store (per-node H2/SQLite) is kept
+  in sync by the leader; a **shared** database (MySQL/PostgreSQL) additionally unlocks **group
+  sharding** (`cronsmith.server.scheduler.sharding`, on by default), where every node fires only the
+  task groups that hash to it. On a node-local store it safely stays leader-only.
+- **Dispatch routing** across an app's executors is round-robin by default; switch it with
+  `cronsmith.server.dispatch.routing` to `WEIGHTED`, `CONSISTENT_HASH`, `RANDOM`, `FIRST` or `LAST`.
+- **Scale** — the leader loads only tasks due in the next `window-minutes` into the wheel and claims
+  the rest from the store as they come due, so a cluster with hundreds of thousands of tasks still
+  starts instantly.
+- **Monitoring** — every node exposes Actuator health (including a `spreaderCluster` component) and a
+  Prometheus scrape endpoint (`/actuator/health`, `/actuator/prometheus`), surfaced on the console's
+  System Health page.
 
-![System Health](docs/images/system-health.jpg)
-
-**Production HA — no external load balancer needed.** The web console (`deploy/web-server.mjs`)
-bootstraps from **one** scheduler seed, discovers every node from the cluster roster, and
-round-robins the API across them with automatic failover — so the UI survives any node failure
-(the leader included), not just the data. Point it at a single seed and add nodes freely.
-
-Prefer to front the cluster with **nginx / KONG / Envoy** anyway (TLS, a single ingress, NAT)? That
-stays fully supported — load balancing remains the scheduler's job and the gateway is transparent
+**No external load balancer needed.** The web console (`deploy/web-server.mjs`) bootstraps from
+**one** scheduler seed, discovers every node from the cluster roster, and round-robins the API across
+them with automatic failover, so the UI survives any node failure (the leader included), not just the
+data. Prefer to front the cluster with **nginx / KONG / Envoy** anyway (TLS, single ingress, NAT)?
+That stays fully supported — load balancing remains the scheduler's job and the gateway is transparent
 transport. See [Running behind nginx / KONG](docs/configuration.md#running-behind-nginx--kong).
 
 ## Documentation
@@ -273,4 +362,4 @@ transport. See [Running behind nginx / KONG](docs/configuration.md#running-behin
 
 ## License
 
-See the `LICENSE` files in the backend modules.
+Licensed under the Apache License 2.0. See the `LICENSE` file.
