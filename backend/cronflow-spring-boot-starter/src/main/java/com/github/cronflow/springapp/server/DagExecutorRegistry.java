@@ -16,6 +16,7 @@
 package com.github.cronflow.springapp.server;
 
 import java.time.Duration;
+import java.util.UUID;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -114,7 +115,7 @@ public class DagExecutorRegistry {
     public String register(DagRegistrationRequest request) {
         String instanceId = request.instanceId() != null && !request.instanceId().isBlank()
                 ? request.instanceId()
-                : java.util.UUID.randomUUID().toString();
+                : UUID.randomUUID().toString();
         instances.put(instanceId, new ExecutorInstance(request.application(), instanceId,
                 request.runUrl(), request.healthCheckUrl(),
                 request.weight() == null ? 1 : request.weight(), Instant.now()));

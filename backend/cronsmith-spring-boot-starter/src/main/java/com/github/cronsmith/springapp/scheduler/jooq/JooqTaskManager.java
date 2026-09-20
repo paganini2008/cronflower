@@ -602,7 +602,7 @@ public class JooqTaskManager implements TaskManager {
         int repeatCount = record.get("repeatCount") instanceof Number rp ? rp.intValue() : -1;
         LocalDateTime stopAt =
                 record.get("stopAt") instanceof LocalDateTime sa ? sa : null;
-        nextFiredDateTime = com.github.cronsmith.springapp.scheduler.Task
+        nextFiredDateTime = Task
                 .capNextFiredDateTime(nextFiredDateTime, runCount, repeatCount, stopAt);
         try {
             dsl.update(tables.taskDetail()).set(NEXT_FIRED_DATETIME, nextFiredDateTime)

@@ -16,6 +16,7 @@
 package com.github.cronflow.springapp.server.web;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -64,7 +65,7 @@ public class DagQueryController {
         List<DagGraphView> all = registry.graphs().stream().map(DagGraphView::of)
                 .filter(v -> needle.isEmpty() || v.graph().toLowerCase().contains(needle)
                         || v.application().toLowerCase().contains(needle))
-                .sorted(java.util.Comparator.comparing(DagGraphView::graph))
+                .sorted(Comparator.comparing(DagGraphView::graph))
                 .toList();
         int from = Math.min(Math.max(offset, 0), all.size());
         int to = limit <= 0 ? all.size() : Math.min(from + limit, all.size());

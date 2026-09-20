@@ -16,6 +16,8 @@
 package com.github.cronflow.springapp.server;
 
 import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
+import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -79,7 +81,7 @@ public class CronflowShardedNode extends GraphNode {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("sharded node '" + context.node() + "' was interrupted", e);
-        } catch (java.util.concurrent.ExecutionException e) {
+        } catch (ExecutionException e) {
             Throwable cause = e.getCause() == null ? e : e.getCause();
             throw new IllegalStateException("sharded node '" + context.node() + "' failed: "
                     + cause.getMessage(), cause);
@@ -96,9 +98,9 @@ public class CronflowShardedNode extends GraphNode {
         }
         if (value.getClass().isArray()) {
             List<Object> out = new ArrayList<>();
-            int n = java.lang.reflect.Array.getLength(value);
+            int n = Array.getLength(value);
             for (int i = 0; i < n; i++) {
-                out.add(java.lang.reflect.Array.get(value, i));
+                out.add(Array.get(value, i));
             }
             return out;
         }

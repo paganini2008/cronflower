@@ -16,6 +16,9 @@
 package com.github.cronflow.springapp.executor;
 
 import java.util.Map;
+import java.util.List;
+import java.util.Collection;
+import java.util.ArrayList;
 
 /**
  * The run state handed to a DAG node method on the client: an immutable view over the channels the
@@ -90,18 +93,18 @@ public final class DagState {
     /** A channel read as a list; a single non-list value is wrapped, an absent one is empty. Handy for a
      *  sharded node's per-shard handler reading {@code Shard.CHANNEL}. */
     @SuppressWarnings("unchecked")
-    public java.util.List<Object> getList(String name) {
+    public List<Object> getList(String name) {
         Object v = channels.get(name);
         if (v == null) {
-            return java.util.List.of();
+            return List.of();
         }
-        if (v instanceof java.util.List) {
-            return (java.util.List<Object>) v;
+        if (v instanceof List) {
+            return (List<Object>) v;
         }
-        if (v instanceof java.util.Collection) {
-            return new java.util.ArrayList<>((java.util.Collection<Object>) v);
+        if (v instanceof Collection) {
+            return new ArrayList<>((Collection<Object>) v);
         }
-        return java.util.List.of(v);
+        return List.of(v);
     }
 
     /** The raw channels, read-only. */

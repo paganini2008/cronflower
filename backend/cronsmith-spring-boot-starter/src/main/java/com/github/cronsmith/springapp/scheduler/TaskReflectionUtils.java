@@ -16,6 +16,7 @@
 package com.github.cronsmith.springapp.scheduler;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -105,7 +106,7 @@ public abstract class TaskReflectionUtils {
     private static Object doGetTaskObject(String taskClassName) {
         Class<?> taskClass = getTaskClass(taskClassName);
         try {
-            java.lang.reflect.Constructor<?> constructor = taskClass.getDeclaredConstructor();
+            Constructor<?> constructor = taskClass.getDeclaredConstructor();
             constructor.setAccessible(true);
             return constructor.newInstance();
         } catch (ReflectiveOperationException | RuntimeException e) {

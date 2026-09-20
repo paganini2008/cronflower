@@ -16,6 +16,7 @@
 package com.github.cronflow.springapp.executor;
 
 import java.util.List;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -64,7 +65,7 @@ public class WebClientCronflowServerClient implements CronflowServerClient {
 
     /** Try {@code call} against each configured server URL + path until one succeeds; a 4xx stops
      *  failover. Returns {@code onFailure} if none succeeds. */
-    private <T> T overServers(String path, java.util.function.Function<String, T> call, T onFailure) {
+    private <T> T overServers(String path, Function<String, T> call, T onFailure) {
         List<String> urls = properties.getServerUrls();
         if (urls == null || urls.isEmpty()) {
             log.warn("No cronflow.client.server-urls configured; cannot call {}", path);
