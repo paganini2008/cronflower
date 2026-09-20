@@ -1,6 +1,26 @@
+/*
+ * Copyright 2026 Fred Feng
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.github.cronflow.springapp.server;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import java.util.List;
+import com.chaconneai.openspreader.dag.Reducer;
+import com.chaconneai.openspreader.dag.ProcessingDag;
+import com.chaconneai.openspreader.aggregation.ProcessingMapReduce;
+import com.github.cronsmith.springapp.scheduler.StoreType;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -112,8 +132,8 @@ public class CronflowServerAutoConfiguration {
     @ConditionalOnMissingBean(name = "cronflowDagRunLog")
     public ClusterDagRunLog cronflowDagRunLog(
             @Qualifier("cronflowDagRunLogStore") DagRunLog store, GossipCluster cluster,
-            ObjectProvider<com.github.cronsmith.springapp.scheduler.StoreType> storeType) {
-        com.github.cronsmith.springapp.scheduler.StoreType st = storeType.getIfAvailable();
+            ObjectProvider<StoreType> storeType) {
+        StoreType st = storeType.getIfAvailable();
         boolean replicate = st == null || !st.isShared();
         return new ClusterDagRunLog(store, cluster, ObjectCodecs.create(SerializationType.JDK),
                 replicate);
@@ -166,7 +186,7 @@ public class CronflowServerAutoConfiguration {
     /** The MapReduce job every sharded node runs on: each shard dispatched to the executor over HTTP.
      *  Present only when the openspreader aggregation toolkit is on (a {@code ProcessingMapReduce}). */
     @Bean(name = "cronflowShardJob")
-    @ConditionalOnBean(com.chaconneai.openspreader.aggregation.ProcessingMapReduce.class)
+    @ConditionalOnBean(ProcessingMapReduce.class)
     @ConditionalOnMissingBean(name = "cronflowShardJob")
     public CronflowShardJob cronflowShardJob(DagNodeDispatcher dispatcher) {
         return new CronflowShardJob(dispatcher);
@@ -174,10 +194,10 @@ public class CronflowServerAutoConfiguration {
 
     /** The node bean for a {@code @DagNode(shard=...)} — dynamic fan-out over MapReduce. */
     @Bean(name = "cronflowShardedNode")
-    @ConditionalOnBean(com.chaconneai.openspreader.aggregation.ProcessingMapReduce.class)
+    @ConditionalOnBean(ProcessingMapReduce.class)
     @ConditionalOnMissingBean(name = "cronflowShardedNode")
     public CronflowShardedNode cronflowShardedNode(
-            com.chaconneai.openspreader.aggregation.ProcessingMapReduce mapReduce) {
+            ProcessingMapReduce mapReduce) {
         return new CronflowShardedNode(mapReduce);
     }
 
@@ -186,11 +206,11 @@ public class CronflowServerAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(DagCoordinator.class)
     public EngineDagRunner cronflowDagCoordinator(
-            com.chaconneai.openspreader.dag.ProcessingDag dagger, DagExecutorRegistry registry,
+            ProcessingDag dagger, DagExecutorRegistry registry,
             DagRunLog runLog, ObjectMapper objectMapper,
-            ObjectProvider<com.chaconneai.openspreader.dag.Reducer<?>> reducers) {
+            ObjectProvider<Reducer<?>> reducers) {
         // Custom channel reducers declared as Spring beans join the kernel + cronflow built-ins.
-        java.util.List<com.chaconneai.openspreader.dag.Reducer<?>> custom =
+        List<Reducer<?>> custom =
                 reducers.stream().toList();
         return new EngineDagRunner(dagger, registry, runLog, objectMapper, custom);
     }

@@ -1,6 +1,24 @@
+/*
+ * Copyright 2026 Fred Feng
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.github.cronflow.springapp.executor;
 
 import java.util.Map;
+import java.util.List;
+import java.util.Collection;
+import java.util.ArrayList;
 
 /**
  * The run state handed to a DAG node method on the client: an immutable view over the channels the
@@ -75,18 +93,18 @@ public final class DagState {
     /** A channel read as a list; a single non-list value is wrapped, an absent one is empty. Handy for a
      *  sharded node's per-shard handler reading {@code Shard.CHANNEL}. */
     @SuppressWarnings("unchecked")
-    public java.util.List<Object> getList(String name) {
+    public List<Object> getList(String name) {
         Object v = channels.get(name);
         if (v == null) {
-            return java.util.List.of();
+            return List.of();
         }
-        if (v instanceof java.util.List) {
-            return (java.util.List<Object>) v;
+        if (v instanceof List) {
+            return (List<Object>) v;
         }
-        if (v instanceof java.util.Collection) {
-            return new java.util.ArrayList<>((java.util.Collection<Object>) v);
+        if (v instanceof Collection) {
+            return new ArrayList<>((Collection<Object>) v);
         }
-        return java.util.List.of(v);
+        return List.of(v);
     }
 
     /** The raw channels, read-only. */

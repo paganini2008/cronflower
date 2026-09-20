@@ -1,3 +1,18 @@
+/*
+ * Copyright 2026 Fred Feng
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.github.cronflow.springapp.server;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -16,13 +31,6 @@ public class CronflowServerProperties {
 
     /** Master switch. Off means cronflow does not load at all — a cronsmith-only server is untouched. */
     private boolean enabled = true;
-
-    /**
-     * Deployment environment label shown in the console header ({@code dev} / {@code prod}). Set per
-     * environment in the staged {@code server.properties} (from application-dev/prod.properties); the
-     * jar default is {@code dev}.
-     */
-    private String env = "dev";
 
     /**
      * REST API prefix for the cronflow endpoints (registration). Must match the executor's

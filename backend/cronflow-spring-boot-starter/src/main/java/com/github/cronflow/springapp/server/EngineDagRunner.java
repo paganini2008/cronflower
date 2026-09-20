@@ -1,6 +1,24 @@
+/*
+ * Copyright 2026 Fred Feng
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.github.cronflow.springapp.server;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,13 +65,13 @@ public class EngineDagRunner implements DagCoordinator, SubGraphResolver {
     private final ObjectMapper objectMapper;
     private final GraphCatalog catalog;
     private final Map<String, CompiledGraph> compiled = new ConcurrentHashMap<>();
-    private final java.util.Set<String> unsupported = ConcurrentHashMap.newKeySet();
+    private final Set<String> unsupported = ConcurrentHashMap.newKeySet();
     /** Per-run monotonic seq for cf_dag_node_log rows (compiled graphs are shared across runs). */
-    private final Map<String, java.util.concurrent.atomic.AtomicInteger> nodeSeq =
+    private final Map<String, AtomicInteger> nodeSeq =
             new ConcurrentHashMap<>();
     /** Nodes currently in flight per active run — the live frontier the console pulses on the graph.
      *  In-memory on the coordinating scheduler; a finished run has none. */
-    private final Map<String, java.util.Set<String>> running = new ConcurrentHashMap<>();
+    private final Map<String, Set<String>> running = new ConcurrentHashMap<>();
 
     public EngineDagRunner(ProcessingDag dagger, DagExecutorRegistry registry, DagRunLog runLog,
             ObjectMapper objectMapper, List<Reducer<?>> customReducers) {
@@ -109,18 +127,18 @@ public class EngineDagRunner implements DagCoordinator, SubGraphResolver {
 
     /** The nodes of {@code runId} currently in flight (empty once the run is over) — the console marks
      *  these RUNNING and pulses them on the graph. */
-    public java.util.Set<String> runningNodesOf(String runId) {
-        java.util.Set<String> s = running.get(runId);
-        return s == null ? java.util.Set.of() : new java.util.HashSet<>(s);
+    public Set<String> runningNodesOf(String runId) {
+        Set<String> s = running.get(runId);
+        return s == null ? Set.of() : new HashSet<>(s);
     }
 
     /** Mirror the local in-flight set into the run-log so it replicates across the cluster: behind the
      *  round-robin console proxy, the run-detail query may land on a node that did not coordinate the
      *  run, and it still needs the frontier to pulse the live node(s). */
     private void pushFrontier(String runId) {
-        java.util.Set<String> s = running.get(runId);
+        Set<String> s = running.get(runId);
         try {
-            runLog.frontier(runId, s == null ? java.util.Set.of() : new java.util.HashSet<>(s));
+            runLog.frontier(runId, s == null ? Set.of() : new HashSet<>(s));
         } catch (RuntimeException e) {
             log.debug("cronflow: frontier push failed for {}: {}", runId, e.toString());
         }
@@ -385,12 +403,12 @@ public class EngineDagRunner implements DagCoordinator, SubGraphResolver {
         public void onNodeFinished(String runId, NodeOutcome outcome) {
             log.info("cronflow: [{}] node '{}' finished on '{}' in {}ms (ok={})", graph,
                     outcome.node(), outcome.executedOn(), outcome.millis(), outcome.ok());
-            java.util.Set<String> frontier = running.get(runId);
+            Set<String> frontier = running.get(runId);
             if (frontier != null) {
                 frontier.remove(outcome.node());
             }
             pushFrontier(runId);
-            int seq = nodeSeq.computeIfAbsent(runId, k -> new java.util.concurrent.atomic.AtomicInteger())
+            int seq = nodeSeq.computeIfAbsent(runId, k -> new AtomicInteger())
                     .getAndIncrement();
             String status = outcome.ok() ? "SUCCESS" : "FAILED";
             String output = outcome.updates() == null ? null : json(outcome.updates());
