@@ -43,3 +43,6 @@ deploy/docker-compose.generated.yml
 .DS_Store
 Thumbs.db
 *.log
+
+# Blog drafts (kept local, not committed)
+docs/blogger
