@@ -5,12 +5,10 @@ import { Injectable, inject, signal } from '@angular/core';
  * edited on a deployed build without recompiling — just refresh). Falls back to the defaults below
  * when the file is missing or unreadable.
  *
- * Note: the login credentials here gate a client-side demo only — the cronsmith server ships without
- * auth. Because the file is fetched by the browser, its contents are not secret. Real protection has
- * to live on the server.
+ * Note: authentication is enforced by the backend (`POST /auth/login`); no credentials are configured
+ * or hinted on the client.
  */
 export interface RuntimeConfig {
-  auth: { username: string; password: string };
   /**
    * Base URL of the cronsmith backend. Defaults to `http://localhost:19090` (a local scheduler) when
    * the key is absent. Set it to **`""` (empty)** to call the API on the SAME origin as the console —
@@ -39,7 +37,6 @@ export interface RuntimeConfig {
 }
 
 export const DEFAULT_CONFIG: RuntimeConfig = {
-  auth: { username: 'admin', password: 'admin' },
   apiBaseUrl: 'http://localhost:19090',
   apiPrefix: '/cronsmith',
   cronflowPrefix: '/cronflow',
@@ -52,10 +49,6 @@ export class ConfigService {
 
   set(config: RuntimeConfig): void {
     this._config.set(config);
-  }
-
-  get auth(): RuntimeConfig['auth'] {
-    return this._config().auth;
   }
 
   /** Backend base URL with any trailing slash trimmed; '' means same-origin. */
@@ -103,7 +96,6 @@ export async function loadRuntimeConfig(): Promise<void> {
     if (res.ok) {
       const json = (await res.json()) as Partial<RuntimeConfig>;
       config.set({
-        auth: { ...DEFAULT_CONFIG.auth, ...(json?.auth ?? {}) },
         apiBaseUrl: json?.apiBaseUrl ?? DEFAULT_CONFIG.apiBaseUrl,
         apiPrefix: json?.apiPrefix ?? DEFAULT_CONFIG.apiPrefix,
         cronflowPrefix: json?.cronflowPrefix ?? DEFAULT_CONFIG.cronflowPrefix,

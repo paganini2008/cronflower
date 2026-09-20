@@ -64,6 +64,37 @@ public class DagExecutorRegistry {
         this.ttlSeconds = ttlSeconds;
     }
 
+    /**
+     * Warm the in-memory definition cache from the persisted store ({@code cf_task_dag}) — called on
+     * startup so the console's DAG list survives a full server-cluster restart without waiting for
+     * executors to re-register. Only definitions are restored (they are persistable); the live host
+     * mapping ({@code hostsByGraph}) still needs a live executor to run a graph, and is rebuilt when the
+     * executor re-registers.
+     */
+    public int hydrateFromStore() {
+        int loaded = 0;
+        try {
+            for (StoredDag stored : dagStore.loadAll()) {
+                try {
+                    DagDefinition parsed =
+                            codec.decode(stored.definition(), codec.normalize(stored.format()));
+                    definitions.put(parsed.graph(), parsed);
+                    applicationByGraph.put(parsed.graph(), stored.application());
+                    loaded++;
+                } catch (RuntimeException e) {
+                    log.warn("cronflow: could not decode stored graph {}: {}", stored.graph(),
+                            e.toString());
+                }
+            }
+        } catch (RuntimeException e) {
+            log.warn("cronflow: could not warm DAG registry from store: {}", e.toString());
+        }
+        if (loaded > 0) {
+            log.info("cronflow: warmed {} DAG definition(s) from the store on startup", loaded);
+        }
+        return loaded;
+    }
+
     /** Record a full registration: instance, its graphs (persisted) and its trigger bindings. */
     public String register(DagRegistrationRequest request) {
         String instanceId = request.instanceId() != null && !request.instanceId().isBlank()
@@ -98,13 +129,20 @@ public class DagExecutorRegistry {
         return instanceId;
     }
 
-    public void heartbeat(DagHeartbeatRequest request) {
+    /**
+     * Refresh a known instance's liveness. Returns {@code false} when this instance is unknown here —
+     * e.g. the whole server cluster restarted and lost its in-memory registry — so the executor knows
+     * to re-register its DAG definitions (a heartbeat carries none) instead of heartbeating into a void.
+     */
+    public boolean heartbeat(DagHeartbeatRequest request) {
         ExecutorInstance existing = instances.get(request.instanceId());
-        if (existing != null) {
-            instances.put(request.instanceId(), new ExecutorInstance(existing.application(),
-                    existing.instanceId(), request.runUrl(), request.healthCheckUrl(),
-                    request.weight() == null ? existing.weight() : request.weight(), Instant.now()));
+        if (existing == null) {
+            return false;
         }
+        instances.put(request.instanceId(), new ExecutorInstance(existing.application(),
+                existing.instanceId(), request.runUrl(), request.healthCheckUrl(),
+                request.weight() == null ? existing.weight() : request.weight(), Instant.now()));
+        return true;
     }
 
     private void persist(String application, DagDefinition dag) {

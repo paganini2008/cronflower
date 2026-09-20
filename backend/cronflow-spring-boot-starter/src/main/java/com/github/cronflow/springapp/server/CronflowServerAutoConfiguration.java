@@ -216,13 +216,8 @@ public class CronflowServerAutoConfiguration {
         return new DagQueryController(registry, runLog, coordinator);
     }
 
-    /** Manual DAG trigger endpoint — same coordinator/engine path as the @Task-driven trigger. */
-    @Bean
-    @ConditionalOnMissingBean
-    public DagTriggerController cronflowDagTriggerController(DagExecutorRegistry registry,
-            DagCoordinator coordinator) {
-        return new DagTriggerController(registry, coordinator);
-    }
+    // DagTriggerController is a @RestController picked up by component scanning (its constructor takes
+    // only beans), so no explicit @Bean is needed here.
 
     /** Canvas authoring endpoints: list target applications, create a graph drawn in the console. */
     @Bean

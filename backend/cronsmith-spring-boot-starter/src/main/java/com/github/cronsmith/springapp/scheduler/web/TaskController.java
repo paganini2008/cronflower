@@ -156,22 +156,27 @@ public class TaskController {
     }
 
     /** Run the task once, right now, via a live executor — independent of its schedule. Blocks for
-     *  the result and records it in the execution history. */
+     *  the result and records it in the execution history. An optional body {@code {"parameter": ...}}
+     *  overrides the task's stored initial parameter for this run only (blank/absent = use the stored
+     *  one); the task definition is untouched. */
     @PostMapping("/{group}/{name}/run")
     public ResponseEntity<Map<String, Object>> runNow(@PathVariable String group,
-            @PathVariable String name) {
+            @PathVariable String name,
+            @RequestBody(required = false) Map<String, Object> body) {
         TaskId taskId = TaskId.of(group, name);
         TaskDetail detail = taskManager.getTaskDetail(taskId, false);
         if (detail == null) {
             return ResponseEntity.notFound().build();
         }
+        Object override = body != null ? body.get("parameter") : null;
+        String parameter = override != null ? override.toString() : detail.getInitialParameter();
         java.time.LocalDateTime firedAt = java.time.LocalDateTime.now(zoneId);
         long start = System.currentTimeMillis();
         TaskExecutionLog log = new TaskExecutionLog(taskId, firedAt).attempt(0)
-                .parameter(detail.getInitialParameter());
+                .parameter(parameter);
         Map<String, Object> response = new LinkedHashMap<>();
         try {
-            Object result = detail.getTask().execute(detail.getInitialParameter());
+            Object result = detail.getTask().execute(parameter);
             long elapsed = System.currentTimeMillis() - start;
             log.success(true).returnValue(result != null ? result.toString() : null).elapsed(elapsed);
             response.put("success", true);

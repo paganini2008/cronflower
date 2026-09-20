@@ -104,6 +104,28 @@ export interface HealthView {
   groups?: string[];
 }
 
+/** JVM heap of one node (MB). maxMb/usagePct may be null when the JVM reports no max. */
+export interface NodeMemory {
+  usedMb: number;
+  committedMb: number;
+  maxMb: number | null;
+  usagePct: number | null;
+}
+
+/** One scheduler node's liveness + live memory (server.web.CronflowNodeHealthController). */
+export interface NodeHealth {
+  id?: string;
+  name?: string;
+  host?: string;
+  httpPort?: number;
+  leader?: boolean;
+  status: string;
+  memory?: NodeMemory;
+  uptimeMs?: number;
+  processors?: number;
+  error?: string;
+}
+
 /** POST body for creating/updating a task — matches the server's TaskSaveRequest. */
 export interface TaskMetadata {
   taskGroup: string;
@@ -227,6 +249,12 @@ export interface DagNodeView {
 export interface DagRunPage {
   total: number;
   items: DagRunView[];
+}
+
+/** One page of registered DAG definitions (server.pojo.DagGraphPage). */
+export interface DagGraphPage {
+  total: number;
+  items: DagGraphView[];
 }
 
 /** A run drilled down: the run, its nodes and any child (subgraph) runs (server.pojo.DagRunDetail). */

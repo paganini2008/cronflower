@@ -10,10 +10,10 @@
 		<relativePath/>
 	</parent>
 	<groupId>com.github.paganini2008</groupId>
-	<artifactId>cronflow-scheduler-example</artifactId>
+	<artifactId>cronflow-server-api</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
-	<name>cronflow-scheduler-example</name>
-	<description>Runnable cronflower scheduler (server) - cronsmith scheduling + optional cronflow DAG</description>
+	<name>cronflow-server-api</name>
+	<description>Cronflow server (product): cronsmith scheduling + cronflow DAG, with login and role based authorization.</description>
 
 	<properties>
 		<java.version>17</java.version>
@@ -35,6 +35,24 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<!-- Login + role based authorization for the console API. Stateless JWT (bearer token) so any
+		     node in the cluster accepts the same credentials behind the round-robin console proxy. The
+		     oauth2-resource-server starter brings the Nimbus JOSE bits used to mint and verify the HMAC
+		     tokens. Executor -> scheduler machine endpoints stay open (see SecurityConfig). -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+		</dependency>
+		<!-- Prometheus metrics for Grafana: exposes /actuator/prometheus for a scraper to pull. -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+			<scope>runtime</scope>
 		</dependency>
 		<!-- Swagger UI / OpenAPI for the scheduler's REST API. The 3.x line targets Spring Boot 4 /
 		     Spring Framework 7. Served at /swagger-ui.html and /v3/api-docs (outside the business
@@ -94,7 +112,21 @@
 	</dependencies>
 
 	<build>
-		<finalName>cronflow-scheduler-example-${project.version}</finalName>
+		<finalName>cronflow-server-api-${project.version}</finalName>
+		<!-- The jar ships ONLY the common application.properties. The per-environment profile files
+		     (application-dev/prod.properties) stay in src/main/resources for LOCAL DEBUG (activate a
+		     Spring profile in the IDE) but are excluded from the packaged jar; packaging is a separate,
+		     independent path (see the maven-resources-plugin execution + the dev/prod profiles below,
+		     which emit the active environment file as conf/server.properties). -->
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<excludes>
+					<exclude>application-dev.properties</exclude>
+					<exclude>application-prod.properties</exclude>
+				</excludes>
+			</resource>
+		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
@@ -107,6 +139,49 @@
 					<loaderImplementation>CLASSIC</loaderImplementation>
 				</configuration>
 			</plugin>
+			<!-- Packaging path (independent of the debug profiles above): emit the ACTIVE environment's
+			     config as target/conf/server.properties. `mvn -Pdev` (default) -> application-dev.properties;
+			     `mvn -Pprod` -> application-prod.properties. The deploy scripts stage this into
+			     deploy/conf/server.properties and load it as the external override. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>emit-server-properties</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+								<copy file="${project.basedir}/src/main/resources/application-${deploy.env}.properties"
+									tofile="${project.build.directory}/conf/server.properties"
+									overwrite="true" />
+							</target>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<!-- Build-time environment selection (independent of runtime Spring profiles). -->
+		<profile>
+			<id>dev</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<properties>
+				<deploy.env>dev</deploy.env>
+			</properties>
+		</profile>
+		<profile>
+			<id>prod</id>
+			<properties>
+				<deploy.env>prod</deploy.env>
+			</properties>
+		</profile>
+	</profiles>
 </project>

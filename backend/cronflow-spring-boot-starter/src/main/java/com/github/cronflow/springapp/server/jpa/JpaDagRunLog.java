@@ -1,5 +1,6 @@
 package com.github.cronflow.springapp.server.jpa;
 
+import com.github.cronflow.springapp.server.DagIds;
 import com.github.cronflow.springapp.server.DagRunLog;
 import com.github.cronflow.springapp.server.pojo.DagRunView;
 import com.github.cronflow.springapp.server.pojo.DagNodeView;
@@ -64,7 +65,7 @@ public class JpaDagRunLog implements DagRunLog {
     public void node(String runId, String graph, String node, int seq, String status,
             String inputParam, String output, String executor, long elapsedMs, String errorDetail) {
         DagNodeLogEntity e = new DagNodeLogEntity();
-        e.setId(DagNodeLogEntity.idOf(runId, seq));
+        e.setId(DagIds.nodeLogId(runId, seq));
         e.setRunId(runId);
         e.setGraph(graph);
         e.setNode(node);

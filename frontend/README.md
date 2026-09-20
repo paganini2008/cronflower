@@ -25,7 +25,7 @@ npm install               # first time only
 npm start                 # ng serve on http://localhost:7200 (also regenerates config.json from .env)
 ```
 
-Sign in with the demo credentials **admin / admin**. Everything is configured from **one `.env`**
+Sign in with the demo credentials **admin / admin123**. Everything is configured from **one `.env`**
 (see below); `ng serve`'s proxy (`proxy.conf.cjs`) forwards `/cronsmith` + `/cronflow` + `/actuator`
 to `CF_SEED_URL` (default `http://localhost:19090` for a plain local scheduler).
 

@@ -137,14 +137,14 @@ interface NodeData {
     .toolbar { display: flex; align-items: flex-end; gap: 0.9rem; padding: 0.85rem 1rem; flex-wrap: wrap; }
     .flex-1 { flex: 1 1 auto; }
     .field { display: flex; flex-direction: column; gap: 0.25rem; }
-    .field .lbl { font-size: 0.75rem; color: #64748b; font-weight: 600; }
+    .field .lbl { font-size: 0.75rem; color: #3d5372; font-weight: 600; }
     input, select, textarea { font: inherit; padding: 0.45rem 0.6rem; border: 1px solid #d7e0ec;
       border-radius: 9px; background: #fff; color: #0f2c4d; outline: none; }
     input:focus, select:focus, textarea:focus { border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56,189,248,0.15); }
     .mono { font-family: var(--cf-font-mono); }
     .modes { display: inline-flex; background: #eef2f7; border-radius: 10px; padding: 3px; gap: 2px; }
     .modes button { display: inline-flex; align-items: center; gap: 0.3rem; border: 0; background: transparent;
-      color: #64748b; font: inherit; font-weight: 600; font-size: 0.85rem; padding: 0.35rem 0.7rem;
+      color: #3d5372; font: inherit; font-weight: 600; font-size: 0.85rem; padding: 0.35rem 0.7rem;
       border-radius: 8px; cursor: pointer; }
     .modes button.on { background: #fff; color: #0f2c4d; box-shadow: 0 1px 3px rgba(15,44,77,0.12); }
     .connect-btn.on { background: #d9f5f0; color: #067a70; border-color: #38e0c8; }
@@ -160,11 +160,11 @@ interface NodeData {
       box-shadow: 0 10px 30px -8px rgba(15,44,77,0.35); padding: 0.7rem 0.85rem; }
     .props-head { display: flex; align-items: center; gap: 0.4rem; color: #0f2c4d; margin-bottom: 0.5rem; }
     .props-head mat-icon { color: #38bdf8; }
-    .pf { display: flex; flex-direction: column; gap: 0.2rem; margin-bottom: 0.5rem; font-size: 0.78rem; color: #64748b; }
+    .pf { display: flex; flex-direction: column; gap: 0.2rem; margin-bottom: 0.5rem; font-size: 0.78rem; color: #3d5372; }
     .pf input { width: 100%; box-sizing: border-box; }
     .pf-row { display: flex; align-items: center; gap: 0.8rem; }
-    .pf-inline { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.78rem; color: #64748b; }
-    .pf-check { font-size: 0.8rem; color: #475569; display: inline-flex; align-items: center; gap: 0.3rem; }
+    .pf-inline { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.78rem; color: #3d5372; }
+    .pf-check { font-size: 0.8rem; color: #3d5372; display: inline-flex; align-items: center; gap: 0.3rem; }
     .canvas-hint { position: absolute; left: 12px; bottom: 12px; display: flex; align-items: center; gap: 0.35rem;
       background: rgba(13,21,36,0.82); color: #aebfda; font-size: 0.76rem; padding: 0.4rem 0.7rem; border-radius: 999px;
       border: 1px solid rgba(120,150,200,0.18); }
@@ -172,9 +172,9 @@ interface NodeData {
     .canvas-hint.dim { opacity: 0.35; }
     .code-card { padding: 0; overflow: hidden; }
     .code-head { display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0.8rem; border-bottom: 1px solid #eef2f7; }
-    .code-note { font-size: 0.76rem; color: #94a3b8; }
+    .code-note { font-size: 0.76rem; color: #3d5372; }
     .fmt { display: inline-flex; background: #eef2f7; border-radius: 8px; padding: 2px; }
-    .fmt button { border: 0; background: transparent; color: #64748b; font: inherit; font-weight: 600;
+    .fmt button { border: 0; background: transparent; color: #3d5372; font: inherit; font-weight: 600;
       font-size: 0.78rem; padding: 0.25rem 0.6rem; border-radius: 6px; cursor: pointer; }
     .fmt button.on { background: #fff; color: #0f2c4d; box-shadow: 0 1px 2px rgba(15,44,77,0.12); }
     textarea.code { width: 100%; box-sizing: border-box; border: 0; border-radius: 0; height: 60vh; min-height: 400px;

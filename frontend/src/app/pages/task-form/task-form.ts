@@ -9,8 +9,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
-import { CronsmithApi } from '../../core/api.service';
-import { HTTP_METHODS, MISFIRE_POLICIES, TaskMetadata } from '../../core/models';
+import { CronsmithApi, DagScheduleRequest } from '../../core/api.service';
+import { DagGraphView, HTTP_METHODS, MISFIRE_POLICIES, TaskMetadata } from '../../core/models';
 import { fromInputDateTime, toInputDateTime, tzLabel } from '../../core/util';
 import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-builder-dialog';
 
@@ -69,6 +69,12 @@ import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-bu
             <span class="tc-title">HTTP API</span>
             <span class="tc-desc">Call an external endpoint directly.</span>
           </button>
+          <button type="button" class="type-card" [class.selected]="type() === 'DAG'"
+            (click)="setType('DAG')">
+            <mat-icon>account_tree</mat-icon>
+            <span class="tc-title">Trigger DAG</span>
+            <span class="tc-desc">Fire a workflow on a schedule.</span>
+          </button>
         </div>
 
         @if (type() === 'BEAN') {
@@ -97,6 +103,38 @@ import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-bu
             <mat-form-field appearance="outline" class="w-full">
               <textarea matInput formControlName="initialParameter" rows="4"
                 placeholder='plain text, or JSON like {{ "{" }} "hello": "world" {{ "}" }}'></textarea>
+            </mat-form-field>
+          </div>
+        } @else if (type() === 'DAG') {
+          <div class="field-grid cols-1">
+            <mat-form-field appearance="outline">
+              <mat-label>Workflow (DAG)</mat-label>
+              <mat-select formControlName="dagGraph">
+                @for (d of dags(); track d.application + '/' + d.graph) {
+                  <mat-option [value]="d.graph">{{ d.graph }} · {{ d.application }}</mat-option>
+                }
+              </mat-select>
+              <mat-hint>
+                @if (dags().length === 0) {
+                  No workflows registered yet. Create one in the Workflows page first.
+                } @else {
+                  The DAG this task triggers on each fire.
+                }
+              </mat-hint>
+            </mat-form-field>
+          </div>
+          <div class="param-block">
+            <div class="param-head">
+              <span class="param-title">Seed (initial channel state)</span>
+              <button mat-button type="button" class="fmt-btn" (click)="formatJson()"
+                matTooltip="Pretty-print the seed as JSON">
+                <mat-icon>data_object</mat-icon> Format JSON
+              </button>
+            </div>
+            <mat-form-field appearance="outline" class="w-full">
+              <textarea matInput formControlName="initialParameter" rows="4"
+                placeholder='optional, JSON like {{ "{" }} "input": "..." {{ "}" }}'></textarea>
+              <mat-hint>Passed to the workflow as its starting channel values. Leave blank for none.</mat-hint>
             </mat-form-field>
           </div>
         } @else {
@@ -225,6 +263,7 @@ import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-bu
     .form-card { max-width: 860px; padding: 1.5rem 1.75rem 0; overflow: hidden; }
     .w-full { width: 100%; }
     .field-grid { display: grid; gap: 1rem 1.1rem; }
+    .field-grid.cols-1 { grid-template-columns: 1fr; }
     .field-grid.cols-2 { grid-template-columns: 1fr 1fr; }
     .field-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
     .field-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
@@ -234,7 +273,7 @@ import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-bu
     .build-btn { margin-top: 0.5rem; height: 56px; }
 
     /* Task-type selector cards */
-    .type-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 1.25rem; }
+    .type-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.85rem; margin-bottom: 1.25rem; }
     .type-card {
       display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem;
       text-align: left; padding: 0.9rem 1rem; cursor: pointer;
@@ -285,18 +324,20 @@ export class TaskForm {
   protected readonly methods = HTTP_METHODS;
   protected readonly saving = signal(false);
   protected readonly editing = signal(false);
-  protected readonly type = signal<'BEAN' | 'HTTP'>('BEAN');
+  protected readonly type = signal<TaskKind>('BEAN');
+  protected readonly dags = signal<DagGraphView[]>([]);
   protected readonly tzLabel = tzLabel;
 
   protected readonly form = this.fb.nonNullable.group({
     taskGroup: ['', Validators.required],
     taskName: ['', Validators.required],
-    taskType: ['BEAN' as 'BEAN' | 'HTTP'],
+    taskType: ['BEAN' as TaskKind],
     className: ['com.example.Tasks', Validators.required],
     beanName: [''],
     methodName: ['run', Validators.required],
     url: [''],
     httpMethod: ['GET'],
+    dagGraph: [''],
     initialParameter: [''],
     cron: ['0 0 12 * * ?', Validators.required],
     parser: ['cron'],
@@ -310,8 +351,10 @@ export class TaskForm {
   });
 
   constructor() {
+    // The "Trigger DAG" option needs the registered workflows to choose from.
+    this.api.dags({ limit: 1000 }).subscribe((p) => this.dags.set(p.items));
     // Keep the type signal and the per-type required validators in sync with the toggle.
-    this.form.controls.taskType.valueChanges.subscribe((t) => this.applyType(t as 'BEAN' | 'HTTP'));
+    this.form.controls.taskType.valueChanges.subscribe((t) => this.applyType(t as TaskKind));
 
     effect(() => {
       const g = this.group();
@@ -319,12 +362,17 @@ export class TaskForm {
       if (g && n) {
         this.editing.set(true);
         this.api.task(g, n).subscribe((t) => {
-          const kind = (t.taskType as 'BEAN' | 'HTTP') ?? 'BEAN';
+          const isDagTrigger = (t.className ?? '').endsWith('DagTriggerTask');
+          const kind: TaskKind = isDagTrigger ? 'DAG' : ((t.taskType as TaskKind) ?? 'BEAN');
+          // A DAG-trigger task keeps its target and seed in the initial parameter as a JSON spec.
+          const spec = isDagTrigger ? parseTriggerSpec(t.initialParameter) : null;
           this.form.patchValue({
             taskGroup: t.taskGroup, taskName: t.taskName, taskType: kind,
             className: t.className ?? '', beanName: t.beanName ?? '', methodName: t.methodName ?? 'run',
             url: t.url ?? '', httpMethod: t.httpMethod ?? 'GET',
-            initialParameter: t.initialParameter ?? '', cron: t.cron ?? '', parser: t.parser ?? 'cron',
+            dagGraph: spec?.graph ?? '',
+            initialParameter: spec ? spec.seedText : (t.initialParameter ?? ''),
+            cron: t.cron ?? '', parser: t.parser ?? 'cron',
             description: t.description ?? '', timeout: t.timeout, maxRetryCount: t.maxRetryCount,
             retryInterval: t.retryInterval, misfirePolicy: t.misfirePolicy ?? 'FIRE_ONCE_NOW',
             repeatCount: t.repeatCount ?? -1,
@@ -340,26 +388,30 @@ export class TaskForm {
   }
 
   /** Select the task kind from the picker cards; drives the type-dependent validators. */
-  protected setType(kind: 'BEAN' | 'HTTP'): void {
+  protected setType(kind: TaskKind): void {
     this.form.controls.taskType.setValue(kind);
   }
 
   /** Switch required validators to match the selected task kind. */
-  private applyType(kind: 'BEAN' | 'HTTP'): void {
+  private applyType(kind: TaskKind): void {
     this.type.set(kind);
-    const { className, methodName, url } = this.form.controls;
+    const { className, methodName, url, dagGraph } = this.form.controls;
+    className.clearValidators();
+    methodName.clearValidators();
+    url.clearValidators();
+    dagGraph.clearValidators();
     if (kind === 'HTTP') {
-      className.clearValidators();
-      methodName.clearValidators();
       url.setValidators([Validators.required]);
+    } else if (kind === 'DAG') {
+      dagGraph.setValidators([Validators.required]);
     } else {
       className.setValidators([Validators.required]);
       methodName.setValidators([Validators.required]);
-      url.clearValidators();
     }
     className.updateValueAndValidity({ emitEvent: false });
     methodName.updateValueAndValidity({ emitEvent: false });
     url.updateValueAndValidity({ emitEvent: false });
+    dagGraph.updateValueAndValidity({ emitEvent: false });
   }
 
   /** Pretty-print the parameter/payload field if it holds valid JSON; otherwise say so. */
@@ -395,8 +447,14 @@ export class TaskForm {
     }
     this.saving.set(true);
     const v = this.form.getRawValue();
+
+    if (v.taskType === 'DAG') {
+      this.submitDagTrigger(v);
+      return;
+    }
+
     const body: TaskMetadata = {
-      taskGroup: v.taskGroup, taskName: v.taskName, taskType: v.taskType,
+      taskGroup: v.taskGroup, taskName: v.taskName, taskType: v.taskType as 'BEAN' | 'HTTP',
       className: v.className, beanName: v.beanName || v.className, methodName: v.methodName,
       url: v.url, httpMethod: v.httpMethod,
       initialParameter: v.initialParameter, cron: v.cron, parser: v.parser, description: v.description,
@@ -415,5 +473,63 @@ export class TaskForm {
         this.snack.open('Save failed: ' + (e?.error?.message ?? e?.message ?? 'error'), 'Dismiss', { duration: 5000 });
       },
     });
+  }
+
+  /** Create a scheduled DAG trigger: a cronsmith task that fires the chosen workflow on the cron. */
+  private submitDagTrigger(v: ReturnType<typeof this.form.getRawValue>): void {
+    let seed: Record<string, unknown> | undefined;
+    const raw = (v.initialParameter ?? '').trim();
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          seed = parsed as Record<string, unknown>;
+        } else {
+          throw new Error('not an object');
+        }
+      } catch {
+        this.saving.set(false);
+        this.snack.open('Seed must be a JSON object, or blank', 'Dismiss', { duration: 4000 });
+        return;
+      }
+    }
+    const req: DagScheduleRequest = {
+      taskGroup: v.taskGroup, taskName: v.taskName, cron: v.cron, parser: v.parser,
+      description: v.description, seed,
+      timeout: v.timeout, maxRetryCount: v.maxRetryCount, retryInterval: v.retryInterval,
+      repeatCount: v.repeatCount, misfirePolicy: v.misfirePolicy,
+      stopAt: fromInputDateTime(v.stopAt),
+    };
+    this.api.scheduleDag(v.dagGraph, req).subscribe({
+      next: (r) => {
+        this.snack.open(`Scheduled trigger for ${r.graph} created`, 'OK', { duration: 3000 });
+        this.router.navigate(['/tasks', r.taskGroup, r.taskName]);
+      },
+      error: (e) => {
+        this.saving.set(false);
+        this.snack.open('Create failed: ' + (e?.error?.error ?? e?.error?.message ?? e?.message ?? 'error'),
+          'Dismiss', { duration: 5000 });
+      },
+    });
+  }
+}
+
+type TaskKind = 'BEAN' | 'HTTP' | 'DAG';
+
+/** Split a DAG-trigger task's stored spec into its graph and a pretty seed for editing. */
+function parseTriggerSpec(initialParameter?: string):
+  { graph: string; seedText: string } | null {
+  const raw = (initialParameter ?? '').trim();
+  if (!raw) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    const graph = typeof parsed?.graph === 'string' ? parsed.graph : '';
+    const seed = parsed?.seed;
+    const seedText = seed && typeof seed === 'object' ? JSON.stringify(seed, null, 2) : '';
+    return { graph, seedText };
+  } catch {
+    return null;
   }
 }

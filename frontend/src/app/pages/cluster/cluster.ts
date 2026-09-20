@@ -2,7 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { CronsmithApi } from '../../core/api.service';
-import { poll } from '../../core/util';
+import { orderedEntries, poll } from '../../core/util';
 
 @Component({
   selector: 'cf-cluster',
@@ -36,6 +36,7 @@ import { poll } from '../../core/util';
       <div class="grid gap-4" style="grid-template-columns: 1.5fr 1fr;">
         <div class="card overflow-hidden">
           <div class="card-head">Nodes</div>
+          <div class="table-scroll">
           <table mat-table [dataSource]="c.nodes">
             <ng-container matColumnDef="role">
               <th mat-header-cell *matHeaderCellDef>Role</th>
@@ -58,6 +59,7 @@ import { poll } from '../../core/util';
             <tr mat-header-row *matHeaderRowDef="columns"></tr>
             <tr mat-row *matRowDef="let row; columns: columns"></tr>
           </table>
+          </div>
         </div>
 
         <div class="card p-5">
@@ -74,13 +76,16 @@ import { poll } from '../../core/util';
     } @else { <p class="muted">Loading…</p> }
   `,
   styles: [`
-    .l { color: #7a8aa0; font-size: 0.8rem; } .v { font-size: 1.8rem; font-weight: 700; color: #0f2c4d; }
+    .l { color: #3d5372; font-size: 0.8rem; } .v { font-size: 1.8rem; font-weight: 700; color: #0f2c4d; }
     .v-sm { font-size: 1.05rem; font-weight: 700; color: #0f2c4d; margin-top: 0.25rem; }
     .card-head { padding: 1rem 1.25rem; font-weight: 600; color: #0f2c4d; border-bottom: 1px solid #eef2f7; display: flex; align-items: center; gap: 0.4rem; }
     .db { color: #1565c0; }
     .ci { font-size: 0.9rem; width: 0.9rem; height: 0.9rem; }
+    .table-scroll { overflow-x: auto; }
+    .table-scroll table { min-width: 620px; }
+    .table-scroll th, .table-scroll td { white-space: nowrap; }
     .meta div { display: flex; justify-content: space-between; gap: 1rem; padding: 0.4rem 0; border-bottom: 1px dashed #eef2f7; }
-    .meta dt { color: #7a8aa0; font-size: 0.82rem; } .meta dd { margin: 0; text-align: right; word-break: break-all; }
+    .meta dt { color: #3d5372; font-size: 0.82rem; } .meta dd { margin: 0; text-align: right; word-break: break-all; }
   `],
 })
 export class Cluster {
@@ -88,7 +93,9 @@ export class Cluster {
   protected readonly cluster = poll(() => this.api.cluster());
   protected readonly columns = ['role', 'node', 'name'];
 
+  // Stable order: the backend serializes a HashMap, so without sorting the fields reshuffle on
+  // every poll.
   protected readonly storeMeta = computed(() =>
-    Object.entries(this.cluster()?.storeMetadata ?? {}).map(([k, v]) => ({ k, v })),
+    orderedEntries(this.cluster()?.storeMetadata),
   );
 }

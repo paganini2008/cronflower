@@ -64,7 +64,10 @@ const EXTERNAL = API_BASE !== '';
 const prefix = (v, d) => { let p = (v || d).trim(); if (!p.startsWith('/')) p = '/' + p; return p.replace(/\/+$/, '') || d; };
 const API_PREFIX = prefix(env.CF_API_PREFIX, '/cronsmith');
 const CRONFLOW_PREFIX = prefix(env.CF_CRONFLOW_PREFIX, '/cronflow');
-const PROXY_PREFIXES = [API_PREFIX, CRONFLOW_PREFIX, '/actuator'];
+// /auth holds the login/identity endpoints (bearer token), at the root outside the API prefixes.
+// /swagger-ui + /v3/api-docs back the embedded API explorer (System -> API tab).
+const PROXY_PREFIXES =
+  [API_PREFIX, CRONFLOW_PREFIX, '/actuator', '/auth', '/swagger-ui', '/v3/api-docs'];
 const DISCOVERY_INTERVAL_MS = Number(pick('CF_DISCOVERY_INTERVAL_MS', 10000));
 
 // The live pool of scheduler origins the proxy round-robins over, kept fresh by discovery. Seeded with

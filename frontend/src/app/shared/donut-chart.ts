@@ -52,7 +52,7 @@ interface Arc extends DonutSegment {
     .legend { list-style: none; margin: 0; padding: 0; min-width: 160px; flex: 1; }
     .legend li { display: flex; align-items: center; gap: 0.5rem; padding: 0.2rem 0; font-size: 0.85rem; }
     .dot { width: 0.7rem; height: 0.7rem; border-radius: 3px; flex: none; }
-    .lg-label { color: #475569; flex: 1; }
+    .lg-label { color: #3d5372; flex: 1; }
     .lg-value { font-weight: 700; color: #0f2c4d; }
   `],
 })

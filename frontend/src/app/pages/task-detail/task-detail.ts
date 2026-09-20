@@ -10,6 +10,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { CronsmithApi } from '../../core/api.service';
 import { TextViewerDialog } from '../../shared/text-viewer-dialog';
 import { ConfirmDialog } from '../../shared/confirm-dialog';
+import { ParamDialog, ParamData } from '../../shared/param-dialog';
 import { LogView, TaskView } from '../../core/models';
 import { fmt, statusClass } from '../../core/util';
 
@@ -105,7 +106,9 @@ import { fmt, statusClass } from '../../core/util';
               <th mat-header-cell *matHeaderCellDef>Scheduler</th>
               <td mat-cell *matCellDef="let l">
                 @if (l.schedulerRepr) {
-                  <span class="mono repr" [matTooltip]="l.schedulerRepr">{{ l.schedulerRepr }}</span>
+                  <span class="node-ref" [matTooltip]="l.schedulerRepr">
+                    <mat-icon>dns</mat-icon>{{ hostPort(l.schedulerRepr) }}
+                  </span>
                 } @else { <span class="muted">—</span> }
               </td>
             </ng-container>
@@ -113,7 +116,9 @@ import { fmt, statusClass } from '../../core/util';
               <th mat-header-cell *matHeaderCellDef>Executor</th>
               <td mat-cell *matCellDef="let l">
                 @if (l.executorRepr) {
-                  <span class="mono repr" [matTooltip]="l.executorRepr">{{ l.executorRepr }}</span>
+                  <span class="node-ref" [matTooltip]="l.executorRepr">
+                    <mat-icon>memory</mat-icon>{{ hostPort(l.executorRepr) }}
+                  </span>
                 } @else { <span class="muted">—</span> }
               </td>
             </ng-container>
@@ -166,27 +171,30 @@ import { fmt, statusClass } from '../../core/util';
   `,
   styles: [`
     .back { display: inline-flex; align-items: center; gap: 0.25rem; color: #1565c0; text-decoration: none; font-size: 0.9rem; }
-    .l { color: #7a8aa0; font-size: 0.8rem; } .v { font-size: 1.6rem; font-weight: 700; color: #0f2c4d; }
+    .l { color: #3d5372; font-size: 0.8rem; } .v { font-size: 1.6rem; font-weight: 700; color: #0f2c4d; }
     .section-title { font-size: 1rem; font-weight: 600; color: #0f2c4d; margin: 0 0 1rem; }
     .table-wrap { overflow-x: auto; }
     table { min-width: 760px; }
     th.mat-mdc-header-cell, td.mat-mdc-cell { padding-right: 1.75rem; white-space: nowrap; }
     .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 0 2rem; }
     .meta div { display: flex; justify-content: space-between; gap: 1rem; padding: 0.45rem 0; border-bottom: 1px dashed #eef2f7; }
-    .meta dt { color: #7a8aa0; font-size: 0.82rem; white-space: nowrap; } .meta dd { margin: 0; text-align: right; word-break: break-all; }
+    .meta dt { color: #3d5372; font-size: 0.82rem; white-space: nowrap; } .meta dd { margin: 0; text-align: right; word-break: break-all; }
     .meta dd.pre { white-space: pre-line; }
     .output { vertical-align: middle; }
     .ret { display: inline-block; vertical-align: middle; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .expand { width: 28px; height: 28px; vertical-align: middle; }
-    .expand mat-icon { font-size: 1rem; width: 1rem; height: 1rem; color: #64748b; }
+    .expand mat-icon { font-size: 1rem; width: 1rem; height: 1rem; color: #3d5372; }
     .view { width: 32px; height: 32px; vertical-align: middle; }
     .view.ok-i mat-icon { color: #1565c0; }
     .view.bad-i mat-icon { color: #d93025; }
-    .attempt-chip { background: #eef2f7; color: #64748b; }
+    .attempt-chip { background: #eef2f7; color: #3d5372; }
     .attempt-chip.retry { background: #fef3c7; color: #b45309; }
     .repr { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-            display: inline-block; vertical-align: middle; font-size: 12px; color: #475569; }
-    .empty { padding: 1.5rem; text-align: center; color: #94a3b8; }
+            display: inline-block; vertical-align: middle; font-size: 12px; color: #3d5372; }
+    .node-ref { display: inline-flex; align-items: center; gap: 0.3rem; color: #3d5372;
+            font-size: 0.82rem; white-space: nowrap; }
+    .node-ref mat-icon { font-size: 16px; width: 16px; height: 16px; color: #1565c0; }
+    .empty { padding: 1.5rem; text-align: center; color: #3d5372; }
     mat-icon.ok { color: #0f9d58; } mat-icon.bad { color: #d93025; }
   `],
 })
@@ -238,21 +246,36 @@ export class TaskDetail {
   }
 
   runNow(): void {
-    this.running.set(true);
-    this.api.runNow(this.group(), this.name()).subscribe({
-      next: (r) => {
-        this.running.set(false);
-        const ok = r['success'] === true;
-        this.snack.open(ok ? 'Ran once — ' + (r['returnValue'] ?? 'done')
-          : 'Run failed: ' + (r['error'] ?? 'error'), 'OK', { duration: 4000 });
-        this.logPageIndex = 0;
-        this.reload();
-      },
-      error: (e) => {
-        this.running.set(false);
-        this.snack.open('Run failed: ' + (e?.error?.message ?? e?.message ?? 'error'), 'Dismiss',
-          { duration: 5000 });
-      },
+    const ref = this.dialog.open(ParamDialog, {
+      autoFocus: false, restoreFocus: false,
+      data: {
+        title: `Run ${this.group()} / ${this.name()} now`,
+        hint: 'Parameter for this run only (overrides the stored one; the task is not changed). '
+          + 'Plain text or JSON; leave as is to use the saved parameter.',
+        value: this.task()?.initialParameter ?? '', mode: 'text', confirmLabel: 'Run now',
+        placeholder: 'plain text, or JSON like { "hello": "world" }',
+      } as ParamData,
+    });
+    ref.afterClosed().subscribe((val: string | undefined) => {
+      if (val == null) {
+        return;
+      }
+      this.running.set(true);
+      this.api.runNow(this.group(), this.name(), val).subscribe({
+        next: (r) => {
+          this.running.set(false);
+          const ok = r['success'] === true;
+          this.snack.open(ok ? 'Ran once — ' + (r['returnValue'] ?? 'done')
+            : 'Run failed: ' + (r['error'] ?? 'error'), 'OK', { duration: 4000 });
+          this.logPageIndex = 0;
+          this.reload();
+        },
+        error: (e) => {
+          this.running.set(false);
+          this.snack.open('Run failed: ' + (e?.error?.message ?? e?.message ?? 'error'), 'Dismiss',
+            { duration: 5000 });
+        },
+      });
     });
   }
 
@@ -294,6 +317,21 @@ export class TaskDetail {
       return '—';
     }
     return s.length > 48 ? s.slice(0, 48) + '…' : s;
+  }
+
+  /** Short "instanceId@host:port" for a scheduler/executor repr; full value in the tooltip.
+   *  e.g. "cronflow-server(e935ca54-..@192.168.64.1:53362)" -> "e935ca54@192.168.64.1:53362". */
+  hostPort(repr: string | null | undefined): string {
+    if (!repr) {
+      return '—';
+    }
+    const m = repr.match(/\(([^@()]+)@([^)]+)\)/);
+    if (m) {
+      return m[1].slice(0, 8) + '@' + m[2];
+    }
+    const at = repr.lastIndexOf('@');
+    const addr = (at >= 0 ? repr.slice(at + 1) : repr).replace(/[)\s]+$/, '');
+    return addr || repr;
   }
 
   /** The first (message) line of an error, trimmed for the table. */

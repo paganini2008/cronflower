@@ -94,14 +94,15 @@ class TaskControllerTests {
 
     @Test
     void runNowOnAMissingTaskIs404() {
-        assertThat(controller.runNow("no", "such").getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(controller.runNow("no", "such", null).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
     void runNowRecordsAFailureWhenThereIsNoExecutor() {
         // The seeded task is a remote-dispatch task; running it with no executor/dispatcher wired
         // fails, and run-now reports that failure rather than throwing.
-        ResponseEntity<Map<String, Object>> response = controller.runNow("reports", "nightly");
+        ResponseEntity<Map<String, Object>> response = controller.runNow("reports", "nightly", null);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().get("success")).isEqualTo(false);
         assertThat(controller.logs("reports", "nightly", 10, 0)).isNotEmpty();

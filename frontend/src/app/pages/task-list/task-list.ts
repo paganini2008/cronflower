@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -18,6 +18,7 @@ import { TaskView } from '../../core/models';
 import { TASK_STATUSES } from '../../core/models';
 import { fmt, statusClass } from '../../core/util';
 import { ConfirmDialog } from '../../shared/confirm-dialog';
+import { ParamDialog, ParamData } from '../../shared/param-dialog';
 
 @Component({
   selector: 'cf-task-list',
@@ -59,6 +60,7 @@ import { ConfirmDialog } from '../../shared/confirm-dialog';
 
     <div class="card overflow-hidden">
       @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+      <div class="table-scroll">
       <table mat-table [dataSource]="data()?.items ?? []">
         <ng-container matColumnDef="status">
           <th mat-header-cell *matHeaderCellDef>Status</th>
@@ -67,7 +69,8 @@ import { ConfirmDialog } from '../../shared/confirm-dialog';
         <ng-container matColumnDef="task">
           <th mat-header-cell *matHeaderCellDef>Task</th>
           <td mat-cell *matCellDef="let t">
-            <a class="task-link" [routerLink]="['/tasks', t.taskGroup, t.taskName]">
+            <a class="task-link" [routerLink]="['/tasks', t.taskGroup, t.taskName]"
+               (click)="$event.stopPropagation()">
               <span class="muted">{{ t.taskGroup }} /</span> <strong>{{ t.taskName }}</strong>
             </a>
             @if (t.description) { <div class="muted text-xs">{{ t.description }}</div> }
@@ -118,8 +121,10 @@ import { ConfirmDialog } from '../../shared/confirm-dialog';
           </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="columns"></tr>
-        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns" class="clickable"
+            (click)="open(row)"></tr>
       </table>
+      </div>
       @if (!loading() && (data()?.items?.length ?? 0) === 0) {
         <div class="empty">No tasks match.</div>
       }
@@ -133,19 +138,28 @@ import { ConfirmDialog } from '../../shared/confirm-dialog';
     </div>
   `,
   styles: [`
+    .table-scroll { overflow-x: auto; }
+    /* Cells keep their content on one line so wide rows push the table past the card and the
+       horizontal scrollbar appears, instead of wrapping to fit (which never scrolls). */
+    .table-scroll table { min-width: 1100px; }
+    .table-scroll th, .table-scroll td { white-space: nowrap; }
+    .table-scroll td .text-xs { overflow: hidden; text-overflow: ellipsis; max-width: 320px; }
+    tr.clickable { cursor: pointer; }
+    tr.clickable:hover { background: #f6f9fd; }
     .task-link { text-decoration: none; color: #0f2c4d; }
     .task-link:hover strong { color: #1565c0; }
     .w-40 { width: 10rem; } .w-44 { width: 11rem; }
-    .empty { padding: 2rem; text-align: center; color: #94a3b8; }
+    .empty { padding: 2rem; text-align: center; color: #3d5372; }
     .danger-item mat-icon, .danger-item { color: #d93025; }
     .cron-cell { display: inline-flex; align-items: center; gap: 0.4rem; }
-    .cron-type { font-size: 18px; width: 18px; height: 18px; color: #94a3b8; }
+    .cron-type { font-size: 18px; width: 18px; height: 18px; color: #3d5372; }
     .cron-type.ycron { color: #1565c0; }
   `],
 })
 export class TaskList implements OnInit {
   private readonly api = inject(CronsmithApi);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
 
@@ -161,6 +175,11 @@ export class TaskList implements OnInit {
   protected pageSize = 10;
 
   protected readonly fmt = fmt;
+
+  /** Open a task's detail — the whole row is clickable (matching DAG Runs). */
+  open(t: TaskView): void {
+    this.router.navigate(['/tasks', t.taskGroup, t.taskName]);
+  }
 
   ngOnInit(): void {
     const s = this.route.snapshot.queryParamMap.get('status');
@@ -198,13 +217,28 @@ export class TaskList implements OnInit {
   }
 
   runNow(t: TaskView): void {
-    this.api.runNow(t.taskGroup, t.taskName).subscribe({
-      next: (r) => {
-        this.snack.open(r['success'] === true ? `Ran ${t.taskName}` : 'Run failed', 'OK',
-          { duration: 3000 });
-        this.fetch();
-      },
-      error: () => this.snack.open('Run failed', 'Dismiss', { duration: 3000 }),
+    const ref = this.dialog.open(ParamDialog, {
+      autoFocus: false, restoreFocus: false,
+      data: {
+        title: `Run ${t.taskGroup} / ${t.taskName} now`,
+        hint: 'Parameter for this run only (overrides the stored one; the task is not changed). '
+          + 'Plain text or JSON; leave as is to use the saved parameter.',
+        value: t.initialParameter ?? '', mode: 'text', confirmLabel: 'Run now',
+        placeholder: 'plain text, or JSON like { "hello": "world" }',
+      } as ParamData,
+    });
+    ref.afterClosed().subscribe((val: string | undefined) => {
+      if (val == null) {
+        return;
+      }
+      this.api.runNow(t.taskGroup, t.taskName, val).subscribe({
+        next: (r) => {
+          this.snack.open(r['success'] === true ? `Ran ${t.taskName}` : 'Run failed', 'OK',
+            { duration: 3000 });
+          this.fetch();
+        },
+        error: () => this.snack.open('Run failed', 'Dismiss', { duration: 3000 }),
+      });
     });
   }
 

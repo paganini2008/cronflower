@@ -5,14 +5,14 @@
 #
 #   ./run-docker.sh      [-n N] [-e M]                  build images & start the stack (`up` optional)
 #   ./run-docker.sh down                                 stop & remove (keeps the H2 data volumes)
-#   ./run-docker.sh logs [scheduler-1|cronflower|executor-1] tail all logs, or one compose service
+#   ./run-docker.sh logs [cronflow-server-api-1|cronflower|cronflow-executor-1] tail all logs, or one service
 #
 # Options for `up`:
 #   -n N   number of scheduler (server) nodes         (default 1)
 #   -e M   number of executor (client) nodes          (default 0 = none)
 #
 # Storage: always the embedded H2 file — nothing to set up. To run against a REAL database
-# (MySQL/PostgreSQL), edit conf/scheduler.properties (uncomment a datasource block); it is mounted
+# (MySQL/PostgreSQL), edit conf/server.properties (uncomment a datasource block); it is mounted
 # into every server container, so a shared DB there gives you a real shared/sharded cluster.
 #
 # Ports on the host: web console 7200 (the one entry point) · schedulers AND executors on random free
@@ -33,23 +33,32 @@ BIN="$HERE/bin"
 . "$HERE/_build.sh"
 
 COMPOSE_FILE="$HERE/docker-compose.generated.yml"
-PROJECT="cronsmith"
+PROJECT="cronflow"
 
 WEB_PORT="${WEB_PORT:-7200}"
 SPREADER_PORT="${SPREADER_PORT:-22000}"
 
-# peers list "scheduler-1,scheduler-2,..." for the spreader cluster
-peers_csv() { local n="$1" i out=""; for i in $(seq 1 "$n"); do out="$out,scheduler-$i"; done; echo "${out#,}"; }
+# peers list "cronflow-server-api-1,cronflow-server-api-2,..." for the spreader cluster
+peers_csv() { local n="$1" i out=""; for i in $(seq 1 "$n"); do out="$out,cronflow-server-api-$i"; done; echo "${out#,}"; }
 
 # The inner spring block for a node: cluster peers only. NO datasource here — it comes from the
-# mounted conf/scheduler.properties (default = the packaged H2 file at /data). Edit that file for
+# mounted conf/server.properties (default = the packaged H2 file at /data). Edit that file for
 # a real MySQL/PostgreSQL, shared by every node.
 spring_inner() {
   printf '"spreader":{"port":%s,"ip-addresses":"%s"}' "$SPREADER_PORT" "$(peers_csv "$1")"
 }
 
 server_json() {
-  printf '{"server":{"port":8080},"spring":{%s}}' "$(spring_inner "$1")"
+  # Point every node at a SHARED external database (SHARED_DB_URL, e.g. the host's own Postgres/MySQL)
+  # to get a real shared store, which unlocks group sharding across the cluster. Injected via
+  # SPRING_APPLICATION_JSON so it wins over the jar's H2 default and the staged conf/server.properties.
+  # On Rancher Desktop / lima the host is reached by its LAN IP, not host.docker.internal.
+  if [ -n "${SHARED_DB_URL:-}" ]; then
+    printf '{"server":{"port":8080},"spring":{%s,"datasource":{"url":"%s","username":"%s","password":"%s"}},"cronsmith":{"server":{"scheduler":{"sharding":true}}}}' \
+      "$(spring_inner "$1")" "$SHARED_DB_URL" "${SHARED_DB_USER:-}" "${SHARED_DB_PASS:-}"
+  else
+    printf '{"server":{"port":8080},"spring":{%s}}' "$(spring_inner "$1")"
+  fi
 }
 
 generate_compose() {
@@ -62,14 +71,15 @@ generate_compose() {
 
     for i in $(seq 1 "$nodes"); do
       port=${sports[$((i - 1))]}
-      echo "  scheduler-$i:"
-      echo "    image: cronsmith-scheduler:local"
+      echo "  cronflow-server-api-$i:"
+      echo "    image: cronflow-server-api:local"
+      echo "    container_name: cronflow-server-api-$i"
       echo "    environment:"
       echo "      SPRING_APPLICATION_JSON: '$(server_json "$nodes")'"
-      echo "      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/config/scheduler.properties"
-      echo "      JAVA_TOOL_OPTIONS: -Xmx${SCHED_XMX_GB}g"
+      echo "      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/config/server.properties"
+      echo "      JAVA_TOOL_OPTIONS: -Xmx${SCHED_XMX}"
       echo "    volumes:"
-      echo "      - ./conf/scheduler.properties:/config/scheduler.properties:ro"
+      echo "      - ./conf/server.properties:/config/server.properties:ro"
       echo "      - sched-data-$i:/data"
       echo "    ports: [\"$port:8080\"]"
       echo "    healthcheck:"
@@ -83,7 +93,7 @@ generate_compose() {
 
     # All scheduler URLs, so both the web proxy and the executors fail over when a node (even the
     # leader) is killed.
-    local sched_urls; sched_urls=$(for i in $(seq 1 "$nodes"); do printf ',http://scheduler-%s:8080' "$i"; done); sched_urls=${sched_urls#,}
+    local sched_urls; sched_urls=$(for i in $(seq 1 "$nodes"); do printf ',http://cronflow-server-api-%s:8080' "$i"; done); sched_urls=${sched_urls#,}
 
     # cronflower web console — a Node static server that proxies /cronsmith + /cronflow + /actuator.
     # Seeded with EVERY scheduler's in-network address (container name : 8080, not a host port), so any
@@ -98,23 +108,24 @@ generate_compose() {
     echo "      CRONFLOW_PREFIX: ${CRONFLOW_PREFIX:-/cronflow}"
     echo "    ports: [\"$WEB_PORT:80\"]"
     echo "    depends_on:"
-    echo "      scheduler-1: { condition: service_started }"
+    echo "      cronflow-server-api-1: { condition: service_started }"
     echo "    networks: [cnet]"
 
     # executors — each on a random host port (container still listens on 8080 internally)
     for i in $([ "$execs" -gt 0 ] && seq 1 "$execs"); do
       port=${eports[$((i - 1))]}
-      echo "  executor-$i:"
-      echo "    image: cronsmith-executor:local"
+      echo "  cronflow-executor-$i:"
+      echo "    image: cronflow-executor:local"
+      echo "    container_name: cronflow-executor-$i"
       echo "    environment:"
       echo "      SPRING_APPLICATION_JSON: '{\"server\":{\"port\":8080},\"spring\":{\"application\":{\"name\":\"demo-executor\"}},\"cronsmith\":{\"client\":{\"server-urls\":\"$sched_urls\",\"server-api-prefix\":\"$API_PREFIX\"}},\"cronflow\":{\"client\":{\"server-urls\":\"$sched_urls\",\"server-api-prefix\":\"${CRONFLOW_PREFIX:-/cronflow}\"}}}'"
       echo "      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/config/executor.properties"
-      echo "      JAVA_TOOL_OPTIONS: -Xmx${EXEC_XMX_GB}g"
+      echo "      JAVA_TOOL_OPTIONS: -Xmx${EXEC_XMX}"
       echo "    volumes:"
       echo "      - ./conf/executor.properties:/config/executor.properties:ro"
       echo "    ports: [\"$port:8080\"]"
       echo "    depends_on:"
-      echo "      scheduler-1: { condition: service_started }"
+      echo "      cronflow-server-api-1: { condition: service_started }"
       echo "    networks: [cnet]"
     done
 
@@ -137,11 +148,11 @@ do_up() {
   check_prereqs docker
   check_capacity "$nodes" "$execs" "$(docker_mem_gb)" "Docker engine RAM"
 
-  # One source of truth: the API prefix from conf/scheduler.properties (default /cronsmith). The
+  # One source of truth: the API prefix from conf/server.properties (default /cronsmith). The
   # scheduler reads it from the mounted file; here we propagate the SAME value to the executor
   # (server-api-prefix), the web proxy (API_PREFIX env) and the served config.json (apiPrefix).
   API_PREFIX="$(read_api_prefix)"
-  echo ">> API prefix: $API_PREFIX (from conf/scheduler.properties; propagated to executor + web proxy + config.json)"
+  echo ">> API prefix: $API_PREFIX (from conf/server.properties; propagated to executor + web proxy + config.json)"
 
   build_backend
   stage_jars
@@ -153,9 +164,9 @@ do_up() {
   # Build each image exactly ONCE up front. (Several server services share one image tag; letting
   # `compose up --build` build them concurrently races buildkit — "image ... already exists".)
   echo ">> building images"
-  ( cd "$HERE" && docker build -q -f Dockerfile.server -t cronsmith-scheduler:local . )
+  ( cd "$HERE" && docker build -q -f Dockerfile.server -t cronflow-server-api:local . )
   ( cd "$HERE" && docker build -q -f Dockerfile.web    -t cronflower:local . )
-  [ "$execs" -gt 0 ] && ( cd "$HERE" && docker build -q -f Dockerfile.executor -t cronsmith-executor:local . )
+  [ "$execs" -gt 0 ] && ( cd "$HERE" && docker build -q -f Dockerfile.executor -t cronflow-executor:local . )
 
   # Pre-pick random free host ports — schedulers AND executors — so the compose and the summary agree,
   # and nothing collides. No fixed 19090: the console is the one entry point, and it discovers the
@@ -175,13 +186,13 @@ do_up() {
   echo "  console    : http://localhost:$WEB_PORT   (the one entry point — proxies to the cluster)"
   echo "  schedulers : $nodes node(s) on random host ports: $sched_ports   (H2 file; access via the console)"
   [ "$execs" -gt 0 ] && echo "  executors  : $execs node(s) on random host ports: $exec_ports"
-  echo "  real DB?   : edit conf/scheduler.properties (MySQL/PostgreSQL) — mounted into every node; default is H2"
+  echo "  real DB?   : edit conf/server.properties (MySQL/PostgreSQL) — mounted into every node; default is H2"
 
   # Spell out the valid `logs` service names for whatever was actually started.
-  local names="scheduler-1"; [ "$nodes" -gt 1 ] && names="scheduler-1..$nodes"
+  local names="cronflow-server-api-1"; [ "$nodes" -gt 1 ] && names="cronflow-server-api-1..$nodes"
   names="$names | cronflower"
-  [ "$execs" -eq 1 ] && names="$names | executor-1"
-  [ "$execs" -gt 1 ] && names="$names | executor-1..$execs"
+  [ "$execs" -eq 1 ] && names="$names | cronflow-executor-1"
+  [ "$execs" -gt 1 ] && names="$names | cronflow-executor-1..$execs"
   echo "  tail a log : $0 logs [name]       (name: $names; empty = all)"
   echo "  stop all   : $0 down"
 }

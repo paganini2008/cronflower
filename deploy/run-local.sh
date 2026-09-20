@@ -18,9 +18,9 @@
 # and discovers the full member list (and each node's real port) from /actuator/health, then
 # load-balances /cronsmith + /cronflow + /actuator across them.
 #
-# Store: each node gets its OWN embedded H2 file (deploy/data/cronsmith-<n>). Node-local replicated
+# Store: each node gets its OWN embedded H2 file (deploy/data/cronflow-<n>). Node-local replicated
 # model - the leader broadcasts every write and each node keeps its own copy in sync, so a failover
-# keeps the data. Persists across restarts. Uncomment a datasource in conf/scheduler.properties to
+# keeps the data. Persists across restarts. Uncomment a datasource in conf/server.properties to
 # switch to a shared MySQL/PostgreSQL. No rebuild needed.
 # ============================================================================================
 set -euo pipefail
@@ -49,10 +49,10 @@ CRONFLOW_PREFIX="${CRONFLOW_PREFIX:-/cronflow}"   # DAG API prefix the web proxy
 # datasource (e.g. a shared MySQL/PostgreSQL, which takes the CAS path instead of broadcast).
 scheduler_ds_args() {
   local i="$1"
-  if grep -qE '^[[:space:]]*spring\.datasource\.url=' "$CONF/scheduler.properties" 2>/dev/null; then
+  if grep -qE '^[[:space:]]*spring\.datasource\.url=' "$CONF/server.properties" 2>/dev/null; then
     return 0
   fi
-  printf -- '--spring.datasource.url=jdbc:h2:file:./data/cronsmith-%s;DB_CLOSE_DELAY=-1 --spring.datasource.username=sa --spring.datasource.password=' "$i"
+  printf -- '--spring.datasource.url=jdbc:h2:file:./data/cronflow-%s;DB_CLOSE_DELAY=-1 --spring.datasource.username=sa --spring.datasource.password=' "$i"
 }
 
 # The HTTP ports assigned to the scheduler nodes this run — random free ports in EXEC_PORT_LO..HI,
@@ -67,7 +67,7 @@ launch_scheduler() {
     --server.port="$port" \
     --spring.spreader.port="$SPREADER_PORT" \
     --spring.spreader.ip-addresses=127.0.0.1 \
-    --spring.config.additional-location="file:$CONF/scheduler.properties" \
+    --spring.config.additional-location="file:$CONF/server.properties" \
     $(scheduler_ds_args "$i") \
     >"$LOGS/scheduler-$i.log" 2>&1 &
   echo $! >"$RUN/scheduler-$i.pid"
@@ -86,7 +86,9 @@ start_schedulers() {
   for port in $SCHED_PORTS; do launch_scheduler "$i" "$port"; i=$((i + 1)); done
   # Wait on the first node's health, then (multi-node) on cluster convergence — port-agnostic.
   wait_for_scheduler "$(echo "$SCHED_PORTS" | awk '{print $1}')"
-  [ "$nodes" -gt 1 ] && wait_for_cluster "$nodes"
+  # Use an if (not `&&`): with `set -e`, a bare `[ ... ] && ...` whose test is false makes this
+  # function return non-zero and aborts the run before the console/executors start (single-node case).
+  if [ "$nodes" -gt 1 ]; then wait_for_cluster "$nodes"; fi
 }
 
 # Wait until the cluster reports the full roster — asks any node's /actuator/health, port-agnostic.
@@ -178,17 +180,17 @@ do_up() {
 
   mkdir -p "$RUN" "$LOGS" "$DATA"
 
-  # One source of truth: the API prefix from conf/scheduler.properties (default /cronsmith). The
+  # One source of truth: the API prefix from conf/server.properties (default /cronsmith). The
   # scheduler reads it from that same file; here we propagate it to the executor, the dev proxy and
   # the served config.json so a single edit flows through the whole chain.
   API_PREFIX="$(read_api_prefix)"
-  echo ">> API prefix: $API_PREFIX (from conf/scheduler.properties; propagated to executor + proxy + config.json)"
+  echo ">> API prefix: $API_PREFIX (from conf/server.properties; propagated to executor + proxy + config.json)"
   patch_frontend_config
 
   build_backend
   stage_jars
 
-  # Run from the deploy dir so the default H2 file (./data/cronsmith) lands in deploy/data.
+  # Run from the deploy dir so the default H2 file (./data/cronflow) lands in deploy/data.
   cd "$HERE"
   start_schedulers "$nodes"
   start_frontend
@@ -203,7 +205,7 @@ do_up() {
   echo "  console    : http://localhost:$FRONTEND_PORT   (the one entry point — proxies to the cluster)"
   echo "  schedulers : $nodes node(s) on random ports [$SCHED_PORTS], per-node H2 file @ deploy/data"
   [ "$execs" -gt 0 ] && echo "  executors  : $execs node(s) on random ports $EXEC_PORT_LO-$EXEC_PORT_HI (shown above)"
-  echo "  real DB?   : edit conf/scheduler.properties (MySQL/PostgreSQL) — default is per-node H2 files replicated by broadcast"
+  echo "  real DB?   : edit conf/server.properties (MySQL/PostgreSQL) — default is per-node H2 files replicated by broadcast"
 
   # Spell out the valid `logs` names for whatever was actually started.
   local names="scheduler-1"; [ "$nodes" -gt 1 ] && names="scheduler-1..$nodes"

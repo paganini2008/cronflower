@@ -63,8 +63,4 @@ public class DagNodeLogEntity {
 
     @Column(name = "logged_at")
     private LocalDateTime loggedAt;
-
-    public static String idOf(String runId, int seq) {
-        return com.github.cronflow.springapp.server.DagIds.nodeLogId(runId, seq);
-    }
 }

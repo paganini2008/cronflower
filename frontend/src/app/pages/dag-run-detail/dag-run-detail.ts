@@ -116,7 +116,8 @@ import { TextViewerDialog } from '../../shared/text-viewer-dialog';
       </div>
 
       <div class="card overflow-hidden nodes">
-        <div class="nodes-head">Nodes</div>
+        <div class="nodes-head">Nodes <span class="muted">· in-flight to output, per step</span></div>
+        <div class="nodes-scroll">
         <table mat-table [dataSource]="d.nodes">
           <ng-container matColumnDef="seq">
             <th mat-header-cell *matHeaderCellDef>#</th>
@@ -138,25 +139,43 @@ import { TextViewerDialog } from '../../shared/text-viewer-dialog';
           </ng-container>
           <ng-container matColumnDef="executor">
             <th mat-header-cell *matHeaderCellDef>Ran on</th>
-            <td mat-cell *matCellDef="let n" class="mono muted">{{ n.executor || '—' }}</td>
+            <td mat-cell *matCellDef="let n">
+              @if (n.executor) {
+                <span class="ran-on" [matTooltip]="n.executor">
+                  <mat-icon>dns</mat-icon>{{ ranOnShort(n.executor) }}
+                </span>
+              } @else { <span class="muted">—</span> }
+            </td>
           </ng-container>
           <ng-container matColumnDef="elapsed">
             <th mat-header-cell *matHeaderCellDef>Elapsed</th>
             <td mat-cell *matCellDef="let n">{{ n.elapsedMs != null ? n.elapsedMs + ' ms' : '—' }}</td>
           </ng-container>
-          <ng-container matColumnDef="io">
-            <th mat-header-cell *matHeaderCellDef>I/O</th>
+          <ng-container matColumnDef="input">
+            <th mat-header-cell *matHeaderCellDef>Input</th>
             <td mat-cell *matCellDef="let n">
-              <button mat-icon-button matTooltip="Input" (click)="view('Input · ' + n.node, n.inputParam)"><mat-icon>input</mat-icon></button>
-              <button mat-icon-button matTooltip="Output" (click)="view('Output · ' + n.node, n.output)"><mat-icon>output</mat-icon></button>
+              @if (n.inputParam) {
+                <button matIconButton matTooltip="View input"
+                  (click)="view('Input · ' + n.node, n.inputParam)"><mat-icon>open_in_full</mat-icon></button>
+              } @else { <span class="muted">—</span> }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="output">
+            <th mat-header-cell *matHeaderCellDef>Output</th>
+            <td mat-cell *matCellDef="let n">
               @if (n.errorDetail) {
-                <button mat-icon-button color="warn" matTooltip="Error" (click)="view('Error · ' + n.node, n.errorDetail, 'error')"><mat-icon>error</mat-icon></button>
-              }
+                <button matIconButton class="bad-i" matTooltip="View error"
+                  (click)="view('Error · ' + n.node, n.errorDetail, 'error')"><mat-icon>error_outline</mat-icon></button>
+              } @else if (n.output) {
+                <button matIconButton class="ok-i" matTooltip="View output"
+                  (click)="view('Output · ' + n.node, n.output)"><mat-icon>data_object</mat-icon></button>
+              } @else { <span class="muted">—</span> }
             </td>
           </ng-container>
           <tr mat-header-row *matHeaderRowDef="nodeCols"></tr>
           <tr mat-row *matRowDef="let row; columns: nodeCols" [class.hl]="row.node === selectedNode()"></tr>
         </table>
+        </div>
       </div>
     } @else {
       <div class="card empty"><mat-icon>hourglass_empty</mat-icon><p>Loading run…</p></div>
@@ -169,39 +188,46 @@ import { TextViewerDialog } from '../../shared/text-viewer-dialog';
     .parent { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.8rem; color: #0891a5;
       text-decoration: none; }
     .parent mat-icon { font-size: 18px; width: 18px; height: 18px; }
-    .run-id { color: #94a3b8; margin: 0 0 1.1rem 2.6rem; font-size: 0.8rem; }
+    .run-id { color: #3d5372; margin: 0 0 1.1rem 2.6rem; font-size: 0.8rem; }
     .grid { display: grid; grid-template-columns: 1fr 320px; gap: 1.25rem; align-items: start; }
     @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
     .graph-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; min-height: 460px; }
     .graph { height: 56vh; }
     .node-panel { border-top: 1px solid #eef2f7; padding: 0.8rem 1rem; }
     .np-head { display: flex; align-items: center; gap: 0.6rem; }
-    .np-meta { font-size: 0.78rem; color: #7a8aa0; }
+    .np-meta { font-size: 0.78rem; color: #3d5372; }
     .np-row { display: flex; gap: 0.6rem; margin-top: 0.5rem; font-size: 0.82rem; }
-    .np-row .k { color: #7a8aa0; min-width: 68px; }
+    .np-row .k { color: #3d5372; min-width: 68px; }
     .np-row .v { word-break: break-all; }
     .call { color: #0f2c4d; font-weight: 600; }
-    .call .sep { color: #38bdf8; margin: 0 1px; } .call .paren { color: #94a3b8; }
+    .call .sep { color: #38bdf8; margin: 0 1px; } .call .paren { color: #3d5372; }
     .call-cell { color: #3d5372; font-size: 0.8rem; }
     .np-actions { display: flex; gap: 0.5rem; margin-top: 0.7rem; flex-wrap: wrap; }
-    .hint { border-top: 1px solid #eef2f7; padding: 0.8rem 1rem; color: #94a3b8; font-size: 0.83rem;
+    .hint { border-top: 1px solid #eef2f7; padding: 0.8rem 1rem; color: #3d5372; font-size: 0.83rem;
       display: flex; align-items: center; gap: 0.4rem; }
     .side { display: flex; flex-direction: column; gap: 1.25rem; }
     .sum { padding: 1rem 1.1rem; }
     .sum h3 { margin: 0 0 0.7rem; font-size: 0.95rem; color: #0f2c4d; }
     .sum dl { margin: 0; display: flex; flex-direction: column; gap: 0.45rem; }
     .sum dl > div { display: flex; justify-content: space-between; gap: 0.8rem; font-size: 0.83rem; }
-    .sum dt { color: #7a8aa0; } .sum dd { margin: 0; text-align: right; word-break: break-all; }
+    .sum dt { color: #3d5372; } .sum dd { margin: 0; text-align: right; word-break: break-all; }
     .sum-actions { display: flex; gap: 0.5rem; margin-top: 0.9rem; flex-wrap: wrap; }
     .child { display: flex; align-items: center; gap: 0.55rem; text-decoration: none; color: inherit;
       padding: 0.4rem 0.2rem; border-radius: 8px; }
     .child:hover { background: #f6f9fd; }
-    .c-graph { font-weight: 600; font-size: 0.85rem; } .c-id { color: #94a3b8; margin-left: auto; }
+    .c-graph { font-weight: 600; font-size: 0.85rem; } .c-id { color: #3d5372; margin-left: auto; }
     .nodes { margin-top: 1.25rem; }
     .nodes-head { padding: 0.8rem 1.1rem; font-weight: 650; color: #0f2c4d; border-bottom: 1px solid #eef2f7; }
+    .nodes-scroll { overflow-x: auto; }
+    .nodes-scroll table { min-width: 720px; }
+    .nodes-scroll th, .nodes-scroll td { white-space: nowrap; }
+    .ok-i { color: #1565c0; }
+    .bad-i { color: #d93025; }
+    .ran-on { display: inline-flex; align-items: center; gap: 0.3rem; color: #3d5372; font-size: 0.82rem; white-space: nowrap; }
+    .ran-on mat-icon { font-size: 16px; width: 16px; height: 16px; color: #1565c0; }
     .linkish { background: 0; border: 0; padding: 0; color: #1565c0; font-weight: 600; cursor: pointer; font: inherit; }
     tr.hl { background: #fff7e6; }
-    .empty { padding: 2.5rem; text-align: center; color: #94a3b8; }
+    .empty { padding: 2.5rem; text-align: center; color: #3d5372; }
     .empty mat-icon { font-size: 2.5rem; width: 2.5rem; height: 2.5rem; }
   `],
 })
@@ -216,7 +242,25 @@ export class DagRunDetailPage {
 
   protected readonly fmt = fmt;
   protected readonly dagStatusClass = dagStatusClass;
-  protected readonly nodeCols = ['seq', 'node', 'target', 'status', 'executor', 'elapsed', 'io'];
+  protected readonly nodeCols =
+    ['seq', 'node', 'target', 'status', 'executor', 'elapsed', 'input', 'output'];
+
+  /** Symbolic short label for the scheduler/executor instance a node ran on; full value in the tooltip.
+   *  "cronflow-server(e935ca54-2f69-..@192.168.64.1:53362)" -> "e935ca54@192.168.64.1:53362"
+   *  (short instance id @ host:port, so you can tell instances apart). */
+  protected ranOnShort(executor: string | undefined | null): string {
+    if (!executor) {
+      return '—';
+    }
+    const s = String(executor);
+    const m = s.match(/\(([^@()]+)@([^)]+)\)/);
+    if (m) {
+      return m[1].slice(0, 8) + '@' + m[2];
+    }
+    const at = s.lastIndexOf('@');
+    const addr = (at >= 0 ? s.slice(at + 1) : s).replace(/[)\s]+$/, '');
+    return addr || s;
+  }
 
   /** node name -> status, for colouring the graph. Finished nodes carry their recorded status; nodes
    *  the backend reports in flight are marked RUNNING so the graph pulses them live. */

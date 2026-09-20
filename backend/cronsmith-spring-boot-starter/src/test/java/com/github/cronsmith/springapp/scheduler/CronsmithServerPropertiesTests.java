@@ -5,7 +5,8 @@ import org.junit.jupiter.api.Test;
 import com.chaconneai.openspreader.serialization.SerializationType;
 
 /**
- * Locks the shipped defaults: sharding off, windowed loading at 5 minutes, UTC scheduling, and JDK
+ * Locks the shipped defaults: sharding on (auto-degrades to leader-only without a shared store),
+ * windowed loading at 5 minutes, UTC scheduling, and JDK
  * serialization. Changing any of these silently would change deployment behaviour. (The store kind is
  * not configured here — it is auto-detected, see {@link StoreTypeTests}.)
  *
@@ -28,7 +29,7 @@ class CronsmithServerPropertiesTests {
         assertThat(props.getScheduler().getWindowMinutes()).isEqualTo(5);
         assertThat(props.getScheduler().getClaimIntervalSeconds()).isEqualTo(15);
         assertThat(props.getScheduler().getZone()).isEqualTo("UTC");
-        assertThat(props.getScheduler().isSharding()).isFalse();
+        assertThat(props.getScheduler().isSharding()).isTrue();
 
         assertThat(props.getDispatch().getConnectTimeoutMillis()).isEqualTo(3000);
         assertThat(props.getDispatch().getReadTimeoutMillis()).isEqualTo(10000);

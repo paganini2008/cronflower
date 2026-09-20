@@ -10,9 +10,9 @@ per-node ones (port, datasource, cluster peers) for you; everything else has a b
 |-----|---------|-------|
 | `server.port` | `19090` | REST + console API |
 | `cronsmith.server.api-prefix` | `/cronsmith` | Base path for the REST API. Scoped to the cronsmith controllers only, so it never moves `/actuator` (unlike `server.servlet.context-path`). Blank or `/` serves at the root. **If changed, the executor's `server-api-prefix` and the console proxy must match.** |
-| `spring.datasource.url` | H2 file (`./data/cronsmith`) | Point at MySQL/PostgreSQL for a **shared** store (auto-detected). Omit entirely for in-memory. |
+| `spring.datasource.url` | H2 file (`./data/cronflow`) | Point at MySQL/PostgreSQL for a **shared** store (auto-detected). Omit entirely for in-memory. |
 | `spring.jpa.hibernate.ddl-auto` | `update` | Creates/updates the `cs_*` tables |
-| `spring.spreader.name` | `cronsmith-application` | Cluster name — must match cluster-wide |
+| `spring.spreader.name` | `cronflow-server` | Cluster name — must match cluster-wide |
 | `spring.spreader.port` | `22000` | Cluster/leader port — same across the cluster |
 | `spring.spreader.ip-addresses` | *(local)* | Peer hosts for a multi-node cluster |
 | `cronsmith.server.scheduler.zone` | `UTC` | Fire-time zone — **must** match cluster-wide |
@@ -21,12 +21,29 @@ per-node ones (port, datasource, cluster peers) for you; everything else has a b
 | `cronsmith.server.scheduler.sharding` | `false` | Group sharding — only effective over a **shared** store |
 | `cronsmith.server.dispatch.routing` | `ROUND_ROBIN` | `FIRST`/`LAST`/`ROUND_ROBIN`/`RANDOM`/`CONSISTENT_HASH`/`WEIGHTED` |
 | `management.endpoints.web.exposure.include` | `health,info,metrics` | Actuator, for the System Health page |
-| `cronsmith.demo.cors-origins` | `*` | CORS origins for the console (applies to the `/cronsmith` API) |
-| `management.endpoints.web.cors.allowed-origin-patterns` | `${cronsmith.demo.cors-origins:*}` | **Actuator CORS — separate from the MVC CORS above.** Required for the System Health page to read `/actuator/health` cross-origin (e.g. console at `:7200`, backend/gateway at another origin). Without it `/actuator/health` returns 200 but the browser blocks the response. |
+| `cronflow.server.cors-origins` | `*` | CORS origins for the console (applies to the `/cronsmith` API) |
+| `management.endpoints.web.cors.allowed-origin-patterns` | `${cronflow.server.cors-origins:*}` | **Actuator CORS — separate from the MVC CORS above.** Required for the System Health page to read `/actuator/health` cross-origin (e.g. console at `:7200`, backend/gateway at another origin). Without it `/actuator/health` returns 200 but the browser blocks the response. |
 | `management.endpoints.web.cors.allowed-methods` | `GET` | Methods allowed on the actuator CORS above |
 
-The runnable defaults live in `backend/cronflow-scheduler-example/src/main/resources/application.properties`.
-For deploy-time tuning **without a rebuild**, edit `deploy/conf/scheduler.properties` (layered on top).
+### Security (login + role based authorization)
+
+| Key | Default | Notes |
+|-----|---------|-------|
+| `cronflow.security.enabled` | `true` | `false` opens the whole API (dev only) |
+| `cronflow.security.jwt.secret` | *(dev default)* | HMAC (HS256) signing secret. **Set a shared random value on every node** in production; the prod build requires `CRONFLOW_JWT_SECRET` (fail fast) |
+| `cronflow.security.jwt.ttl-minutes` | `720` | Bearer token lifetime |
+| `cronflow.security.users-file` | `classpath:users.xml` | XML user store (no self-registration). Override with e.g. `file:conf/users.xml`. Each `<user username=".." password=".." roles="admin,scheduler_admin,workflow_admin,user"/>`; password is raw (bcrypt-encoded on load) or `{bcrypt}$2a$…` |
+
+Sign in at `POST /auth/login` (`{username,password}` → bearer token); send it as `Authorization:
+Bearer <token>`. Roles map to URL + method: cronsmith writes need `admin`/`scheduler_admin`, cronflow
+writes need `admin`/`workflow_admin`, `/actuator/**` (beyond health/info) needs `admin`, reads need any
+signed in user. Executor → scheduler machine endpoints stay open. Default console login: **admin /
+admin123**.
+
+The jar packages ONLY the common `application.properties`. The dev/prod differences live in
+`src/main/resources/application-{dev,prod}.properties`, which the build (`mvn -Pdev`/`-Pprod`) emits as
+the external `deploy/conf/server.properties`. For deploy-time tuning **without a rebuild**, edit
+`deploy/conf/server.properties` (layered on top).
 
 ## Executor (client)
 
@@ -82,17 +99,17 @@ Set exactly one of `cron` / `interval`(+`intervalUnit`) / `iso`. A method takes 
 ## Storage matrix
 
 Both scripts default to an embedded **H2 file**, one **independent** file per node (`run-local` at
-`data/cronsmith-<n>`, `run-docker` a per-node volume). This is a **node-local replicated** store: the
+`data/cronflow-<n>`, `run-docker` a per-node volume). This is a **node-local replicated** store: the
 leader broadcasts every write and each node applies it to its own copy, so a node keeps its data on
 failover. Switch to a **shared** DB by uncommenting a datasource block in
-`deploy/conf/scheduler.properties` — it takes over. The engine auto-detects the kind from the JDBC
+`deploy/conf/server.properties` — it takes over. The engine auto-detects the kind from the JDBC
 connection:
 
 | Store | How | Across nodes | Sharding |
 |-------|-----|--------------|----------|
-| H2 file | **default** (per node: `jdbc:h2:file:./data/cronsmith-<n>`) | node-local, kept in sync by leader **broadcast** | no |
-| in-memory | set `jdbc:h2:mem:cronsmith` (or no DataSource) | node-local, broadcast | no |
-| MySQL / PostgreSQL | uncomment a datasource block in `scheduler.properties` | **shared** (single store, CAS) | **yes** |
+| H2 file | **default** (per node: `jdbc:h2:file:./data/cronflow-<n>`) | node-local, kept in sync by leader **broadcast** | no |
+| in-memory | set `jdbc:h2:mem:cronflow` (or no DataSource) | node-local, broadcast | no |
+| MySQL / PostgreSQL | uncomment a datasource block in `server.properties` | **shared** (single store, CAS) | **yes** |
 
 ## Running behind nginx / KONG
 

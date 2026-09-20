@@ -47,6 +47,7 @@ public class ShardFlow {
     /** Entry node: produces the list of ids to process in parallel shards. */
     @DagNode(entry = true, to = {"square"})
     public Map<String, Object> generate(DagState state) {
+        pause();
         List<Object> ids = new ArrayList<>(IntStream.rangeClosed(1, 20).boxed().toList());
         return Map.of("ids", ids);
     }
@@ -54,6 +55,7 @@ public class ShardFlow {
     /** Per-shard handler: squares just this shard's ids and returns the partial list. */
     @DagNode(shard = @Shard(input = "ids", output = "squares"), to = {"report"})
     public Map<String, Object> square(DagState state) {
+        pause();
         List<Object> shard = state.getList(Shard.CHANNEL);
         List<Object> out = new ArrayList<>();
         for (Object o : shard) {
@@ -67,9 +69,19 @@ public class ShardFlow {
     /** Fan-in: log the gathered squares. */
     @DagNode
     public Map<String, Object> report(DagState state) {
+        pause();
         List<Object> squares = state.getList("squares");
         log.info("cronflow: shard-flow gathered {} squares: {}", squares.size(), squares);
         return Map.of();
+    }
+
+    /** Simulated work so each node stays RUNNING long enough to see the live pulse on the graph. */
+    private void pause() {
+        try {
+            Thread.sleep(3000L);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
 }

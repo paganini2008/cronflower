@@ -8,9 +8,9 @@
   -n  number of scheduler (server) nodes   (default 1)
   -e  number of executor (client) nodes    (default 0 = none)
 
-  Store: each node gets its OWN H2 file (deploy\data\cronsmith-<n>); the leader broadcasts every write
+  Store: each node gets its OWN H2 file (deploy\data\cronflow-<n>); the leader broadcasts every write
   and each node keeps its own copy in sync (so a failover keeps the data). Persists across restarts.
-  Uncomment a datasource in conf\scheduler.properties for a shared MySQL/PostgreSQL.
+  Uncomment a datasource in conf\server.properties for a shared MySQL/PostgreSQL.
   Ports: seed scheduler 19090 . followers RANDOM (auto-discovered) . console 7200 . executors random.
   The console (web-server.mjs) discovers the whole cluster from the single seed and load-balances -
   no nginx/KONG. Seed (node 1) starts first, then followers on random ports.
@@ -29,16 +29,16 @@ param(
 $SchedBasePort = if ($env:SCHED_BASE_PORT) { [int]$env:SCHED_BASE_PORT } else { 19090 }
 $FrontendPort  = if ($env:FRONTEND_PORT)   { [int]$env:FRONTEND_PORT }   else { 7200 }
 $SpreaderPort  = if ($env:SPREADER_PORT)   { [int]$env:SPREADER_PORT }   else { 22000 }
-$ConfUrl       = 'file:' + ($Conf -replace '\\', '/') + '/scheduler.properties'
+$ConfUrl       = 'file:' + ($Conf -replace '\\', '/') + '/server.properties'
 
 function Save-Pid([int]$procId, [string]$name) { $procId | Out-File -Encoding ascii (Join-Path $RunDir "$name.pid") }
 
 # Each node gets its OWN independent H2 file (node-local replicated model: leader broadcasts, every
 # node keeps its own copy). conf wins if it sets a datasource (e.g. a shared MySQL/PostgreSQL).
 function Scheduler-DsArgs([int]$i) {
-  $confFile = Join-Path $Conf 'scheduler.properties'
+  $confFile = Join-Path $Conf 'server.properties'
   if ((Test-Path $confFile) -and (Select-String -Path $confFile -Pattern '^\s*spring\.datasource\.url=' -Quiet)) { return @() }
-  return @("--spring.datasource.url=jdbc:h2:file:./data/cronsmith-$i;DB_CLOSE_DELAY=-1", '--spring.datasource.username=sa', '--spring.datasource.password=')
+  return @("--spring.datasource.url=jdbc:h2:file:./data/cronflow-$i;DB_CLOSE_DELAY=-1", '--spring.datasource.username=sa', '--spring.datasource.password=')
 }
 
 function Launch-Scheduler([int]$i) {
@@ -158,7 +158,7 @@ function Do-Up {
   Write-Host "  console    : http://localhost:$FrontendPort"
   Write-Host "  scheduler  : http://localhost:$SchedBasePort/cronsmith/tasks   ($n node(s): seed + random-port followers, per-node H2 @ deploy\data)"
   if ($e -gt 0) { Write-Host "  executors  : $e node(s) on random ports $ExecPortLo-$ExecPortHi (shown above)" }
-  Write-Host "  real DB?   : edit conf\scheduler.properties (MySQL/PostgreSQL) - default is per-node H2 files replicated by broadcast"
+  Write-Host "  real DB?   : edit conf\server.properties (MySQL/PostgreSQL) - default is per-node H2 files replicated by broadcast"
   Write-Host "  tail a log : .\run-local.ps1 logs <name>   (name: $names)"
   Write-Host "  stop all   : .\run-local.ps1 down"
 }

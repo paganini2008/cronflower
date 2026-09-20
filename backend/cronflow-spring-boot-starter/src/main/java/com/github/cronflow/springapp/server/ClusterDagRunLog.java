@@ -2,6 +2,9 @@ package com.github.cronflow.springapp.server;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -41,6 +44,10 @@ public class ClusterDagRunLog
     private final GossipCluster cluster;
     private final ObjectCodec codec;
     private final boolean replicate;
+
+    /** Live in-flight frontier per run (transient, not persisted). Replicated so any node can answer the
+     *  run-detail query behind the round-robin console proxy; the console pulses these nodes. */
+    private final Map<String, Set<String>> frontier = new ConcurrentHashMap<>();
 
     public ClusterDagRunLog(DagRunLog store, GossipCluster cluster, ObjectCodec codec,
             boolean replicate) {
@@ -84,6 +91,24 @@ public class ClusterDagRunLog
                 elapsedMs, errorDetail));
     }
 
+    @Override
+    public void frontier(String runId, Set<String> running) {
+        Set<String> snap = running == null ? Set.of() : Set.copyOf(running);
+        frontier.put(runId, snap);
+        propagate(DagRunLogMessage.frontier(runId, snap));
+    }
+
+    @Override
+    public Set<String> frontierOf(String runId) {
+        return frontier.getOrDefault(runId, Set.of());
+    }
+
+    @Override
+    public void clearFrontier(String runId) {
+        frontier.remove(runId);
+        propagate(DagRunLogMessage.frontier(runId, Set.of()));
+    }
+
     private void propagate(DagRunLogMessage message) {
         if (!replicate) {
             return;
@@ -123,6 +148,14 @@ public class ClusterDagRunLog
                 case DagRunLogMessage.NODE -> store.node(m.runId(), m.graph(), m.node(),
                         m.seq() == null ? 0 : m.seq(), m.status(), m.inputParam(), m.output(),
                         m.executor(), m.elapsedMs() == null ? 0L : m.elapsedMs(), m.errorDetail());
+                case DagRunLogMessage.FRONTIER -> {
+                    // Transient (never touches the store): just mirror the in-flight set locally.
+                    if (m.frontier() == null || m.frontier().isEmpty()) {
+                        frontier.remove(m.runId());
+                    } else {
+                        frontier.put(m.runId(), Set.copyOf(m.frontier()));
+                    }
+                }
                 default -> log.warn("cronflow: unknown run-log op '{}'", m.op());
             }
         } catch (RuntimeException e) {

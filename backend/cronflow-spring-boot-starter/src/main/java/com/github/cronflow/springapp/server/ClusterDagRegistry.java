@@ -47,6 +47,9 @@ public class ClusterDagRegistry
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
         cluster.addListener(CHANNEL, this);
+        // Restore DAG definitions from the store so the console list survives a full cluster restart
+        // without waiting for executors to re-register (definitions are persisted; live hosts are not).
+        registry.hydrateFromStore();
         log.info("cronflow: cluster DAG registry listening on '{}'", CHANNEL);
     }
 
@@ -60,10 +63,12 @@ public class ClusterDagRegistry
         return instanceId;
     }
 
-    /** Apply a heartbeat locally, then propagate it. */
-    public void heartbeat(DagHeartbeatRequest request) {
-        registry.heartbeat(request);
+    /** Apply a heartbeat locally, then propagate it. Returns whether this instance was known here (so
+     *  the executor can re-register its definitions after a cluster restart wiped the registry). */
+    public boolean heartbeat(DagHeartbeatRequest request) {
+        boolean known = registry.heartbeat(request);
         propagate(DagSyncMessage.heartbeat(request));
+        return known;
     }
 
     private void propagate(DagSyncMessage message) {

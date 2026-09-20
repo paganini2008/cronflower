@@ -67,7 +67,7 @@ public class FulfilmentFlow {
      *  pulsing as the flow moves through the graph. */
     private void pause() {
         try {
-            Thread.sleep(1500L);
+            Thread.sleep(3000L);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
