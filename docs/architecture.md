@@ -10,6 +10,7 @@ business code, and the **console** is the operator's window onto both.
 
 ## System topology
 
+{% raw %}
 ```mermaid
 flowchart TB
     UI["cronflower console (Angular)<br/>Dashboard · Tasks · Cluster · DAG · System"]
@@ -38,6 +39,7 @@ flowchart TB
     S1 -->|"dispatch (HTTP callback when due)"| E1 & E2 & E3
     E1 -.->|register + heartbeat on boot| S1
 ```
+{% endraw %}
 
 The leader schedules and dispatches; followers serve reads and take over on failover. The console
 talks to **one** endpoint — any node answers reads locally and routes writes to the leader.
@@ -47,6 +49,7 @@ talks to **one** endpoint — any node answers reads locally and routes writes t
 A `@Task` on an executor becomes a durable definition the scheduler owns; the leader claims it when
 due and calls back. Nothing lives only in memory, so a restart or failover loses nothing.
 
+{% raw %}
 ```mermaid
 sequenceDiagram
     participant E as Executor
@@ -63,6 +66,7 @@ sequenceDiagram
         L->>DB: write execution history + compute next fire
     end
 ```
+{% endraw %}
 
 **Windowed loading** is what lets it scale: only tasks due within `window-minutes` are held in memory,
 the rest stay in the store and are claimed as they come due, so a cluster with hundreds of thousands
@@ -74,6 +78,7 @@ The store is auto-detected from the JDBC connection. A **node-local** store is r
 leader; a **shared** database additionally unlocks **group sharding**, where each node fires only the
 task groups that hash to it.
 
+{% raw %}
 ```mermaid
 flowchart TB
     subgraph NodeLocal["node-local store (H2 / SQLite) — replicated"]
@@ -89,6 +94,7 @@ flowchart TB
         N3["node C<br/>groups hash→C"] --- SDB
     end
 ```
+{% endraw %}
 
 **Weighted dispatch** routes runs to executors by capacity; routing is configurable
 (`cronsmith.server.dispatch.routing`: round-robin / weighted / consistent-hash / random / first / last).
@@ -99,6 +105,7 @@ The optional `cronflow` add-on turns the same cluster into a workflow engine. A 
 `@DagNode` steps; the engine drives the graph across the cluster, dispatching each node to a live
 executor, with data flowing between nodes over typed **channels** (each with a reducer).
 
+{% raw %}
 ```mermaid
 flowchart LR
     input((input)) --> intake
@@ -109,6 +116,7 @@ flowchart LR
     decide -->|"score >= 70"| APPROVED
     decide -->|else| REJECTED
 ```
+{% endraw %}
 
 Edges are not just straight lines: `when` routes by a SpEL expression, `trigger = ALL/ANY` sets the
 join mode, `subgraph` nests a whole other DAG, and `@Shard` fans a node out once per list element at
