@@ -1,3 +1,7 @@
+---
+title: Configuration
+---
+
 # Configuration
 
 All settings are plain Spring Boot properties: set them on the `java -jar` line as `--key=value`, in

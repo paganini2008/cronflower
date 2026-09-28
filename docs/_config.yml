@@ -1,0 +1,23 @@
+title: cronflower
+description: A distributed, stateful cron scheduler for the JVM, with DAG orchestration and a web console.
+
+# Project site served at https://paganini2008.github.io/cronflower/ — baseurl must be the repo name so
+# the `relative_url` filter builds correct links and image paths.
+url: https://paganini2008.github.io
+baseurl: /cronflower
+
+# The site is English-only. The Chinese blog versions stay in the repo but are kept out of the build,
+# so they never appear on GitHub Pages.
+exclude:
+  - blogger/cronflower/dag-workflow-orchestration.zh.md
+  - blogger/cronsmith/distributed-task-scheduling.zh.md
+  - images/README.md
+  - .DS_Store
+
+# Every page uses the one custom layout (which loads Mermaid and styles the docs). Individual pages
+# only need front matter with a title; the layout is applied here.
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default

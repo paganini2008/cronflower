@@ -1,3 +1,7 @@
+---
+title: "cronflower: run a DAG workflow across your cluster"
+---
+
 # cronflower: run a DAG workflow across your cluster, instead of chaining cron jobs
 
 Every team ends up here. One cron job at 02:00 charges the orders. Another at 02:15 ships them, set

@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ site.title }} · distributed cron scheduler for the JVM</title>
+  <meta name="description" content="{{ site.description }}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --blue: #2563eb; --blue-d: #1d4ed8; --ink: #0f2c4d; --muted: #46597a; --line: #e6edf6;
+      --bg: #ffffff; --bg-soft: #f4f7fd;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--bg); color: var(--ink);
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased; line-height: 1.6; }
+    a { color: var(--blue); text-decoration: none; }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* Nav */
+    header.nav { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,0.9);
+      backdrop-filter: saturate(1.5) blur(8px); border-bottom: 1px solid var(--line); }
+    header.nav .row { display: flex; align-items: center; gap: 1.5rem; height: 60px; }
+    header.nav .brand { font-weight: 800; color: var(--blue); font-size: 1.15rem; letter-spacing: -0.02em; }
+    header.nav nav { display: flex; gap: 1.4rem; margin-left: auto; flex-wrap: wrap; }
+    header.nav nav a { color: var(--muted); font-weight: 600; font-size: 0.92rem; }
+    header.nav nav a:hover { color: var(--blue); }
+    .btn { display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 650; border-radius: 10px;
+      padding: 0.6rem 1.1rem; font-size: 0.95rem; transition: transform .06s, box-shadow .15s, background .15s; }
+    .btn-primary { background: var(--blue); color: #fff; box-shadow: 0 8px 20px -8px rgba(37,99,235,0.6); }
+    .btn-primary:hover { background: var(--blue-d); }
+    .btn-ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+    .btn-ghost:hover { border-color: #c6d6ec; }
+    .btn:active { transform: translateY(1px); }
+
+    /* Hero */
+    .hero { padding: 4.5rem 0 2.5rem; background:
+      radial-gradient(900px 420px at 85% -8%, #e8f0ff 0%, rgba(232,240,255,0) 60%),
+      radial-gradient(700px 380px at 5% 0%, #eef4fd 0%, rgba(238,244,253,0) 55%); }
+    .hero .eyebrow { display: inline-block; font-weight: 700; font-size: 0.78rem; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--blue); background: #e8f1fd; padding: 0.3rem 0.7rem; border-radius: 999px; }
+    .hero h1 { font-size: clamp(2.1rem, 5vw, 3.3rem); line-height: 1.08; letter-spacing: -0.03em;
+      margin: 1rem 0 0.6rem; font-weight: 800; max-width: 16ch; }
+    .hero p.lead { font-size: 1.15rem; color: var(--muted); max-width: 60ch; margin: 0 0 1.6rem; }
+    .hero .cta { display: flex; gap: 0.7rem; flex-wrap: wrap; align-items: center; }
+    .hero .equation { margin-top: 1.4rem; font-family: 'JetBrains Mono', monospace; color: var(--muted);
+      font-size: 0.9rem; }
+    .hero .equation b { color: var(--ink); }
+    .badges { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 1.5rem; }
+    .badges img { height: 22px; }
+    .hero-shot { margin-top: 2.6rem; border-radius: 16px; border: 1px solid var(--line);
+      box-shadow: 0 30px 60px -30px rgba(15,44,77,0.35); overflow: hidden; background: #fff; }
+    .hero-shot img { display: block; width: 100%; }
+
+    /* Sections */
+    section { padding: 3.5rem 0; }
+    section.soft { background: var(--bg-soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .sec-head { text-align: center; max-width: 60ch; margin: 0 auto 2.2rem; }
+    .sec-head h2 { font-size: clamp(1.6rem, 3.5vw, 2.1rem); letter-spacing: -0.02em; margin: 0 0 0.5rem; }
+    .sec-head p { color: var(--muted); margin: 0; font-size: 1.05rem; }
+
+    /* Feature grid */
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1rem; }
+    @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+    .card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1.4rem;
+      box-shadow: 0 1px 2px rgba(15,44,77,0.04); transition: box-shadow .15s, transform .1s; }
+    .card:hover { box-shadow: 0 16px 34px -20px rgba(21,101,192,0.35); transform: translateY(-2px); }
+    .card .ic { width: 40px; height: 40px; border-radius: 11px; background: #e8f1fd; color: var(--blue);
+      display: grid; place-items: center; font-size: 22px; margin-bottom: 0.9rem; }
+    .card h3 { margin: 0 0 0.4rem; font-size: 1.08rem; }
+    .card p { margin: 0; color: var(--muted); font-size: 0.94rem; }
+
+    /* Showcase */
+    .shots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.4rem; }
+    @media (max-width: 820px) { .shots { grid-template-columns: 1fr; } }
+    .shot figure { margin: 0; }
+    .shot img { width: 100%; border-radius: 12px; border: 1px solid var(--line); box-shadow: 0 14px 30px -20px rgba(15,44,77,0.3); }
+    .shot figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 0.6rem; text-align: center; }
+
+    /* Quickstart */
+    .quick { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: center; }
+    @media (max-width: 820px) { .quick { grid-template-columns: 1fr; } }
+    pre.code { background: #0d1524; color: #e6edf9; border-radius: 14px; padding: 1.2rem 1.3rem; overflow-x: auto;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.88rem; line-height: 1.7; margin: 0; }
+    pre.code .c { color: #8aa0c6; }
+    pre.code .k { color: #7fd1c0; }
+
+    /* Doc cards */
+    .doc-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.1rem; }
+    @media (max-width: 820px) { .doc-cards { grid-template-columns: 1fr; } }
+    a.doc { display: block; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1.3rem 1.4rem;
+      color: var(--ink); transition: box-shadow .15s, transform .1s, border-color .15s; }
+    a.doc:hover { box-shadow: 0 16px 34px -20px rgba(21,101,192,0.35); transform: translateY(-2px); border-color: #c6d6ec; }
+    a.doc .tag { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--blue); }
+    a.doc h3 { margin: 0.3rem 0 0.35rem; font-size: 1.12rem; }
+    a.doc p { margin: 0; color: var(--muted); font-size: 0.93rem; }
+
+    /* Footer */
+    footer.site { border-top: 1px solid var(--line); background: var(--bg-soft); padding: 2.2rem 0; color: var(--muted); font-size: 0.9rem; }
+    footer.site .row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+    footer.site b { color: var(--ink); }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap row">
+      <span class="brand">cronflower</span>
+      <nav>
+        <a href="#features">Features</a>
+        <a href="{{ '/architecture.html' | relative_url }}">Architecture</a>
+        <a href="{{ '/developer-guide.html' | relative_url }}">Developer</a>
+        <a href="{{ '/configuration.html' | relative_url }}">Configuration</a>
+        <a href="#guides">Guides</a>
+        <a href="https://github.com/paganini2008/cronflower">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="wrap">
+      <span class="eyebrow">Open source · Apache 2.0</span>
+      <h1>Distributed cron for the JVM, with a console.</h1>
+      <p class="lead">cronflower is a distributed, stateful cron scheduler that forms its own cluster and
+        needs no external database, broker, or coordinator. Drop <code>@Task</code> on a Spring bean and
+        the cluster owns the schedule; declare a <code>@Dag</code> and it runs a whole workflow across your machines.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/paganini2008/cronflower">Get started on GitHub</a>
+        <a class="btn btn-ghost" href="{{ '/architecture.html' | relative_url }}">Read the docs</a>
+      </div>
+      <div class="equation"><b>cronflower</b> = cronsmith (distributed scheduling) + cronflow (DAG orchestration)</div>
+      <div class="badges">
+        <img alt="Java 17" src="https://img.shields.io/badge/Java-17-007396?logo=openjdk&logoColor=white" />
+        <img alt="Spring Boot 4.1" src="https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F?logo=springboot&logoColor=white" />
+        <img alt="Angular 21" src="https://img.shields.io/badge/Angular-21-DD0031?logo=angular&logoColor=white" />
+        <img alt="Store" src="https://img.shields.io/badge/store-H2%20·%20MySQL%20·%20PostgreSQL-4479A1?logo=databricks&logoColor=white" />
+        <img alt="License Apache 2.0" src="https://img.shields.io/badge/license-Apache%202.0-blue" />
+      </div>
+      <div class="hero-shot">
+        <img alt="cronflower console — tasks" src="{{ '/images/tasks-list.jpg' | relative_url }}" />
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Everything a scheduler needs, nothing to provision</h2>
+        <p>No separate database, message broker, or coordination service. Embedded store, self-forming cluster, self-balancing console.</p>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="ic">◈</div><h3>Self-clustering &amp; HA</h3>
+          <p>Nodes gossip and elect a leader among themselves — no ZooKeeper or etcd. The leader schedules and dispatches; followers fail over. No cron fires twice, none goes missing.</p></div>
+        <div class="card"><div class="ic">⛁</div><h3>Stateful &amp; durable</h3>
+          <p>Schedules and execution history live in a store auto-detected from the JDBC URL: in-memory → H2/SQLite → MySQL/PostgreSQL. A restart or failover loses nothing.</p></div>
+        <div class="card"><div class="ic">⚡</div><h3>Scales horizontally</h3>
+          <p>A timing wheel drives large task volumes; group sharding spreads them across nodes and weighted dispatch fans runs out to executors by capacity.</p></div>
+        <div class="card"><div class="ic">⌗</div><h3>Rich <code>@Task</code> model</h3>
+          <p>Cron, year-based YCRON, fixed interval, or ISO-8601 duration — plus retry with back-off, per-run timeout, misfire policy, and repeat/stop-at limits, all declarative.</p></div>
+        <div class="card"><div class="ic">⤳</div><h3>DAG orchestration</h3>
+          <p>Declare a workflow of <code>@Dag</code> nodes with typed channels, branching, joins, subgraphs, and dynamic fan-out. The cluster drives the graph across executors.</p></div>
+        <div class="card"><div class="ic">▤</div><h3>Operator console</h3>
+          <p>Tasks, Executors, Cluster, DAG runs, System Health, and a live Settings view — one endpoint, UTC-first with a per-viewer time-zone toggle.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHOWCASE -->
+  <section class="soft">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>See the whole deployment at a glance</h2>
+        <p>A web console talks to one endpoint and self-balances across every node, with automatic failover.</p>
+      </div>
+      <div class="shots">
+        <div class="shot"><figure><img alt="Cluster view" src="{{ '/images/cluster.jpg' | relative_url }}" />
+          <figcaption>Cluster — nodes, leader, detected store, and sharding mode</figcaption></figure></div>
+        <div class="shot"><figure><img alt="DAG workflows" src="{{ '/images/dag-workflows.jpg' | relative_url }}" />
+          <figcaption>DAG workflows — the shape of a graph before you run it</figcaption></figure></div>
+        <div class="shot"><figure><img alt="Execution history with retries" src="{{ '/images/execution-history.jpg' | relative_url }}" />
+          <figcaption>Execution history — retries, timing, and which node ran each attempt</figcaption></figure></div>
+        <div class="shot"><figure><img alt="System settings" src="{{ '/images/settings.jpg' | relative_url }}" />
+          <figcaption>Settings — the effective server configuration, read live</figcaption></figure></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUICKSTART -->
+  <section>
+    <div class="wrap quick">
+      <div>
+        <h2 style="margin-top:0">From clone to a live cluster in one command</h2>
+        <p style="color:var(--muted)">Nothing to provision — the store is an embedded H2 file and the nodes
+          elect a leader themselves. One command brings up a real distributed cluster with a web console.</p>
+        <p><a class="btn btn-primary" href="https://github.com/paganini2008/cronflower">Browse the repo</a></p>
+      </div>
+      <pre class="code"><span class="c"># clone and run — scheduler + console + 1 executor</span>
+git clone https://github.com/paganini2008/cronflower
+<span class="k">cd</span> cronflower/deploy
+./run-local.sh -e 1
+
+<span class="c"># open http://localhost:7200  (admin / admin123)</span>
+<span class="c"># scale into a cluster:</span>
+./run-local.sh -n 3 -e 2</pre>
+    </div>
+  </section>
+
+  <!-- GUIDES / DOCS -->
+  <section id="guides" class="soft">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Documentation &amp; guides</h2>
+        <p>Reference for operators, and usage-first walkthroughs for developers.</p>
+      </div>
+      <div class="doc-cards">
+        <a class="doc" href="{{ '/architecture.html' | relative_url }}">
+          <span class="tag">Reference</span><h3>Architecture</h3>
+          <p>Components, clustering, task lifecycle, storage &amp; sharding, and DAG orchestration — with diagrams.</p></a>
+        <a class="doc" href="{{ '/configuration.html' | relative_url }}">
+          <span class="tag">Reference</span><h3>Configuration</h3>
+          <p>Every config key, the <code>@Task</code> cheat-sheet, the storage matrix, and running behind nginx / KONG.</p></a>
+        <a class="doc" href="{{ '/developer-guide.html' | relative_url }}">
+          <span class="tag">Reference</span><h3>Developer guide</h3>
+          <p>Extension points and how to plug in your own — custom task types, reducers, routing, storage — with examples.</p></a>
+        <a class="doc" href="{{ '/blogger/cronsmith/distributed-task-scheduling.en.html' | relative_url }}">
+          <span class="tag">Guide</span><h3>Turn a Spring Boot app into a distributed cron cluster</h3>
+          <p>The usage tour of distributed <code>@Task</code> scheduling, from declaration to retries and sharding.</p></a>
+        <a class="doc" href="{{ '/blogger/cronflower/dag-workflow-orchestration.en.html' | relative_url }}">
+          <span class="tag">Guide</span><h3>Run a DAG workflow across your cluster</h3>
+          <p>Declare a <code>@Dag</code>, wire nodes with typed channels, and watch it run node-by-node across executors.</p></a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site">
+    <div class="wrap row">
+      <span><b>cronflower</b> = cronsmith + cronflow · © 2026</span>
+      <span><a href="https://github.com/paganini2008/cronflower">source on GitHub</a></span>
+    </div>
+  </footer>
+</body>
+</html>

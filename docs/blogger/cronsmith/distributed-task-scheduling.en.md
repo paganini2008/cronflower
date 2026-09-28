@@ -1,3 +1,7 @@
+---
+title: "cronflower: turn a Spring Boot app into a distributed cron cluster"
+---
+
 # cronflower: turn a Spring Boot app into a distributed cron cluster
 
 `@Scheduled` is fine until it isn't. It runs in one JVM, so the moment you scale to two instances the
