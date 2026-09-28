@@ -106,7 +106,7 @@ import { dagStatusClass, fmt } from '../../core/util';
     .f ::ng-deep .mat-mdc-form-field-subscript-wrapper { display: none; }
     .flex-1 { flex: 1 1 auto; }
     .clickable { cursor: pointer; }
-    .clickable:hover { background: #f6f9fd; }
+    .clickable:hover { background: var(--cf-blue-light); }
     .sub-tag { margin-left: 0.5rem; font-size: 0.68rem; font-weight: 600; color: #7e57c2;
       background: #f3ecfb; border-radius: 999px; padding: 0.05rem 0.45rem; }
     .empty { padding: 2.5rem; text-align: center; color: #3d5372; }

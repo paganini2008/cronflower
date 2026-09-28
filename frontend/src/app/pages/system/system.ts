@@ -20,6 +20,7 @@ import { MatIconModule } from '@angular/material/icon';
       <a routerLink="/system/cluster" routerLinkActive="on"><mat-icon>hub</mat-icon> Cluster</a>
       <a routerLink="/system/health" routerLinkActive="on"><mat-icon>monitor_heart</mat-icon> Health</a>
       <a routerLink="/system/api" routerLinkActive="on"><mat-icon>api</mat-icon> API</a>
+      <a routerLink="/system/settings" routerLinkActive="on"><mat-icon>settings</mat-icon> Settings</a>
     </nav>
 
     <div class="tab-body">

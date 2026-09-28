@@ -19,7 +19,7 @@ cronflower brings two engines together under one console:
 cronflower = cronsmith (distributed scheduling) + cronflow (DAG orchestration)
 ```
 
-![Tasks list](docs/images/tasks-list.jpg)
+![Tasks list](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/tasks-list.jpg)
 
 ---
 
@@ -57,8 +57,8 @@ table, and a dashboard you wrote yourself. cronsmith is that whole stack behind 
   field can. Opt in per task; fully isolated from the classic parser.
 - **DAG orchestration (cronflow)** — declare a workflow of `@Dag` nodes with typed channels,
   branching, joins, subgraphs, and dynamic fan-out; the cluster drives the graph across executors.
-- **Operator console** — Tasks, Executors, Cluster, DAG workflows & runs, and System Health, all
-  talking to a single endpoint, with a **UTC-first, per-viewer time-zone toggle**.
+- **Operator console** — Tasks, Executors, Cluster, DAG workflows & runs, System Health, and a live
+  Settings view, all talking to a single endpoint, with a **UTC-first, per-viewer time-zone toggle**.
 
 ## Tech stack
 
@@ -84,13 +84,13 @@ table, and a dashboard you wrote yourself. cronsmith is that whole stack behind 
   runs. The **leader** dispatches; **followers** stand by and take over on failure. The Cluster view
   shows who leads, the detected store, and whether sharding is on.
 
-![Cluster view: three scheduler nodes, one leader over a shared store](docs/images/cluster.jpg)
+![Cluster view: nodes, leader, detected store, and sharding mode](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/cluster.jpg)
 
 - An **executor** registers with the cluster, advertises the URL the scheduler calls back, heartbeats,
   and runs `@Task` and `@Dag` bean methods. HTTP-API tasks are called by the scheduler directly, with
   no executor.
 
-![Executors view](docs/images/executors.jpg)
+![Executors view](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/executors.jpg)
 
 Full write-up, component responsibilities, and the persistence/serialization model:
 [`docs/architecture.md`](docs/architecture.md).
@@ -222,7 +222,7 @@ paused, resumed, or canceled, over the console or the REST API.
 Every run is recorded with its result, timing, and attempt number (so retries are visible), plus
 which scheduler dispatched it and which executor ran it:
 
-![Execution history with retry attempts and the node that ran each one](docs/images/execution-history.jpg)
+![Execution history with retry attempts and the node that ran each one](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/execution-history.jpg)
 
 ## DAG workflow orchestration
 
@@ -262,7 +262,7 @@ public class ScoringFlow {
 
 The console renders exactly what you declared, so you see the shape before you run it:
 
-![The registered workflows and the selected graph's shape](docs/images/dag-workflows.jpg)
+![The registered workflows and the selected graph's shape](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-workflows.jpg)
 
 The edges aren't just straight lines: `when = @When(expr = "#risk > 80", to = "review")` routes by a
 SpEL expression, `trigger = "ANY"` joins on the first arrival, `subgraph = "..."` nests a whole other
@@ -277,13 +277,13 @@ finished `@Task`** whose return value becomes the DAG input, or **on a schedule 
 A run is not a black box. Open it and the graph lights up node by node, with a panel showing what
 triggered it and how long it took:
 
-![A completed run: the graph and how it was triggered](docs/images/dag-run.jpg)
+![A completed run: the graph and how it was triggered](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-run.jpg)
 
 Below the graph each node is a row showing what it invoked, its result, its timing, and crucially
 **which executor ran it** — the engine drives the graph across the whole cluster and dispatches each
 node to a live executor, so a wide fan-out really runs in parallel on different machines:
 
-![Per-node results, including which executor ran each node](docs/images/dag-run-nodes.jpg)
+![Per-node results, including which executor ran each node](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-run-nodes.jpg)
 
 ## Time zones
 
@@ -311,6 +311,11 @@ Best-practice defaults ship in each example; tune the scheduler at deploy time (
 - **Monitoring** — every node exposes Actuator health (including a `spreaderCluster` component) and a
   Prometheus scrape endpoint (`/actuator/health`, `/actuator/prometheus`), surfaced on the console's
   System Health page.
+- **Live settings** — the **System > Settings** tab lists the effective server configuration
+  (`cronsmith.server.*` / `cronflow.server.*`), read from Actuator, so you can confirm what a node is
+  actually running without shell access. Read-only; secrets are masked.
+
+![System > Settings: the effective server configuration](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/settings.jpg)
 
 **No external load balancer needed.** The web console (`deploy/web-server.mjs`) bootstraps from
 **one** scheduler seed, discovers every node from the cluster roster, and round-robins the API across

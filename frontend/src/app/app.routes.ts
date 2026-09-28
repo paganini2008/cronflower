@@ -76,6 +76,11 @@ export const routes: Routes = [
             title: 'API · cronflower',
             loadComponent: () => import('./pages/api-docs/api-docs').then((m) => m.ApiDocs),
           },
+          {
+            path: 'settings',
+            title: 'Settings · cronflower',
+            loadComponent: () => import('./pages/settings/settings').then((m) => m.Settings),
+          },
         ],
       },
       // Workflows + Runs are unified under one "DAG" section (a tabbed page). Old paths redirect in.

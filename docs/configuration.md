@@ -4,6 +4,10 @@ All settings are plain Spring Boot properties: set them on the `java -jar` line 
 a properties/YAML file, or via `SPRING_APPLICATION_JSON` for containers. The deploy scripts inject the
 per-node ones (port, datasource, cluster peers) for you; everything else has a best-practice default.
 
+> The console's **System > Settings** tab lists the *effective* values of these `cronsmith.server.*`
+> and `cronflow.server.*` properties, read live from `/actuator/configprops`, so you can confirm what a
+> node is actually running. It is read-only and ADMIN-only, and secrets are masked.
+
 ## Scheduler (server)
 
 | Key | Default | Notes |
@@ -18,9 +22,10 @@ per-node ones (port, datasource, cluster peers) for you; everything else has a b
 | `cronsmith.server.scheduler.zone` | `UTC` | Fire-time zone — **must** match cluster-wide |
 | `cronsmith.server.scheduler.window-minutes` | `5` | Windowed loading horizon |
 | `cronsmith.server.scheduler.claim-interval-seconds` | `15` | How often due tasks are claimed |
-| `cronsmith.server.scheduler.sharding` | `false` | Group sharding — only effective over a **shared** store |
+| `cronsmith.server.scheduler.sharding` | `true` | Group sharding — on by default; auto-degrades to leader-only on a **node-local** store, effective only over a **shared** store |
 | `cronsmith.server.dispatch.routing` | `ROUND_ROBIN` | `FIRST`/`LAST`/`ROUND_ROBIN`/`RANDOM`/`CONSISTENT_HASH`/`WEIGHTED` |
-| `management.endpoints.web.exposure.include` | `health,info,metrics` | Actuator, for the System Health page |
+| `management.endpoints.web.exposure.include` | `health,info,metrics,prometheus,configprops` | Actuator endpoints — power the System Health page (`health`), Prometheus scraping (`prometheus`), and the System Settings page (`configprops`) |
+| `management.endpoint.configprops.show-values` | `always` | Show real values on `/actuator/configprops` (it is ADMIN-only; Spring still masks secret-like keys) |
 | `cronflow.server.cors-origins` | `*` | CORS origins for the console (applies to the `/cronsmith` API) |
 | `management.endpoints.web.cors.allowed-origin-patterns` | `${cronflow.server.cors-origins:*}` | **Actuator CORS — separate from the MVC CORS above.** Required for the System Health page to read `/actuator/health` cross-origin (e.g. console at `:7200`, backend/gateway at another origin). Without it `/actuator/health` returns 200 but the browser blocks the response. |
 | `management.endpoints.web.cors.allowed-methods` | `GET` | Methods allowed on the actuator CORS above |

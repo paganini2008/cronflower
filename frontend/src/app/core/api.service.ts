@@ -39,6 +39,15 @@ export interface DagRunQuery {
   offset?: number;
 }
 
+/** Shape of Spring Boot Actuator's /actuator/configprops response (only the parts we read). */
+export interface ConfigPropsBean {
+  prefix?: string;
+  properties?: Record<string, unknown>;
+}
+export interface ConfigProps {
+  contexts?: Record<string, { beans?: Record<string, ConfigPropsBean> }>;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CronsmithApi {
   private readonly http = inject(HttpClient);
@@ -73,6 +82,12 @@ export class CronsmithApi {
 
   health(): Observable<HealthView> {
     return this.http.get<HealthView>(`${this.root()}/actuator/health`);
+  }
+
+  /** Spring Boot Actuator configprops — every @ConfigurationProperties bean and its current values
+   *  (secrets masked by Spring). ADMIN-only; used by System > Settings. */
+  configProps(): Observable<ConfigProps> {
+    return this.http.get<ConfigProps>(`${this.root()}/actuator/configprops`);
   }
 
   /** Per-node liveness + live JVM memory across the scheduler cluster. */

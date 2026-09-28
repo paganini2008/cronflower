@@ -30,51 +30,12 @@ interface NavItem {
     MatTooltipModule,
   ],
   template: `
-    <mat-toolbar class="app-toolbar">
-      <button matIconButton (click)="toggleCollapse()" aria-label="Toggle navigation"
-              [matTooltip]="collapsed() ? 'Expand menu' : 'Collapse menu'">
-        <mat-icon>menu</mat-icon>
-      </button>
-      <a routerLink="/dashboard" class="brand" aria-label="cronflower home">
-        <img src="default_logo.png" class="logo" alt="cronflower" />
-      </a>
-      <span class="brand-tagline">Cronsmith scheduling with cronflow DAG orchestration</span>
-      <span class="flex-1"></span>
-      @if (env(); as e) {
-        <span class="env-badge" [class.up]="healthUp()" [class.down]="!healthUp()"
-          [matTooltip]="'Deployment environment — cluster health ' + (healthUp() ? 'UP' : 'DOWN')">
-          {{ e }}
-        </span>
-      }
-      <button type="button" class="tz-badge" [matMenuTriggerFor]="tzMenu"
-        matTooltip="Times are UTC by default — click to switch time zone">
-        <mat-icon>schedule</mat-icon>{{ tzLabel() }}<mat-icon class="caret">expand_more</mat-icon>
-      </button>
-      <mat-menu #tzMenu="matMenu">
-        <div class="menu-head">Show times in</div>
-        <button mat-menu-item (click)="useTz('utc')">
-          <mat-icon>{{ mode() === 'utc' ? 'check' : 'schedule' }}</mat-icon> UTC
-        </button>
-        <button mat-menu-item (click)="useTz('local')">
-          <mat-icon>{{ mode() === 'local' ? 'check' : 'public' }}</mat-icon>
-          Local — {{ zone }} · {{ zoneOffset }}
-        </button>
-      </mat-menu>
-      <button matIconButton [matMenuTriggerFor]="userMenu" aria-label="Account" class="ml-2">
-        <mat-icon>account_circle</mat-icon>
-      </button>
-      <mat-menu #userMenu="matMenu">
-        <div class="menu-user">
-          Signed in as <strong>{{ auth.user() }}</strong>
-          <span class="menu-role">{{ roleLabel() }}</span>
-        </div>
-        <button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon> Sign out</button>
-      </mat-menu>
-    </mat-toolbar>
-
     <mat-sidenav-container class="app-container" [autosize]="true">
       <mat-sidenav [opened]="opened()" mode="side" class="app-sidenav"
           [class.collapsed]="collapsed()">
+        <a routerLink="/dashboard" class="sidenav-brand" aria-label="cronflower home">
+          <img src="default_logo.png" class="logo" alt="cronflower" />
+        </a>
         <mat-nav-list class="nav-list">
           @for (item of nav(); track item.path) {
             <a mat-list-item [routerLink]="item.path" routerLinkActive="active-link"
@@ -87,6 +48,44 @@ interface NavItem {
       </mat-sidenav>
 
       <mat-sidenav-content class="app-content">
+        <mat-toolbar class="app-toolbar">
+          <button matIconButton (click)="toggleCollapse()" aria-label="Toggle navigation"
+                  [matTooltip]="collapsed() ? 'Expand menu' : 'Collapse menu'">
+            <mat-icon>menu</mat-icon>
+          </button>
+          <span class="flex-1"></span>
+          @if (env(); as e) {
+            <span class="env-badge" [class.up]="healthUp()" [class.down]="!healthUp()"
+              [matTooltip]="'Deployment environment — cluster health ' + (healthUp() ? 'UP' : 'DOWN')">
+              {{ e }}
+            </span>
+          }
+          <button type="button" class="tz-badge" [matMenuTriggerFor]="tzMenu"
+            matTooltip="Times are UTC by default — click to switch time zone">
+            <mat-icon>schedule</mat-icon>{{ tzLabel() }}<mat-icon class="caret">expand_more</mat-icon>
+          </button>
+          <mat-menu #tzMenu="matMenu">
+            <div class="menu-head">Show times in</div>
+            <button mat-menu-item (click)="useTz('utc')">
+              <mat-icon>{{ mode() === 'utc' ? 'check' : 'schedule' }}</mat-icon> UTC
+            </button>
+            <button mat-menu-item (click)="useTz('local')">
+              <mat-icon>{{ mode() === 'local' ? 'check' : 'public' }}</mat-icon>
+              Local — {{ zone }} · {{ zoneOffset }}
+            </button>
+          </mat-menu>
+          <button matIconButton [matMenuTriggerFor]="userMenu" aria-label="Account" class="ml-2">
+            <mat-icon>account_circle</mat-icon>
+          </button>
+          <mat-menu #userMenu="matMenu">
+            <div class="menu-user">
+              Signed in as <strong>{{ auth.user() }}</strong>
+              <span class="menu-role">{{ roleLabel() }}</span>
+            </div>
+            <button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon> Sign out</button>
+          </mat-menu>
+        </mat-toolbar>
+
         <div class="content-inner">
           <router-outlet />
         </div>
@@ -118,7 +117,7 @@ interface NavItem {
             </div>
           </div>
           <div class="ft-bar">
-            <span class="ft-brand">cronflower = cronsmith + cronflow</span>
+            <span class="ft-tagline">Cronsmith scheduling with cronflow DAG orchestration</span>
             <span class="ft-sep">·</span>
             <span>© 2026 cronflower</span>
             <span class="flex-1"></span>
@@ -143,12 +142,13 @@ interface NavItem {
   styles: [`
     :host { display: block; height: 100vh; }
     .app-toolbar { position: sticky; top: 0; z-index: 10; color: #0f2c4d; background: #fff;
-      border-bottom: 2px solid #1565c0; box-shadow: 0 2px 10px rgba(21, 101, 192, 0.08); }
-    .brand { display: inline-flex; align-items: center; margin-left: 0.4rem; text-decoration: none; }
-    .logo { height: 46px; width: auto; display: block; }
-    .brand-sub { font-size: 0.8rem; color: #3d5372; font-weight: 500; }
-    .brand-tagline { margin-left: 0.9rem; padding-left: 0.9rem; border-left: 1px solid #e3eaf3;
-      font-size: 0.82rem; color: #3d5372; font-weight: 500; white-space: nowrap; }
+      border-bottom: 1px solid #e8eef6; box-shadow: 0 1px 3px rgba(15, 44, 77, 0.05); }
+    /* Brand now lives at the top of the blue sidebar; the whole left column is blue. Logo rendered
+       white so it reads on the blue rail. */
+    .sidenav-brand { display: flex; align-items: center; height: 64px; padding-left: 1.15rem;
+      text-decoration: none; flex: 0 0 auto; }
+    .sidenav-brand .logo { height: 40px; width: auto; display: block; filter: brightness(0) invert(1); }
+    .app-sidenav.collapsed .sidenav-brand { padding-left: 0.9rem; }
     @media (max-width: 900px) { .brand-tagline { display: none; } }
     .env-badge { margin-left: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.7rem;
       font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -168,31 +168,50 @@ interface NavItem {
     .ml-2 { margin-left: 0.5rem; }
     .menu-user { padding: 0.5rem 1rem; font-size: 0.8rem; color: #3d5372; border-bottom: 1px solid #eef2f7; }
     .menu-role { display: block; margin-top: 0.15rem; font-size: 0.72rem; color: #3d5372; text-transform: capitalize; }
-    .app-container { height: calc(100vh - 64px); background: #f4f7fb; }
+    .app-container { height: 100vh; background: #f4f7fb; }
     /* Animate the content reflow when the sidebar collapses (autosize adjusts its left margin). */
     .app-container ::ng-deep .mat-drawer-content { transition: margin-left 0.18s ease; }
-    /* Square the drawer edges so the blue sidebar meets the blue footer with no rounded corner. */
+    /* Square the drawer edges so the blue sidebar meets the footer with no rounded corner. */
     .app-sidenav, .app-sidenav ::ng-deep .mat-drawer-inner-container { border-radius: 0; }
-    /* Solid deep-blue sidebar (blue chrome, white content) — the blue-white theme. */
-    .app-sidenav { width: 236px; border-right: 0; background: #0f2c4d; padding-top: 0.5rem;
+    /* Bright royal-blue sidebar (blue chrome, white content) — the blue-white theme, a touch
+       lighter and glossier than before. Solid, not gradient. */
+    .app-sidenav { width: 236px; border-right: 0; background: #2563eb; padding-top: 0;
       display: flex; flex-direction: column; transition: width 0.18s ease; overflow-x: hidden; }
     .app-sidenav.collapsed { width: 68px; }
-    /* Square menu items (no pill rounding) for an enterprise-console feel. */
-    .app-sidenav .mat-mdc-list-item, .app-sidenav .mdc-list-item { border-radius: 0; }
-    /* Light text/icons on the dark sidebar (override Material's default dark tokens). */
+    /* Menu items sit against a small blue gutter on the left and run to the sidebar's right edge, so
+       the active item reads as a white tab connecting into the content area (like the reference). */
+    .app-sidenav .nav-list { padding: 0.25rem 0 0.25rem 0.7rem; }
+    .app-sidenav .mat-mdc-list-item, .app-sidenav .mdc-list-item {
+      border-radius: 16px 0 0 16px !important; margin: 3px 0; overflow: visible; }
+    /* White labels/icons on the blue rail (override Material's default dark tokens). */
     .app-sidenav .nav-label,
     .app-sidenav .mat-mdc-list-item .mdc-list-item__primary-text { color: #ffffff; font-weight: 600; }
-    .app-sidenav .mat-mdc-list-item mat-icon { color: #cbdcf2; }
-    .app-sidenav .mat-mdc-list-item:hover { background: rgba(255, 255, 255, 0.06); }
-    .app-sidenav .active-link { background: rgba(255, 255, 255, 0.12);
-      border-right: 3px solid #6aa9f5; font-weight: 600; }
+    .app-sidenav .mat-mdc-list-item mat-icon { color: rgba(255, 255, 255, 0.88); }
+    .app-sidenav .mat-mdc-list-item:hover { background: rgba(255, 255, 255, 0.16); }
+    /* Active item: a white tab, flush to the right edge, blue label/icon — the reference's signature.
+       The ::before / ::after carve concave corners so the white flows smoothly into the blue. */
+    .app-sidenav .active-link { background: #ffffff; position: relative; font-weight: 700; }
+    .app-sidenav .active-link:hover { background: #ffffff; }
     .app-sidenav .active-link .nav-label,
-    .app-sidenav .active-link .mdc-list-item__primary-text { color: #ffffff; }
-    .app-sidenav .active-link mat-icon { color: #ffffff; }
+    .app-sidenav .active-link .mdc-list-item__primary-text { color: #1d4ed8; }
+    .app-sidenav .active-link mat-icon { color: #2563eb; }
+    .app-sidenav .active-link::before,
+    .app-sidenav .active-link::after {
+      content: ''; position: absolute; right: 0; width: 16px; height: 16px; background: #ffffff;
+      pointer-events: none; }
+    .app-sidenav .active-link::before {
+      top: -16px;
+      -webkit-mask: radial-gradient(circle at top left, transparent 16px, #000 16px);
+      mask: radial-gradient(circle at top left, transparent 16px, #000 16px); }
+    .app-sidenav .active-link::after {
+      bottom: -16px;
+      -webkit-mask: radial-gradient(circle at bottom left, transparent 16px, #000 16px);
+      mask: radial-gradient(circle at bottom left, transparent 16px, #000 16px); }
     .app-sidenav.collapsed .nav-label { display: none; }
     .app-content { background: #f4f7fb; display: flex; flex-direction: column; min-height: 100%; }
     .content-inner { flex: 1 0 auto; padding: 1.5rem 1.5rem 2rem; box-sizing: border-box; }
-    .app-footer { flex: 0 0 auto; border-top: 0; background: #0f2c4d; color: #aebfd8;
+    /* Footer shares the sidebar's bright blue so the chrome reads as one colour. */
+    .app-footer { flex: 0 0 auto; border-top: 0; background: #2563eb; color: rgba(255, 255, 255, 0.82);
       font-size: 0.78rem; padding: 1.6rem 1.75rem 1.1rem; }
     .app-footer .ft-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem 2.5rem;
       max-width: 1200px; margin: 0 auto; }
@@ -201,17 +220,18 @@ interface NavItem {
       letter-spacing: 0.02em; }
     .app-footer .ft-col ul { list-style: none; margin: 0; padding: 0; display: flex;
       flex-direction: column; gap: 0.4rem; }
-    .app-footer .ft-col li { position: relative; padding-left: 1rem; line-height: 1.45; color: #b9cae2; }
+    .app-footer .ft-col li { position: relative; padding-left: 1rem; line-height: 1.45;
+      color: rgba(255, 255, 255, 0.85); }
     .app-footer .ft-col li::before { content: ''; position: absolute; left: 0; top: 0.5rem;
-      width: 5px; height: 5px; border-radius: 50%; background: #6aa9f5; }
+      width: 5px; height: 5px; border-radius: 50%; background: #bcd6ff; }
     .app-footer .ft-bar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
       max-width: 1200px; margin: 1.3rem auto 0; padding-top: 0.9rem;
       border-top: 1px solid rgba(255, 255, 255, 0.12); }
-    .app-footer .ft-brand { font-family: var(--cf-font-display); font-weight: 700; color: #ffffff; }
+    .app-footer .ft-tagline { color: #ffffff; font-weight: 500; }
     .app-footer .ft-sep { opacity: 0.5; }
     .app-footer .flex-1 { flex: 1 1 auto; }
-    .app-footer .ft-gh { display: inline-flex; align-items: center; color: #cfe0f5; margin-right: 0.9rem;
-      transition: color .15s; }
+    .app-footer .ft-gh { display: inline-flex; align-items: center; color: rgba(255, 255, 255, 0.85);
+      margin-right: 0.9rem; transition: color .15s; }
     .app-footer .ft-gh:hover { color: #ffffff; }
     /* Logo rendered white so it stays legible on the blue footer band. */
     .app-footer .ft-logo { height: 24px; width: auto; filter: brightness(0) invert(1); opacity: 0.92; }

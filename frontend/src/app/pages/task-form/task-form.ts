@@ -184,7 +184,7 @@ import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-bu
               <mat-option value="ycron">YCRON</mat-option>
             </mat-select>
           </mat-form-field>
-          <mat-form-field appearance="outline" class="flex-1">
+          <mat-form-field appearance="outline" class="flex-1" subscriptSizing="dynamic">
             <mat-label>Cron or ISO duration</mat-label>
             <input matInput formControlName="cron" placeholder="0 0 12 * * ?" />
             <mat-hint>
@@ -232,12 +232,12 @@ import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-bu
           </mat-form-field>
         </div>
         <div class="field-grid cols-2">
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Repeat count</mat-label>
             <input matInput type="number" formControlName="repeatCount" />
             <mat-hint>Total fires for a periodic task; -1 or 0 = unlimited</mat-hint>
           </mat-form-field>
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Stop at</mat-label>
             <input matInput type="datetime-local" formControlName="stopAt" step="1" />
             <mat-hint>Deadline after which the task stops; blank = none · times in {{ tzLabel() }}</mat-hint>
@@ -262,7 +262,9 @@ import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-bu
     .back:hover { text-decoration: underline; }
     .form-card { max-width: 860px; padding: 1.5rem 1.75rem 0; overflow: hidden; }
     .w-full { width: 100%; }
-    .field-grid { display: grid; gap: 1rem 1.1rem; }
+    /* Row-gap and a margin below each grid give the (now compact) fields room to breathe and leave
+       space for any multi-line hint below a field. */
+    .field-grid { display: grid; gap: 1.5rem 1.1rem; margin-bottom: 1.5rem; }
     .field-grid.cols-1 { grid-template-columns: 1fr; }
     .field-grid.cols-2 { grid-template-columns: 1fr 1fr; }
     .field-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
@@ -290,7 +292,7 @@ import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-bu
     }
     .type-card.selected > mat-icon, .type-card.selected .tc-title { color: var(--cf-blue); }
 
-    .param-block { margin-bottom: 0.25rem; }
+    .param-block { margin-bottom: 1.5rem; }
     .param-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem; }
     .param-title { color: var(--cf-ink-2); font-size: 0.82rem; font-weight: 600; }
     .fmt-btn { --mdc-text-button-label-text-color: var(--cf-blue); font-size: 0.8rem; line-height: 1.6; min-width: 0; }

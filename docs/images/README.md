@@ -15,5 +15,6 @@ time-zone toggle set to **UTC**.
 | `dag-workflows.jpg` | DAG → Workflows | the registered `@Dag` workflows and the selected graph's shape |
 | `dag-run.jpg` | DAG → Run | a completed run: the graph and how it was triggered |
 | `dag-run-nodes.jpg` | DAG → Run | per-node results, including which executor ran each node |
+| `settings.jpg` | System → Settings | the effective server configuration (properties), read-only |
 
 To refresh a shot, retake it from the running console at ~1440px wide and overwrite the file in place.
