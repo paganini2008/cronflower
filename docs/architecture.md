@@ -1,3 +1,7 @@
+---
+title: Architecture
+---
+
 # Architecture
 
 cronflower is a **distributed, stateful cron scheduler** (plus an optional DAG add-on). Responsibility
