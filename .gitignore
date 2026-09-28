@@ -45,4 +45,4 @@ Thumbs.db
 *.log
 
 # Blog drafts (kept local, not committed)
-docs/blogger
+# docs/blogger
