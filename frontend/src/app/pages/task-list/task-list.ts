@@ -145,7 +145,7 @@ import { ParamDialog, ParamData } from '../../shared/param-dialog';
     .table-scroll th, .table-scroll td { white-space: nowrap; }
     .table-scroll td .text-xs { overflow: hidden; text-overflow: ellipsis; max-width: 320px; }
     tr.clickable { cursor: pointer; }
-    tr.clickable:hover { background: #f6f9fd; }
+    tr.clickable:hover { background: var(--cf-blue-light); }
     .task-link { text-decoration: none; color: #0f2c4d; }
     .task-link:hover strong { color: #1565c0; }
     .w-40 { width: 10rem; } .w-44 { width: 11rem; }

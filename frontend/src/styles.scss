@@ -19,6 +19,9 @@ html {
       density: 0,
     )
   );
+  // The default density-0 outline fields (inputs + mat-selects) are too tall and bulky. Tighten just
+  // the form fields to a compact height; buttons, menus and other controls keep their normal size.
+  @include mat.form-field-density(-3);
 }
 
 body {
@@ -63,8 +66,9 @@ body {
   --cf-shadow: 0 1px 2px rgba(15, 44, 77, 0.05), 0 8px 24px -12px rgba(15, 44, 77, 0.14);
   --cf-shadow-hover: 0 2px 6px rgba(15, 44, 77, 0.08), 0 14px 34px -14px rgba(21, 101, 192, 0.28);
 
-  /* Display typeface for titles — geometric, engineered, deliberately not the generic UI sans. */
-  --cf-font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  /* Display typeface for titles — Poppins: rounded, friendly geometric sans that matches the
+     smooth, bright blue-white dashboard style (pairs with Inter for body/UI). */
+  --cf-font-display: 'Poppins', 'Inter', system-ui, sans-serif;
   --cf-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* DAG canvas — a dark, terminal-grade surface (the graph is where people watch a run live). */
@@ -158,25 +162,50 @@ body {
 .muted { color: var(--cf-muted); }
 .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem; }
 
-/* Material table polish */
+/* Material table — row-card styling (borrowed, not copied, from smooth dashboard tables):
+   a clean label-only header over softly separated, rounded row cards that highlight on hover. */
 table.mat-mdc-table {
   width: 100%;
   background: transparent;
+  border-collapse: separate !important;
+  border-spacing: 0 0.55rem;   /* vertical gap between row cards; no horizontal gap */
 }
-/* A subtle blue header band (blue-white theme) — sets tables apart from the white card body and
-   improves column scannability without shouting. */
-.mat-mdc-header-row { background: var(--cf-blue-light); }
+/* Plain, quiet header — no fill band, just small uppercase labels. */
+.mat-mdc-header-row { background: transparent; }
 .mat-mdc-header-cell {
-  color: #2a4a72;
-  font-weight: 600;
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
+  color: var(--cf-muted);
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   background: transparent;
-  border-bottom: 1px solid #d3e2f5;
+  border-bottom: 0;
+  padding-top: 0.2rem;
+  padding-bottom: 0.5rem;
 }
-.mat-mdc-row:hover .mat-mdc-cell { background: var(--cf-surface-2); }
-.mat-mdc-row .mat-mdc-cell { border-bottom-color: var(--cf-line); }
+/* Each body row reads as its own rounded, bordered card with a little more breathing room, and a
+   whisper of shadow beneath for the smooth, lifted feel. */
+.mat-mdc-row .mat-mdc-cell {
+  background: var(--cf-surface);
+  border-top: 1px solid var(--cf-line);
+  border-bottom: 1px solid var(--cf-line);
+  box-shadow: 0 1px 2px rgba(15, 44, 77, 0.05);
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.mat-mdc-row .mat-mdc-cell:first-of-type {
+  border-left: 1px solid var(--cf-line);
+  border-top-left-radius: var(--cf-radius-sm);
+  border-bottom-left-radius: var(--cf-radius-sm);
+}
+.mat-mdc-row .mat-mdc-cell:last-of-type {
+  border-right: 1px solid var(--cf-line);
+  border-top-right-radius: var(--cf-radius-sm);
+  border-bottom-right-radius: var(--cf-radius-sm);
+}
+/* Hover lifts the whole row into a soft blue tint (matches the clickable-row affordance). */
+.mat-mdc-row:hover .mat-mdc-cell { background: var(--cf-blue-light); border-color: #cfe0f5; }
 
 /* Buttons: a touch more presence on the primary action */
 .mat-mdc-raised-button, .mat-mdc-unelevated-button { letter-spacing: 0.01em; }

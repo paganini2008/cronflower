@@ -33,7 +33,7 @@ import { orderedEntries, poll } from '../../core/util';
         </div>
       </div>
 
-      <div class="grid gap-4" style="grid-template-columns: 1.5fr 1fr;">
+      <div class="grid gap-4" style="grid-template-columns: 1fr;">
         <div class="card overflow-hidden">
           <div class="card-head">Nodes</div>
           <div class="table-scroll">
