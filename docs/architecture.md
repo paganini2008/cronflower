@@ -41,12 +41,12 @@ flowchart TB
 ```
 {% endraw %}
 
-The leader schedules and dispatches; followers serve reads and take over on failover. The console
-talks to **one** endpoint — any node answers reads locally and routes writes to the leader.
+The leader schedules and dispatches, followers serve reads and take over on failover. The console
+talks to **one** endpoint: any node answers reads locally and routes writes to the leader.
 
 ## Task lifecycle
 
-A `@Task` on an executor becomes a durable definition the scheduler owns; the leader claims it when
+A `@Task` on an executor becomes a durable definition the scheduler owns, the leader claims it when
 due and calls back. Nothing lives only in memory, so a restart or failover loses nothing.
 
 {% raw %}
@@ -75,19 +75,19 @@ of tasks still starts instantly.
 ## Store & sharding topology
 
 The store is auto-detected from the JDBC connection. A **node-local** store is replicated by the
-leader; a **shared** database additionally unlocks **group sharding**, where each node fires only the
+leader, a **shared** database additionally unlocks **group sharding**, where each node fires only the
 task groups that hash to it.
 
 {% raw %}
 ```mermaid
 flowchart TB
-    subgraph NodeLocal["node-local store (H2 / SQLite) — replicated"]
+    subgraph NodeLocal["node-local store (H2 / SQLite), replicated"]
         direction LR
         L1["leader"] -->|broadcast writes| F1["follower"]
         L1 -->|broadcast writes| F2["follower"]
     end
 
-    subgraph Shared["shared DB (MySQL / PostgreSQL) — group sharding"]
+    subgraph Shared["shared DB (MySQL / PostgreSQL), group sharding"]
         direction LR
         N1["node A<br/>groups hash→A"] --- SDB[("shared DB")]
         N2["node B<br/>groups hash→B"] --- SDB
@@ -96,13 +96,13 @@ flowchart TB
 ```
 {% endraw %}
 
-**Weighted dispatch** routes runs to executors by capacity; routing is configurable
+**Weighted dispatch** routes runs to executors by capacity, routing is configurable
 (`cronsmith.server.dispatch.routing`: round-robin / weighted / consistent-hash / random / first / last).
 
 ## DAG orchestration (cronflow)
 
 The optional `cronflow` add-on turns the same cluster into a workflow engine. A `@Dag` is a graph of
-`@DagNode` steps; the engine drives the graph across the cluster, dispatching each node to a live
+`@DagNode` steps, the engine drives the graph across the cluster, dispatching each node to a live
 executor, with data flowing between nodes over typed **channels** (each with a reducer).
 
 {% raw %}
@@ -125,7 +125,7 @@ run time. A workflow is triggered by hand, from a finished `@Task`, or on a sche
 ## YCRON (year-based extension)
 
 Traditional cron cannot express "the 200th day of the year" or "the first ISO week". YCRON adds a
-year-scoped syntax — fields `‹sec› ‹min› ‹hour› ‹dow› ‹woy› ‹doy› ‹year›` — fully isolated from the
+year-scoped syntax: fields `‹sec› ‹min› ‹hour› ‹dow› ‹woy› ‹doy› ‹year›`: fully isolated from the
 traditional parser. Pick it per task with `@Task(parser = "ycron")` (or the console's Syntax
 selector). The engine still prefers traditional cron whenever a schedule *can* be expressed that way.
 
@@ -133,13 +133,13 @@ selector). The engine still prefers traditional cron whenever a schedule *can* b
 
 Task schedules are stored as a compact binary that fully reconstructs the expression tree (including
 its `CronType`, so cron vs. YCRON survives a round-trip). The `cron_expression` binary column is the
-source of truth; a human-readable `cron` string is kept alongside for display.
+source of truth, a human-readable `cron` string is kept alongside for display.
 
 ## Components at a glance
 
 | Layer | Module | Responsibility |
 |-------|--------|----------------|
-| Scheduler | `cronsmith-spring-boot-starter` → `cronflow-server-api` | owns schedules & durable state; leader election, windowed loading, dispatch, sharding |
-| Executor | `cronsmith-executor-spring-boot-starter` → `cronflow-executor-example` | hosts `@Task` / `@Dag` beans; registers on boot; runs the code on callback |
+| Scheduler | `cronsmith-spring-boot-starter` → `cronflow-server-api` | owns schedules & durable state, leader election, windowed loading, dispatch, sharding |
+| Executor | `cronsmith-executor-spring-boot-starter` → `cronflow-executor-example` | hosts `@Task` / `@Dag` beans, registers on boot, runs the code on callback |
 | DAG add-on | `cronflow-spring-boot-starter` / `cronflow-executor-spring-boot-starter` | graph orchestration over the same cluster |
-| Console | `cronflower/frontend` | Angular standalone + signals; one endpoint; live cluster / tasks / DAG / settings |
+| Console | `cronflower/frontend` | Angular standalone + signals, one endpoint, live cluster / tasks / DAG / settings |

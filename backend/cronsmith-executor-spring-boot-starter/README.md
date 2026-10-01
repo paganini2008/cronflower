@@ -6,12 +6,12 @@ and, when the task is due, calls back into your app to run the method.
 
 ## Features
 
-- **One annotation** — `@Task` on a bean method; discovered and registered on startup, no `@Enable`.
-- **Stateless** — no database, no local schedule; retry, timeout and logging all live on the server.
-- **Server-driven schedule** — tasks run on the *server's* clock, coordinated across the cluster, not locally.
-- **Flexible parameters** — a task takes nothing or a single `String`; `initialParameter` can be a constant or a `#{...}` SpEL template evaluated fresh on each fire.
-- **Servlet or reactive** — works on Spring MVC or WebFlux (your app supplies the web server).
-- **Replaceable seams** — every bean is `@ConditionalOnMissingBean`; swap the transport or the invoker.
+- **One annotation**: `@Task` on a bean method, discovered and registered on startup, no `@Enable`.
+- **Stateless**: no database, no local schedule, retry, timeout and logging all live on the server.
+- **Server-driven schedule**: tasks run on the *server's* clock, coordinated across the cluster, not locally.
+- **Flexible parameters**: a task takes nothing or a single `String`, `initialParameter` can be a constant or a `#{...}` SpEL template evaluated fresh on each fire.
+- **Servlet or reactive**: works on Spring MVC or WebFlux (your app supplies the web server).
+- **Replaceable seams**: every bean is `@ConditionalOnMissingBean`, swap the transport or the invoker.
 
 ```
 server (leader)  ──POST /cronsmith/run──▶  your app (@Task method runs)
@@ -22,7 +22,7 @@ server (leader)  ──POST /cronsmith/run──▶  your app (@Task method runs
 ## Requirements
 
 - **JDK 17+**, **Spring Boot 4.1+** (tested against 4.1.1).
-- A web application — **Spring MVC (servlet) or WebFlux (reactive)**; the starter brings neither server.
+- A web application: **Spring MVC (servlet) or WebFlux (reactive)**, the starter brings neither server.
 
 ## Quick Start
 
@@ -54,14 +54,14 @@ public class ReportTasks {
 That is the whole integration: on startup the executor discovers the method, registers it, and the
 method runs on schedule, coordinated across the cluster.
 
-## Examples — writing a task
+## Examples: writing a task
 
 `@Task` goes on a bean method that takes **no argument or a single `String`**. A non-`void` return is
 reported back and stored in the execution log.
 
 | Attribute | Default | Meaning |
 |-----------|---------|---------|
-| `cron` | *(required)* | Cron expression (validated by the server; any dialect it understands) |
+| `cron` | *(required)* | Cron expression (validated by the server, any dialect it understands) |
 | `group` | application name | Task group |
 | `name` | `beanName.methodName` | Task name, unique within its group |
 | `description` | `""` | Shown in the console |
@@ -86,38 +86,38 @@ All properties are under `cronsmith.client`:
 | Property | Default | Meaning |
 |----------|---------|---------|
 | `enabled` | `true` | Turn the whole starter off |
-| `server-urls` | *(empty)* | Server base URL(s); one is enough, several are tried in turn (writes route to the leader) |
+| `server-urls` | *(empty)* | Server base URL(s), one is enough, several are tried in turn (writes route to the leader) |
 | `application` | `spring.application.name` | This executor's application name |
 | `advertise-host` / `advertise-port` / `scheme` | auto | Address/port/scheme peers dial to reach this executor |
-| `base-url` / `health-check-url` | auto | Full external URLs (through a proxy / rewritten path); override detection |
+| `base-url` / `health-check-url` | auto | Full external URLs (through a proxy / rewritten path), override detection |
 | `register-interval-seconds` | `30` | Heartbeat interval |
 | `connect-timeout-millis` / `read-timeout-millis` | `3000` / `10000` | Timeouts for calls back to the server |
 | `invoker-pool-size` | `8` | Threads that run task methods |
 
-**Lifecycle:** on startup it sends its task list once (a *saveOrUpdate*, retrying until accepted); on
+**Lifecycle:** on startup it sends its task list once (a *saveOrUpdate*, retrying until accepted), on
 `register-interval-seconds` it sends a lightweight heartbeat that keeps it present and reachable, so it
 survives a server restart or leader change with no coordination.
 
-**Endpoints exposed on the executor:** `POST /cronsmith/run` (the server dispatches a run here; returns
-`202` and runs async) and `GET /cronsmith/ping` (liveness fallback, **only when Actuator is absent** —
+**Endpoints exposed on the executor:** `POST /cronsmith/run` (the server dispatches a run here, returns
+`202` and runs async) and `GET /cronsmith/ping` (liveness fallback, **only when Actuator is absent** :
 otherwise `/actuator/health` is registered as the liveness URL). Registered URLs honour
 `server.servlet.context-path`, `spring.mvc.servlet.path`, `spring.webflux.base-path` and the actuator
-paths; for a reverse proxy or rewritten path, set `base-url` / `health-check-url` explicitly.
+paths, for a reverse proxy or rewritten path, set `base-url` / `health-check-url` explicitly.
 
 ### Behind a gateway (KONG / nginx / Envoy)
 
-> **Load balancing is the scheduler's own capability — never delegated to the gateway.** The gateway is
+> **Load balancing is the scheduler's own capability: never delegated to the gateway.** The gateway is
 > transparent transport (reachability / NAT / TLS), so KONG ↔ nginx ↔ Envoy swap freely.
 
 - **executor → scheduler** (`server-urls`): point at the gateway and set `server-api-prefix` to match
-  how the scheduler is exposed; the gateway only has to reach **any one** node (writes forward to the leader).
+  how the scheduler is exposed, the gateway only has to reach **any one** node (writes forward to the leader).
 - **scheduler → executor** (dispatch callback): give each executor a **unique, deterministically proxied**
   URL via `base-url` / `advertise-*` so the scheduler's round-robin still targets a specific instance.
   Do **not** pool multiple executors into one upstream for this direction (it nullifies the scheduler's routing).
 
 ## Extending
 
-Every bean is `@ConditionalOnMissingBean`; the two seams are interfaces:
+Every bean is `@ConditionalOnMissingBean`, the two seams are interfaces:
 
 ```java
 @Bean
@@ -126,11 +126,11 @@ CronsmithServerClient cronsmithServerClient(CronsmithClientProperties props) {
 }
 ```
 
-- `CronsmithServerClient` — how the executor talks to the server (default: WebClient over the JDK HttpClient).
-- `TaskExecutionService` — how a dispatch is run (default: reflective invocation on a thread pool).
+- `CronsmithServerClient`: how the executor talks to the server (default: WebClient over the JDK HttpClient).
+- `TaskExecutionService`: how a dispatch is run (default: reflective invocation on a thread pool).
 
 ## Notes & see also
 
-- The executor is **stateless**; task bodies run on a shared pool and a bean is reused, so **make task
+- The executor is **stateless**, task bodies run on a shared pool and a bean is reused, so **make task
   methods thread-safe**. Business exceptions propagate as the run's error, reported back verbatim.
 - Root [`README.md`](../../README.md) · full config reference [`../../docs/configuration.md`](../../docs/configuration.md).

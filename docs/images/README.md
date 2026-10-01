@@ -8,6 +8,7 @@ time-zone toggle set to **UTC**.
 
 | file | page | what it shows |
 |------|------|---------------|
+| `dashboard.jpg` | Dashboard | task counts, executors, cluster, sharding, and busiest tasks (README hero) |
 | `tasks-list.jpg` | Tasks | the task list with cron / **YCRON** schedules, runs, and next fire |
 | `execution-history.jpg` | Task detail | the execution log with retries (a `flaky` run) + scheduler/executor |
 | `executors.jpg` | Executors | registered executors with liveness, weight, and run URL |

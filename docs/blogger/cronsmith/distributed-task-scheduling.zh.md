@@ -1,6 +1,6 @@
 # cronflower：把 Spring Boot 变成一个分布式定时任务集群
 
-**cronflower** 是一个面向 JVM、自带控制台的开源分布式定时任务调度器。它自己组建集群，不依赖任何外部数据库、消息队列或协调服务。这篇讲它的分布式**任务**调度（DAG 那一面另有[一篇](../cronflower/dag-workflow-orchestration.zh.md)）。
+**cronflower** 是一个面向 JVM、自带控制台的开源分布式定时任务调度器。它自己组建集群，不依赖任何外部数据库、消息队列或协调服务。这篇讲它的分布式**任务**调度。
 
 ![控制台里的任务列表](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/tasks-list.jpg)
 
@@ -122,7 +122,7 @@ public void weeklyReport() { /* ... */ }
 
 | 属性 | 默认 | 说明 |
 |------|------|------|
-| `cronsmith.client.server-urls` | — | 执行器上：调度器种子 URL |
+| `cronsmith.client.server-urls` |: | 执行器上：调度器种子 URL |
 | `cronsmith.server.scheduler.zone` | `UTC` | 触发时区，必须全集群一致 |
 | `cronsmith.server.scheduler.window-minutes` | `5` | 窗口加载视野 |
 | `cronsmith.server.scheduler.sharding` | `true` | 共享库上的分组分片（否则 leader-only） |

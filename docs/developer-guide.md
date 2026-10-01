@@ -13,15 +13,15 @@ in their own behaviour. It assumes you can already run the stack (see the
 
 There are two kinds of process, and **which one an extension lives in matters**:
 
-- **Executor** — *your* application. It hosts `@Task` / `@Dag` beans and runs the code when the
+- **Executor**: *your* application. It hosts `@Task` / `@Dag` beans and runs the code when the
   scheduler calls back. Add the `cronsmith-executor-spring-boot-starter` (and, for DAGs,
   `cronflow-executor-spring-boot-starter`).
-- **Scheduler** — the server process that owns schedules and durable state, elects a leader, and
+- **Scheduler**: the server process that owns schedules and durable state, elects a leader, and
   dispatches runs. It runs the `cronsmith-spring-boot-starter` (and optionally
   `cronflow-spring-boot-starter`).
 
 Almost every moving part is an ordinary Spring bean guarded by `@ConditionalOnMissingBean`, so you
-extend the platform by **defining your own bean of the same type** — no forking. Put the bean in the
+extend the platform by **defining your own bean of the same type**: no forking. Put the bean in the
 right process:
 
 | I want to… | Extension | Lives in |
@@ -41,11 +41,11 @@ right process:
 
 ## Declaring work
 
-### Tasks — `@Task`
+### Tasks: `@Task`
 
 A task is a bean method annotated with `@Task` (annotation:
 `cronsmith-executor-spring-boot-starter` → `executor/Task.java`). The method takes no argument or a
-single `String` (the `initialParameter`); a non-void return value is logged.
+single `String` (the `initialParameter`), a non-void return value is logged.
 
 ```java
 @Component
@@ -71,10 +71,10 @@ The full attribute set (`cron`, `parser`, `interval`+`intervalUnit`, `iso`, `bui
 `name`, `description`, `initialParameter`, `maxRetryCount`, `retryInterval`, `timeout`,
 `misfirePolicy`, `repeatCount`) is documented in the
 [`@Task` reference](configuration.html#task-reference). One gotcha: **there is no `stopAt`
-attribute** — a constant can't express "now + N", so a deadline is set through a `CronExpressionBuilder`
+attribute**: a constant can't express "now + N", so a deadline is set through a `CronExpressionBuilder`
 (below). `misfirePolicy` is one of `FIRE_ONCE_NOW` (default), `SKIP`, `FIRE_ALL`.
 
-### Schedules in code — `CronExpressionBuilder` + `CronBuilder`
+### Schedules in code: `CronExpressionBuilder` + `CronBuilder`
 
 For a schedule you'd rather compute (and self-validate) than hand-type, point the task at a builder
 bean. `CronExpressionBuilder` (`cronsmith-executor-spring-boot-starter` →
@@ -98,9 +98,9 @@ class WeeklyForAMonth implements CronExpressionBuilder {
 public void weeklyReport() { /* ... */ }
 ```
 
-### Workflows — `@Dag`
+### Workflows: `@Dag`
 
-A DAG is a bean carrying `@Dag`; each `@DagNode` method is a step, and the `to` list is the edges.
+A DAG is a bean carrying `@Dag`, each `@DagNode` method is a step, and the `to` list is the edges.
 Nodes hand data to each other by returning a `Map` of named channel writes and read upstream values
 from a `DagState`. Annotations live in `cronflow-executor-spring-boot-starter` → `executor/`.
 
@@ -147,7 +147,7 @@ for dynamic fan-out, and `retries` / `onFailure` / `onComplete`. `DagState` expo
 `OR`, `CONCAT_STRING`, `JOIN_CSV`). When none fits, write your own.
 
 A reducer is a `com.chaconneai.openspreader.dag.Reducer<?>` bean **on the scheduler**. The server
-collects every such bean and joins them to the built-ins; you then reference it by name from the
+collects every such bean and joins them to the built-ins, you then reference it by name from the
 channel. cronflow's own extra reducers are the model to copy
 (`cronflow-spring-boot-starter` → `server/CronflowReducers.java`).
 
@@ -169,11 +169,11 @@ Reducer<?> topScore() {
 
 `customReducer` overrides `reducer` when set.
 
-### Build a DAG in code — `CronflowDag`  *(executor)*
+### Build a DAG in code: `CronflowDag`  *(executor)*
 
 Prefer to assemble a graph programmatically (e.g. from config)? Expose a `CronflowDag` bean
 (`cronflow-executor-spring-boot-starter` → `executor/CronflowDag.java`). The scanner registers it
-exactly like an annotated one; the fluent API mirrors the annotations
+exactly like an annotated one, the fluent API mirrors the annotations
 (`input`, `channel(name, reducer)`, `node(name)` → `bean` / `method` / `subgraph` / `entry` /
 `trigger` / `retry` / `to` / `onFailure` / `onComplete` / `when(expr, targets…)` / `otherwise`), plus
 `triggeredBy(taskGroup, taskName)` to fire it from a finished `@Task`.
@@ -201,8 +201,8 @@ When an app runs several executors, the leader picks one per run. The strategy i
 cronsmith.server.dispatch.routing=WEIGHTED
 ```
 
-`WEIGHTED` reads each executor's `cronsmith.client.weight`; `CONSISTENT_HASH` keeps a task group on
-the same executor. This is a **closed enum** — there is no name-based custom-routing plug-in. For
+`WEIGHTED` reads each executor's `cronsmith.client.weight`, `CONSISTENT_HASH` keeps a task group on
+the same executor. This is a **closed enum**: there is no name-based custom-routing plug-in. For
 logic beyond the six, replace the dispatcher (`scheduler/TaskDispatcher.java`:
 `dispatchAndWait(DispatchRequest)` / `complete(CompleteRequest)`) or the `ExecutorRegistry` bean, both
 `@ConditionalOnMissingBean`:
@@ -231,7 +231,7 @@ Two related seams:
 
 - **A new database kind.** The store is auto-detected from the JDBC product name. Teach it a new one
   at startup with `StoreType.register(name, replicated, shared, aliases…)` (`scheduler/StoreType.java`)
-  — `replicated` = node-local (leader broadcasts), `shared` = sharding-capable.
+ : `replicated` = node-local (leader broadcasts), `shared` = sharding-capable.
 - **Serialization.** Schedules are serialized with a codec chosen by
   `cronsmith.server.storage.serialization` (`JDK` default, or `KRYO` if on the classpath).
 
@@ -240,7 +240,7 @@ Two related seams:
 Most tasks are `@Task` beans on an executor. But a task can also live entirely in the scheduler (the
 `HTTP-API` task is the built-in example) by implementing `Task` directly
 (`cronsmith-spring-boot-starter` → `scheduler/Task.java`). The key methods are `execute(String)` and,
-as an outcome hook, `handleResult(Object result, Throwable reason)`; identity and limits
+as an outcome hook, `handleResult(Object result, Throwable reason)`, identity and limits
 (`getCronExpression`, `getTaskId`, `getTimeout`, `getMaxRetryCount`, …) are overridable, most with
 defaults.
 
@@ -261,13 +261,13 @@ public class ReindexTask implements Task {
 
 > One instance is cached and reused per `Task` class, so keep the body **thread-safe** (no per-run
 > mutable fields). How rows become `Task` objects is itself pluggable via the `TaskFactory` SPI
-> (`scheduler/TaskFactory.java`), registered with `TaskReflectionUtils.setTaskFactory(…)` — this is how
+> (`scheduler/TaskFactory.java`), registered with `TaskReflectionUtils.setTaskFactory(…)`: this is how
 > the server swaps in HTTP-dispatch tasks.
 
-### Observe every task — `TaskListener` / `ErrorHandler`  *(scheduler)*
+### Observe every task: `TaskListener` / `ErrorHandler`  *(scheduler)*
 
 To watch the whole lifecycle cross-cuttingly (audit, metrics, alerting), register a `TaskListener`
-bean (`scheduler/TaskListener.java`) — all methods are `default`, so override just what you need:
+bean (`scheduler/TaskListener.java`): all methods are `default`, so override just what you need:
 
 ```java
 @Component
@@ -278,14 +278,14 @@ class AuditListener implements TaskListener {
 ```
 
 `ErrorHandler` (`scheduler/ErrorHandler.java`: `onHandleScheduler` / `onHandleTask` /
-`onHandleTaskResult`) is the matching seam for error policy; built-ins are `LoggingErrorHandler` and
+`onHandleTaskResult`) is the matching seam for error policy, built-ins are `LoggingErrorHandler` and
 `DebugErrorHandler`.
 
 ### Swap the transport  *(executor)*
 
 The executor talks to the server through an interface, so the wire protocol is replaceable. Implement
 `CronsmithServerClient` (`register` / `heartbeat` / `complete`) and/or `CronflowServerClient`
-(`register` / `heartbeat`) and define your own bean; the default WebClient impls step aside
+(`register` / `heartbeat`) and define your own bean, the default WebClient impls step aside
 (`@ConditionalOnMissingBean`).
 
 ```java
@@ -305,10 +305,10 @@ binder). The task side has the same seam in `TaskExecutionService` (default
 
 ## Overriding auto-configured beans
 
-Every bean below is `@ConditionalOnMissingBean` — define your own of the same type (matching the name
+Every bean below is `@ConditionalOnMissingBean`: define your own of the same type (matching the name
 where one is given) to replace it. Toggle a whole starter with its `*.enabled` flag.
 
-**Scheduler — `CronsmithServerAutoConfiguration`**
+**Scheduler: `CronsmithServerAutoConfiguration`**
 
 | Bean (type / name) | Replace to… |
 |--------------------|-------------|
@@ -318,7 +318,7 @@ where one is given) to replace it. Toggle a whole starter with its `*.enabled` f
 | `TaskDispatcher cronsmithTaskDispatcher` | custom dispatch |
 | `SchedulerLifecycle cronsmithSchedulerLifecycle` | custom start/stop |
 
-**Executor — `CronsmithClientAutoConfiguration`** (`cronsmith.client.enabled`)
+**Executor: `CronsmithClientAutoConfiguration`** (`cronsmith.client.enabled`)
 
 | Bean | Replace to… |
 |------|-------------|
@@ -327,7 +327,7 @@ where one is given) to replace it. Toggle a whole starter with its `*.enabled` f
 | `ExecutorIdentity` | custom node id / weight |
 | `TaskExecutionService` | custom invocation / arg binding |
 
-**cronflow server — `CronflowServerAutoConfiguration`** (`cronflow.server.enabled`)
+**cronflow server: `CronflowServerAutoConfiguration`** (`cronflow.server.enabled`)
 
 | Bean | Replace to… |
 |------|-------------|
@@ -335,7 +335,7 @@ where one is given) to replace it. Toggle a whole starter with its `*.enabled` f
 | `DagDefinitionCodec` | custom definition serialization |
 | `DagNodeDispatcher` / `EngineDagRunner cronflowDagCoordinator` | custom orchestration |
 
-**cronflow executor — `CronflowClientAutoConfiguration`** (`cronflow.client.enabled`)
+**cronflow executor: `CronflowClientAutoConfiguration`** (`cronflow.client.enabled`)
 
 | Bean | Replace to… |
 |------|-------------|
@@ -356,5 +356,5 @@ where one is given) to replace it. Toggle a whole starter with its `*.enabled` f
 | `cronflow-spring-boot-starter` → `CronflowReducers` | the pattern for custom `Reducer` beans |
 | `cronsmith-spring-boot-starter` `src/test` → `CustomTaskTests` / `TestTasks` | hand-written `Task` implementations |
 
-For the config keys behind all of this, see [Configuration](configuration.html); for how the pieces
+For the config keys behind all of this, see [Configuration](configuration.html), for how the pieces
 fit together, [Architecture](architecture.html).
