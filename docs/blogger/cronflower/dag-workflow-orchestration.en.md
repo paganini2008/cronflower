@@ -48,7 +48,6 @@ edges. A node returns a `Map` of named **channel** writes; downstream nodes read
 `DagState`. Each `@Channel` says how concurrent writes to it merge, via a **reducer**. The engine
 drives the graph **across the whole cluster**, dispatching each node to a live executor.
 
-{% raw %}
 ```mermaid
 flowchart LR
   input((input)) --> intake
@@ -59,7 +58,6 @@ flowchart LR
   decide -->|"score >= 70"| APPROVED
   decide -->|else| REJECTED
 ```
-{% endraw %}
 
 ## Code examples
 

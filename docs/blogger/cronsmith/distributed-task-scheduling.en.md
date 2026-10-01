@@ -46,7 +46,6 @@ Two kinds of process: a **scheduler** owns the schedule and durable state; an **
 which declares tasks and runs the code on callback. Run several schedulers and they elect a leader over
 gossip; state lives in the store, so a restart or failover loses nothing.
 
-{% raw %}
 ```mermaid
 flowchart LR
   App["your app = executor<br/>@Task beans"] -->|register on boot| L
@@ -57,7 +56,6 @@ flowchart LR
   Cluster --> Store[("store<br/>H2 · MySQL · PostgreSQL")]
   L -->|"dispatch when due (HTTP callback)"| App
 ```
-{% endraw %}
 
 The leader loads only the tasks due in the next few minutes into a timing wheel and claims the rest
 from the store as they come due, so a cluster with hundreds of thousands of tasks still starts
