@@ -1,8 +1,8 @@
 ---
-title: "cronflower: turn a Spring Boot app into a distributed cron cluster"
+title: "Cronflower: Turn a Spring Boot app into a distributed cron cluster easily"
 ---
 
-# cronflower: turn a Spring Boot app into a distributed cron cluster
+# Cronflower: Turn a Spring Boot app into a distributed cron cluster easily
 
 **cronflower** is an open-source, distributed cron scheduler for the JVM with a web console. It forms
 its own cluster and needs no external database, broker, or coordinator. This post is the usage tour of
