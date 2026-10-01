@@ -24,6 +24,7 @@ package com.github.cronflow.springapp.executor;
  *
  * @Description: ChannelReducer
  * @Author: Fred Feng
+ * @Date: 20/09/2026
  * @Version 1.0.0
  */
 public enum ChannelReducer {

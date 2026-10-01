@@ -1,12 +1,8 @@
----
-title: "cronflower: turn a Spring Boot app into a distributed cron cluster"
----
-
 # cronflower: turn a Spring Boot app into a distributed cron cluster
 
 **cronflower** is an open-source, distributed cron scheduler for the JVM with a web console. It forms
 its own cluster and needs no external database, broker, or coordinator. This post is the usage tour of
-its distributed **task** scheduling (its DAG side has [its own post](../cronflower/dag-workflow-orchestration.en.html)).
+its distributed **task** scheduling (its DAG side has its own post).
 
 ![The task list in the console](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/tasks-list.jpg)
 
@@ -28,17 +24,15 @@ cd cronflower/deploy
 ./run-local.sh -e 1          # scheduler + console + 1 executor  (embedded H2)
 ```
 
-Open <http://localhost:7200>, sign in `admin` / `admin123`, and the example tasks are already running.
+Open http://localhost:7200, sign in `admin` / `admin123`, and the example tasks are already running.
 Scale into a real cluster with `./run-local.sh -n 3 -e 2`.
 
 ## Requirements
 
-| Need | Version / note |
-|------|----------------|
-| JDK | 17+ (builds via the bundled Maven Wrapper) |
-| Node | 20+ (builds the console) |
-| Docker | optional (container path only) |
-| Database | optional — none → embedded H2; MySQL / PostgreSQL for a shared store |
+- **JDK**: 17+ (builds via the bundled Maven Wrapper)
+- **Node**: 20+ (builds the console)
+- **Docker**: optional (container path only)
+- **Database**: optional — none → embedded H2; MySQL / PostgreSQL for a shared store
 
 ## How it works
 
@@ -46,18 +40,18 @@ Two kinds of process: a **scheduler** owns the schedule and durable state; an **
 which declares tasks and runs the code on callback. Run several schedulers and they elect a leader over
 gossip; state lives in the store, so a restart or failover loses nothing.
 
-{% raw %}
-```mermaid
-flowchart LR
-  App["your app = executor<br/>@Task beans"] -->|register on boot| L
-  subgraph Cluster["scheduler cluster"]
-    L["leader"] <-->|gossip| F1["follower"]
-    F1 <-->|gossip| F2["follower"]
-  end
-  Cluster --> Store[("store<br/>H2 · MySQL · PostgreSQL")]
-  L -->|"dispatch when due (HTTP callback)"| App
 ```
-{% endraw %}
+   your app (executor, @Task beans)
+          |  register on boot
+          v
+   +----------------------------------------+
+   |   scheduler cluster (gossip)           |
+   |   leader  <->  follower  <->  follower |
+   +----------------------------------------+
+          |                        ^
+          v                        |  dispatch when due (HTTP callback)
+     store:  H2  /  MySQL  /  PostgreSQL
+```
 
 The leader loads only the tasks due in the next few minutes into a timing wheel and claims the rest
 from the store as they come due, so a cluster with hundreds of thousands of tasks still starts
@@ -127,27 +121,23 @@ operators add or edit tasks with no redeploy.
 
 The `@Task` attributes, for reference:
 
-| Attribute | What it does |
-|-----------|--------------|
-| `cron` / `parser` | a cron schedule, or YCRON with `parser = "ycron"` |
-| `interval` + `intervalUnit` / `iso` | a fixed interval, or an ISO-8601 duration |
-| `builder` | a `CronExpressionBuilder` bean (wins over `cron`; the only way to set a deadline) |
-| `initialParameter` | a constant, or a SpEL template evaluated on each fire |
-| `maxRetryCount` / `retryInterval` | retry a failed run, with back-off |
-| `timeout` | fail a run that overruns, in milliseconds |
-| `misfirePolicy` | `FIRE_ONCE_NOW` (default) / `FIRE_ALL` / `SKIP` |
-| `repeatCount` | total fires before the task finishes |
+- **`cron` / `parser`**: a cron schedule, or YCRON with `parser = "ycron"`
+- **`interval` + `intervalUnit` / `iso`**: a fixed interval, or an ISO-8601 duration
+- **`builder`**: a `CronExpressionBuilder` bean (wins over `cron`; the only way to set a deadline)
+- **`initialParameter`**: a constant, or a SpEL template evaluated on each fire
+- **`maxRetryCount` / `retryInterval`**: retry a failed run, with back-off
+- **`timeout`**: fail a run that overruns, in milliseconds
+- **`misfirePolicy`**: `FIRE_ONCE_NOW` (default) / `FIRE_ALL` / `SKIP`
+- **`repeatCount`**: total fires before the task finishes
 
 ## Configuration
 
-| Property | Default | Description |
-|----------|---------|-------------|
-| `cronsmith.client.server-urls` | — | On the executor: scheduler seed URL(s) |
-| `cronsmith.server.scheduler.zone` | `UTC` | Fire-time zone — must match cluster-wide |
-| `cronsmith.server.scheduler.window-minutes` | `5` | Windowed-loading horizon |
-| `cronsmith.server.scheduler.sharding` | `true` | Group sharding over a shared store (else leader-only) |
-| `cronsmith.server.dispatch.routing` | `ROUND_ROBIN` | …`WEIGHTED` / `CONSISTENT_HASH` / `RANDOM` / `FIRST` / `LAST` |
-| `spring.datasource.url` | H2 file | Point at MySQL/PostgreSQL for a shared, sharding-capable store |
+- **`cronsmith.client.server-urls`**: on the executor, the scheduler seed URL(s)
+- **`cronsmith.server.scheduler.zone`** (default `UTC`): fire-time zone, must match cluster-wide
+- **`cronsmith.server.scheduler.window-minutes`** (default `5`): windowed-loading horizon
+- **`cronsmith.server.scheduler.sharding`** (default `true`): group sharding over a shared store (else leader-only)
+- **`cronsmith.server.dispatch.routing`** (default `ROUND_ROBIN`): `WEIGHTED` / `CONSISTENT_HASH` / `RANDOM` / `FIRST` / `LAST`
+- **`spring.datasource.url`** (default H2 file): point at MySQL/PostgreSQL for a shared, sharding-capable store
 
 ## Limitations & trade-offs
 

@@ -22,6 +22,7 @@ package com.github.cronflow.springapp.server.pojo;
  *
  * @Description: StoredDag
  * @Author: Fred Feng
+ * @Date: 20/09/2026
  * @Version 1.0.0
  */
 public record StoredDag(String application, String graph, String definition, String format) {}

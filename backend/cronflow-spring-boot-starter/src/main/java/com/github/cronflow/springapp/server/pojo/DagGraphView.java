@@ -21,6 +21,7 @@ package com.github.cronflow.springapp.server.pojo;
  *
  * @Description: DagGraphView
  * @Author: Fred Feng
+ * @Date: 20/09/2026
  * @Version 1.0.0
  */
 public record DagGraphView(String application, String graph, int nodeCount,

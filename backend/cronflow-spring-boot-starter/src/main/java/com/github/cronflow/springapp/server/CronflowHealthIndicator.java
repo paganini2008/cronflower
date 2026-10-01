@@ -27,6 +27,7 @@ import org.springframework.boot.health.contributor.HealthIndicator;
  *
  * @Description: CronflowHealthIndicator
  * @Author: Fred Feng
+ * @Date: 20/09/2026
  * @Version 1.0.0
  */
 public class CronflowHealthIndicator implements HealthIndicator {

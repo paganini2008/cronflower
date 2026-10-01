@@ -23,6 +23,7 @@ import java.io.Serializable;
  *
  * @Description: TriggerBinding
  * @Author: Fred Feng
+ * @Date: 20/09/2026
  * @Version 1.0.0
  */
 public record TriggerBinding(String taskGroup, String taskName, String graph) implements Serializable {}

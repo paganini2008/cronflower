@@ -26,6 +26,7 @@ import java.util.Map;
  *
  * @Description: DagDefinition
  * @Author: Fred Feng
+ * @Date: 20/09/2026
  * @Version 1.0.0
  */
 public record DagDefinition(String graph, List<String> inputs, List<ChannelDef> channels,

@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
  *
  * @Description: DagNodeView
  * @Author: Fred Feng
+ * @Date: 20/09/2026
  * @Version 1.0.0
  */
 public record DagNodeView(String runId, String graph, String node, Integer seq, String status,

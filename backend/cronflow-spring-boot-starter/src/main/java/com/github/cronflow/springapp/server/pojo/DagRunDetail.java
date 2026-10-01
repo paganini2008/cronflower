@@ -25,6 +25,7 @@ import java.util.List;
  *
  * @Description: DagRunDetail
  * @Author: Fred Feng
+ * @Date: 20/09/2026
  * @Version 1.0.0
  */
 public record DagRunDetail(DagRunView run, List<DagNodeView> nodes, List<DagRunView> children,
