@@ -1,13 +1,9 @@
----
-title: "cronflower: run a DAG workflow across your cluster"
----
-
 # cronflower: run a DAG workflow across your cluster, instead of chaining cron jobs
 
 **cronflower** is an open-source, distributed scheduler for the JVM with a web console. `cronflow` is
 its optional DAG add-on: declare the steps and how they depend on each other as a graph, and the same
 cluster runs the graph node by node, with data flowing between nodes over typed channels. (Its
-distributed `@Task` scheduling has [its own post](../cronsmith/distributed-task-scheduling.en.html).)
+distributed `@Task` scheduling has its own post.)
 
 ![Registered workflows and the selected graph's shape](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-workflows.jpg)
 
@@ -29,17 +25,15 @@ cd cronflower/deploy
 ./run-local.sh -e 1          # scheduler + console + 1 executor
 ```
 
-Open <http://localhost:7200> (`admin` / `admin123`) and the example DAGs are registered under **DAG >
+Open http://localhost:7200 (`admin` / `admin123`) and the example DAGs are registered under **DAG >
 Workflows**, ready to trigger.
 
 ## Requirements
 
-| Need | Version / note |
-|------|----------------|
-| JDK | 17+ (builds via the bundled Maven Wrapper) |
-| Node | 20+ (builds the console) |
-| cronflow add-on | `cronflow-spring-boot-starter` on the scheduler, `cronflow-executor-spring-boot-starter` on the executor |
-| Database | optional — none → embedded H2; MySQL / PostgreSQL for a shared store |
+- **JDK**: 17+ (builds via the bundled Maven Wrapper)
+- **Node**: 20+ (builds the console)
+- **cronflow add-on**: `cronflow-spring-boot-starter` on the scheduler, `cronflow-executor-spring-boot-starter` on the executor
+- **Database**: optional — none → embedded H2; MySQL / PostgreSQL for a shared store
 
 ## How it works
 
@@ -48,18 +42,18 @@ edges. A node returns a `Map` of named **channel** writes; downstream nodes read
 `DagState`. Each `@Channel` says how concurrent writes to it merge, via a **reducer**. The engine
 drives the graph **across the whole cluster**, dispatching each node to a live executor.
 
-{% raw %}
-```mermaid
-flowchart LR
-  input((input)) --> intake
-  intake --> credit & income & collateral
-  credit --> decide
-  income --> decide
-  collateral --> decide
-  decide -->|"score >= 70"| APPROVED
-  decide -->|else| REJECTED
 ```
-{% endraw %}
+                 input
+                   |
+                 intake
+              /    |    \
+        credit  income  collateral
+              \    |    /
+                 decide
+              /          \
+       score >= 70       else
+       APPROVED          REJECTED
+```
 
 ## Code examples
 
@@ -132,15 +126,13 @@ public Map<String, Object> square(DagState state) { /* runs once per id, at run 
 
 Each `@Channel` merges concurrent writes with a built-in reducer, or your own via `customReducer`:
 
-| Reducer | Merge |
-|---------|-------|
-| `SUM_INT` / `SUM_LONG` | add the numbers |
-| `MAX` / `MIN` | keep the largest / smallest |
-| `AND` / `OR` | boolean fold |
-| `CONCAT_LIST` / `UNION_SET` | append / union collections |
-| `CONCAT_STRING` / `JOIN_CSV` | join text |
-| `MERGE_MAP` | merge maps |
-| `LAST_WINS` / `FIRST_WINS` / `WRITE_ONCE` | pick one writer |
+- **`SUM_INT` / `SUM_LONG`**: add the numbers
+- **`MAX` / `MIN`**: keep the largest / smallest
+- **`AND` / `OR`**: boolean fold
+- **`CONCAT_LIST` / `UNION_SET`**: append / union collections
+- **`CONCAT_STRING` / `JOIN_CSV`**: join text
+- **`MERGE_MAP`**: merge maps
+- **`LAST_WINS` / `FIRST_WINS` / `WRITE_ONCE`**: pick one writer
 
 The executor points at the scheduler with `cronflow.client.server-urls`; the server prefix is
 `cronflow.server.api-prefix` (default `/cronflow`).

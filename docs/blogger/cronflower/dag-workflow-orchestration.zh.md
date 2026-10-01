@@ -1,62 +1,116 @@
 # cronflower：在集群上跑一张 DAG 工作流，别再手动串 cron 任务了
 
-每个团队最后都会走到这一步。一个 cron 任务 02:00 给订单扣款；另一个 02:15 发货，之所以定在晚 15 分钟，是因为第一个**通常**能在这之前跑完。两者之间没有真正的依赖，没有共享数据，事后也无从判断：第二步跑起来，是因为第一步真的成功了，还是仅仅因为时钟到点了。
+**cronflower** 是一个面向 JVM、自带控制台的开源分布式调度器。`cronflow` 是它可选的 DAG 附加组件：把「有哪些步骤、彼此怎么依赖」声明成一张图，同一个集群按图逐个节点地跑，数据在节点间通过类型化 channel 流转。（它的分布式 `@Task` 调度另有[一篇](../cronsmith/distributed-task-scheduling.zh.md)。）
 
-这就是纯 cron 撞上的墙：它只能调度单个任务，编排不了一连串任务的流转。
+![已注册的工作流，右侧是选中图的形状](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-workflows.jpg)
 
-**cronflower** 是一个面向 Spring Boot、自带控制台的开源分布式调度器，它有两面：`cronsmith`，分布式调度器（另有一篇）；以及 `cronflow`，也就是这篇要讲的 DAG 编排器。用 `cronflow`，你把「有哪些步骤、彼此怎么依赖」声明成一张图，同一个集群按图逐个节点地跑，数据在节点间流转，每次运行都留痕。这篇讲怎么用。
+## 它解决什么问题？
 
-## 声明一个工作流
+团队最后都会去手动串 cron：一个 02:00 给订单扣款，另一个 02:15 发货，之所以晚 15 分钟，是赌第一个**通常**能在之前跑完。两者没有真正的依赖、没有共享数据，事后也无从判断：第二步跑起来，是因为第一步真的成功了，还是仅仅因为时钟到点了。
 
-一个 DAG 就是一个 Spring bean。`@Dag` 给它命名；每个 `@DagNode` 方法是一个步骤；`to` 列表就是边。节点之间靠返回一个「命名 channel 写入」的 `Map` 传数据，靠 `DagState` 读上游写了什么：
+这就是纯 cron 撞上的墙：它只能调度单个任务，编排不了一连串任务的流转。一张 DAG 让依赖变成真的，让数据在步骤间流动，并且每次运行都留痕。
+
+## 快速开始
+
+```bash
+git clone https://github.com/paganini2008/cronflower
+cd cronflower/deploy
+./run-local.sh -e 1          # 调度器 + 控制台 + 1 个执行器
+```
+
+打开 <http://localhost:7200>（`admin` / `admin123`），示例 DAG 已经注册在 **DAG > Workflows** 下，随时可触发。
+
+## 环境要求
+
+| 需要 | 版本 / 说明 |
+|------|-------------|
+| JDK | 17+（用自带的 Maven Wrapper 构建） |
+| Node | 20+（构建控制台） |
+| cronflow 附加组件 | 调度器加 `cronflow-spring-boot-starter`，执行器加 `cronflow-executor-spring-boot-starter` |
+| 数据库 | 可选，不配就是内嵌 H2；配 MySQL / PostgreSQL 得到共享存储 |
+
+## 工作原理
+
+一个 DAG 就是一个 Spring bean：`@Dag` 给它命名，每个 `@DagNode` 方法是一个步骤，`to` 列表就是边。节点返回一个「命名 channel 写入」的 `Map`，下游节点从 `DagState` 读。每个 `@Channel` 声明并发写入怎么通过 **reducer** 合并。引擎把图**跨整个集群**驱动，把每个节点派发给一个存活的执行器。
+
+```mermaid
+flowchart LR
+  input((input)) --> intake
+  intake --> credit & income & collateral
+  credit --> decide
+  income --> decide
+  collateral --> decide
+  decide -->|"score >= 70"| APPROVED
+  decide -->|else| REJECTED
+```
+
+## 代码示例
+
+### 声明一个工作流 `@Dag`
+
+**输入**：一个带 `@Dag` + `@DagNode` 方法和类型化 channel 的 bean：
 
 ```java
 @Dag(name = "scoring-flow", inputs = {"input"}, channels = {
-        @Channel(name = "score",     reducer = ChannelReducer.SUM_INT),
-        @Channel(name = "maxWeight", reducer = ChannelReducer.MAX),
-        @Channel(name = "factors",   reducer = ChannelReducer.JOIN_CSV)})
+        @Channel(name = "score",   reducer = ChannelReducer.SUM_INT),
+        @Channel(name = "factors", reducer = ChannelReducer.JOIN_CSV)})
 @Component
 public class ScoringFlow {
 
-    // 入口节点扇出到三个并行打分节点
-    @DagNode(entry = true, to = {"credit", "income", "collateral"})
+    @DagNode(entry = true, to = {"credit", "income", "collateral"})     // 扇出到三个并行打分节点
     public Map<String, Object> intake(DagState state) {
         return Map.of("applicant", state.getString("input"));
     }
 
     @DagNode(to = {"decide"})
     public Map<String, Object> credit(DagState state) {
-        return Map.of("score", 40, "maxWeight", 40, "factors", "credit");
+        return Map.of("score", 40, "factors", "credit");
     }
+    // income()、collateral() … 形状相同，写入同样的 channel
 
-    @DagNode(to = {"decide"})
-    public Map<String, Object> income(DagState state) {
-        return Map.of("score", 30, "maxWeight", 30, "factors", "income");
-    }
-
-    @DagNode(to = {"decide"})
-    public Map<String, Object> collateral(DagState state) {
-        return Map.of("score", 20, "maxWeight", 20, "factors", "collateral");
-    }
-
-    // join：等全部三个到齐，再读合并后的 channel
-    @DagNode(trigger = "ALL")
+    @DagNode(trigger = "ALL")                                           // 汇合：等全部三个到齐
     public Map<String, Object> decide(DagState state) {
-        long total = state.getLong("score");          // 40 + 30 + 20 = 90
+        long total = state.getLong("score");                           // reducer 已经求和好了
         return Map.of("decision", total >= 70 ? "APPROVED" : "REJECTED");
     }
 }
 ```
 
-控制台会照你声明的原样把图画出来，跑之前就能看清它的形状：
+**执行**：三个打分节点并行跑，各自写 `score`；reducer 把并发写入合并（求和成 90），于是 `decide` 读到一个合并好的单值。没有共享可变状态，也不用假设谁先谁后。
 
-![已注册的工作流，右侧是选中图的形状](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-workflows.jpg)
+**输出**：控制台把图画出来；一次运行逐个节点亮起，每个节点都显示**由哪个执行器跑的**，所以宽扇出是真的在不同机器上并行：
 
-## channel 帮你把管道接好
+![各节点结果，含每个节点由哪个执行器运行](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-run-nodes.jpg)
 
-三个打分节点同时往 `score` 写。手写代码里这是竞态加锁；在这里它是一个**带 reducer 的 channel**。每个 `@Channel` 声明并发写入怎么合并，于是 `decide` 读到的是一个已经合并好的单值（`score` 求和成 90、`maxWeight` 取最大成 40、`factors` 拼成 `"credit,income,collateral"`）。没有共享可变状态，也不用假设谁先谁后。
+### 边不只是直线
 
-内置 reducer 覆盖了常见的合并：
+```java
+@DagNode(when = @When(expr = "#risk > 80", to = "humanReview"), otherwise = {"fulfilment"})
+public Map<String, Object> riskScore(DagState state) { /* 写入 risk */ }
+
+@DagNode(subgraph = "fulfilment-flow", to = {"notify"})                // 嵌套一整张 DAG
+public Map<String, Object> fulfilment(DagState state) { /* ... */ }
+
+@DagNode(shard = @Shard(input = "ids", output = "squares"), to = {"report"})
+public Map<String, Object> square(DagState state) { /* 运行时每个 id 跑一次 */ }
+```
+
+- **`when` + `otherwise`**：用 SpEL 表达式按 channel 里的数据决定下一步。
+- **`trigger`**：`ALL` 等所有上游边到齐；`ANY` 第一个到就触发。
+- **`subgraph`**：一个节点就是另一整张 DAG，于是组合而非复制。
+- **`@Shard`**：动态扇出，按运行时才知道的列表逐元素各跑一次。
+
+### 三种触发方式
+
+- **手动**，用控制台的 *Trigger* 按钮，可选传一段 JSON 作为输入 channel 的种子。
+- **由同一个 bean 里完成的 `@Task` 触发**：它的返回值就是 DAG 的输入。
+- **直接按排期触发**：在 *Create Task* 表单里选 *Trigger DAG*。
+
+![一次完成的运行：图 + 触发方式](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-run.jpg)
+
+## 配置：channel 与 reducer
+
+每个 `@Channel` 用内置 reducer 合并并发写入，或用 `customReducer` 指向你自己的：
 
 | Reducer | 合并方式 |
 |---------|----------|
@@ -68,67 +122,22 @@ public class ScoringFlow {
 | `MERGE_MAP` | 合并 map |
 | `LAST_WINS` / `FIRST_WINS` / `WRITE_ONCE` | 只取一个写入者 |
 
-要别的？用 `customReducer` 把 channel 指到你自己的 bean。
+执行器用 `cronflow.client.server-urls` 指向调度器；服务端前缀是 `cronflow.server.api-prefix`（默认 `/cronflow`）。
 
-## 分支、汇合、嵌套、动态扇出
+## 局限与取舍
 
-边不只是直线。
+- DAG 引擎跑在**cronflow 附加组件**之上、依托调度器集群，不是独立的工作流服务器。先把 cronflower 跑起来，再加 `@Dag` bean。
+- 节点通过 HTTP 派发给执行器，所以节点的 bean 要**可达、且足够幂等**以便重试。
+- channel 的值要跨网络在节点间传递，所以保持**可序列化、体量别太大**。
+- 它编排的是**你的步骤**，不是用来流式处理大数据集的数据管道引擎。
 
-**条件路由。** 一个节点可以用 SpEL 表达式，按数据决定下一步：
+## 小结
 
-```java
-@DagNode(when = @When(expr = "#risk > 80", to = "humanReview"), otherwise = {"fulfilment"})
-public Map<String, Object> riskScore(DagState state) { /* 写入 risk */ }
-```
+- 一个 DAG 就是一个 Spring bean：**`@Dag` + `@DagNode`**，`to` 定义边，数据走类型化 **channel**。
+- **reducer** 合并并发写入，汇合不需要锁、也不用假设先后。
+- **分支**（`when`）、**汇合模式**（`ALL`/`ANY`）、**子图**、**动态扇出**（`@Shard`）都是注解属性。
+- 引擎把**图跨集群驱动**，每个节点派发给一个存活的执行器。
+- 触发方式：**手动、由完成的任务、或按排期**。
+- 每次运行都**逐节点留痕**，看得到什么在哪跑的、产出了什么。
 
-**汇合模式。** `trigger = "ALL"` 等所有上游边到齐（上面的 `decide`）；`trigger = "ANY"` 只要第一个到就触发，用于「先到先得」的步骤。
-
-**子图。** 一个节点可以是另一整张 DAG，于是你是组合工作流，而不是复制：
-
-```java
-@DagNode(subgraph = "fulfilment-flow", to = {"notify"})
-public Map<String, Object> fulfilment(DagState state) { /* 跑 fulfilment-flow 这张 DAG */ }
-```
-
-**动态扇出。** 宽度到运行时才知道时，`@Shard` 把某个 channel 里的列表拆开，节点按元素各跑一次，再把结果收集进另一个 channel：
-
-```java
-@DagNode(shard = @Shard(input = "ids", output = "squares"), to = {"report"})
-public Map<String, Object> square(DagState state) { /* 每个 id 跑一次 */ }
-```
-
-## 三种触发方式
-
-- **手动**，用控制台的 *Trigger* 按钮，可选传一段 JSON 作为输入 channel 的种子。
-- **由一个完成的任务触发。** 在同一个 bean 里放一个 cronsmith `@Task`，它的返回值就是 DAG 的输入，于是一个排期就把流程启动了：
-
-  ```java
-  @Task(cron = "0/30 * * * * ?", description = "kick off the scoring-flow DAG")
-  public String kickoff() { return "applicant-42"; }
-  ```
-
-- **直接按排期触发。** 在 Tasks 模块 *Create Task* 选 *Trigger DAG*，调度器就按 cron 触发这张工作流，一行 kickoff 代码都不用写。
-
-## 看它分布式地跑
-
-一次运行不是黑盒。点进去，你能看到同一张图逐个节点亮起来，旁边的面板告诉你是什么触发的、跑了多久、跑了几个节点：
-
-![一次完成的运行：图 + 触发方式](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-run.jpg)
-
-图的下方，每个节点是一行：它调了什么、成不成功、耗时多少，以及最关键的：**由哪个执行器跑的**。引擎不是在一个进程里跑完整个流程，而是把图**跨整个调度集群**驱动，把每个节点派发给一个存活的执行器，所以一次宽扇出是真的在不同机器上并行跑：
-
-![各节点结果，含每个节点由哪个执行器运行](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-run-nodes.jpg)
-
-这就是相比「手动串 cron」的回报：依赖是真的，数据走类型化的 channel 流转，分支就是分支，而且事后你能精确指出哪个节点在哪跑的、产出了什么。
-
-## 把它跑起来
-
-克隆 [cronflower](https://github.com/paganini2008/cronflower)，一条命令就把整套拉起来：一个调度器、控制台、外加一个执行器，底层用内嵌存储，什么都不用额外准备：
-
-```bash
-git clone https://github.com/paganini2008/cronflower
-cd cronflower/deploy
-./run-local.sh -e 1          # 调度器 + 控制台 + 1 个执行器
-```
-
-打开 <http://localhost:7200>，用 `admin` / `admin123` 登录。想变成真正的集群，用 `./run-local.sh -n 3 -e 2`（3 个调度器、2 个执行器），或用 `./run-docker.sh` 跑容器版。自带的执行器已经带了这篇里所有的工作流，所以控制台一打开，它们就在里面等你触发；要加自己的工作流，声明你自己的 `@Dag` bean 即可。
+把它跑起来：[cronflower on GitHub](https://github.com/paganini2008/cronflower)。

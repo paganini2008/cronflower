@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
  *
  * @Description: DagRunView
  * @Author: Fred Feng
+ * @Date: 20/09/2026
  * @Version 1.0.0
  */
 public record DagRunView(String runId, String parentRunId, String application, String graph,

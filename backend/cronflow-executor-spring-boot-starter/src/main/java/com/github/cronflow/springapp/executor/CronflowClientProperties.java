@@ -32,6 +32,7 @@ import lombok.Data;
  *
  * @Description: CronflowClientProperties
  * @Author: Fred Feng
+ * @Date: 14/09/2026
  * @Version 1.0.0
  */
 @Data
