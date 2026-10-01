@@ -122,6 +122,36 @@ Edges are not just straight lines: `when` routes by a SpEL expression, `trigger 
 join mode, `subgraph` nests a whole other DAG, and `@Shard` fans a node out once per list element at
 run time. A workflow is triggered by hand, from a finished `@Task`, or on a schedule.
 
+### How a run executes
+
+A run has three layers, and they live in different places:
+
+{% raw %}
+```mermaid
+flowchart TB
+    Coord["coordinating scheduler<br/>graph event loop + frontier + run log"]
+    Coord -->|"submit each ready node step"| Pool["cluster process pool (PoolService)<br/>picks a replica afresh per call"]
+    Pool --> A["scheduler node A"]
+    Pool --> B["scheduler node B"]
+    Pool --> C["scheduler node C"]
+    A -->|"node body: HTTP call"| Exec["a live executor<br/>runs the @DagNode method"]
+```
+{% endraw %}
+
+1. **One coordinating scheduler** drives the graph. It is the node that fired the trigger `@Task`: the
+   leader in leader-only mode, or the task-group owner under sharding. Its event loop decides node
+   readiness, applies channel reducers, advances the frontier, and writes the run log.
+2. **The cluster process pool** runs the node steps. The coordinator submits each ready node to
+   openspreader's `PoolService`, which picks a replica afresh on every call, so the steps of a single
+   run are spread across scheduler instances rather than pinned to the coordinator.
+3. **A live executor** runs the node body. The step a replica runs is a thin call that dispatches over
+   HTTP to an executor, which invokes your `@DagNode` method and returns the channel writes.
+
+Definitions and run history are replicated cluster-wide (`ClusterDagRegistry`, `ClusterDagRunLog`), so
+every node serves the console and a later run can be coordinated by a different node. The in-flight
+frontier of one run lives in the coordinating node's memory, so that node owns that run's orchestration
+loop until it finishes.
+
 ## YCRON (year-based extension)
 
 Traditional cron cannot express "the 200th day of the year" or "the first ISO week". YCRON adds a
