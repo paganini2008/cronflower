@@ -1,4 +1,4 @@
-# cronflower
+# cronflower 1.0.0-SNAPSHOT
 
 ![Java](https://img.shields.io/badge/Java-17-007396?logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F?logo=springboot&logoColor=white)
@@ -7,17 +7,17 @@
 ![Build](https://img.shields.io/badge/build-Maven%20Wrapper-C71A36?logo=apachemaven&logoColor=white)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 
-**Distributed cron for the JVM, with a console — it clusters itself and depends on nothing external.**
+**Distributed cron for the JVM, with a console: it clusters itself and depends on nothing external.**
 
-Drop `@Task` on a Spring bean and the cluster owns the schedule and calls you back; declare a `@Dag`
+Drop `@Task` on a Spring bean and the cluster owns the schedule and calls you back, declare a `@Dag`
 and the same cluster runs a whole workflow across your machines. One command takes you from `git clone`
-to a live, distributed scheduler cluster with a UI — no database, broker, or ZooKeeper/etcd to stand up.
+to a live, distributed scheduler cluster with a UI: no database, broker, or ZooKeeper/etcd to stand up.
 
 ```
 cronflower = cronsmith (distributed scheduling) + cronflow (DAG orchestration)
 ```
 
-![Tasks list](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/tasks-list.jpg)
+![Dashboard](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dashboard.jpg)
 
 ## Features
 
@@ -26,14 +26,14 @@ dependencies:
 
 | Capability | What it gives you |
 |------------|-------------------|
-| **Zero external infrastructure** | No separate database, broker, or coordination service — embedded H2 store, self-forming cluster, self-balancing console |
-| **Distributed & HA** | Gossip leader election (via *openspreader*); followers fail over; no cron fires twice, none goes missing |
-| **Stateful & durable** | Schedules + history in a store **auto-detected** from the JDBC URL (in-memory → H2/SQLite → MySQL/PostgreSQL); a restart or failover loses nothing |
-| **Scales horizontally** | A timing wheel drives large task volumes; **group sharding** spreads them across nodes; **weighted dispatch** fans runs out to executors by capacity |
-| **Rich `@Task` model** | cron / YCRON / fixed-interval / ISO-8601 duration, plus retry with back-off, per-run timeout, misfire policy, and repeat / stop-at limits — all declarative |
+| **Zero external infrastructure** | No separate database, broker, or coordination service: embedded H2 store, self-forming cluster, self-balancing console |
+| **Distributed & HA** | Gossip leader election (via *openspreader*), followers fail over, no cron fires twice, none goes missing |
+| **Stateful & durable** | Schedules + history in a store **auto-detected** from the JDBC URL (in-memory → H2/SQLite → MySQL/PostgreSQL), a restart or failover loses nothing |
+| **Scales horizontally** | A timing wheel drives large task volumes, **group sharding** spreads them across nodes, **weighted dispatch** fans runs out to executors by capacity |
+| **Rich `@Task` model** | cron / YCRON / fixed-interval / ISO-8601 duration, plus retry with back-off, per-run timeout, misfire policy, and repeat / stop-at limits: all declarative |
 | **YCRON** | Year-based schedules ("the 200th day of the year") that no traditional cron field can express |
 | **DAG orchestration** | `@Dag` graphs with typed channels, branching, joins, subgraphs, and dynamic fan-out, driven across the cluster |
-| **Operator console** | Tasks, Executors, Cluster, DAG runs, System Health, and a live Settings view — one endpoint, UTC-first with a per-viewer time-zone toggle |
+| **Operator console** | Tasks, Executors, Cluster, DAG runs, System Health, and a live Settings view: one endpoint, UTC-first with a per-viewer time-zone toggle |
 
 ## How it works
 
@@ -50,7 +50,7 @@ flowchart LR
   E1 -.->|register + heartbeat| L
 ```
 
-- The **scheduler** owns time: it parses schedules, keeps the next-fire wheel, and dispatches due runs. The **leader** dispatches; **followers** take over on failure.
+- The **scheduler** owns time: it parses schedules, keeps the next-fire wheel, and dispatches due runs. The **leader** dispatches, **followers** take over on failure.
 - An **executor** is your app: it registers `@Task` / `@Dag` beans on boot and runs them on callback. HTTP-API tasks run on the scheduler itself, with no executor.
 
 Deeper dive, with diagrams: [`docs/architecture.md`](docs/architecture.md).
@@ -59,10 +59,10 @@ Deeper dive, with diagrams: [`docs/architecture.md`](docs/architecture.md).
 
 | Need | Version / note |
 |------|----------------|
-| JDK | 17+ (backend builds via the bundled **Maven Wrapper** — no system Maven) |
+| JDK | 17+ (backend builds via the bundled **Maven Wrapper**: no system Maven) |
 | Node | 20+ (`npx` builds the Angular console) |
-| Docker | optional — only for the container path |
-| Database | optional — none → embedded **H2**; point at **MySQL / PostgreSQL** for a shared store |
+| Docker | optional: only for the container path |
+| Database | optional, none uses embedded **H2**, or **MySQL / PostgreSQL** for a shared store |
 
 No message broker, no ZooKeeper / etcd, no external load balancer.
 
@@ -77,7 +77,7 @@ cd cronflower/deploy
 ./run-local.sh -e 1          # scheduler + console + 1 executor  (embedded H2)
 ```
 
-**Expected:** open <http://localhost:7200>, sign in **admin / admin123** — you land on the dashboard
+**Expected:** open <http://localhost:7200>, sign in **admin / admin123**: you land on the dashboard
 with the example tasks already scheduled.
 
 ```bash
@@ -90,7 +90,7 @@ with the example tasks already scheduled.
 
 ## Examples
 
-### Schedule a method — `@Task`  *(on an executor)*
+### Schedule a method: `@Task`  *(on an executor)*
 
 ```java
 @Component
@@ -113,12 +113,12 @@ public class DemoTasks {
 }
 ```
 
-**Output:** each method appears in the console with its schedule, run count, and next fire; every run
+**Output:** each method appears in the console with its schedule, run count, and next fire, every run
 is recorded with result, timing, attempt number, and which scheduler/executor handled it.
 
 ![Execution history with retries and the node that ran each attempt](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/execution-history.jpg)
 
-### Build a schedule in code — `CronExpressionBuilder`
+### Build a schedule in code: `CronExpressionBuilder`
 
 ```java
 @Bean
@@ -130,13 +130,13 @@ CronExpressionBuilder mondayMornings() {
 public void weeklyReport() { /* ... */ }
 ```
 
-### Tasks without an executor — HTTP-API task
+### Tasks without an executor: HTTP-API task
 
 Some jobs are just "call this URL on a schedule". Create one from the console's *New task* form or the
-REST API; the scheduler makes the call itself, no executor involved (and operators add/edit tasks with
+REST API, the scheduler makes the call itself, no executor involved (and operators add/edit tasks with
 no redeploy). Every task can be run-now / paused / resumed / canceled from the console or REST API.
 
-### Orchestrate steps — `@Dag`  *(cronflow add-on)*
+### Orchestrate steps: `@Dag`  *(cronflow add-on)*
 
 ```java
 @Dag(name = "scoring-flow", inputs = {"input"}, channels = {
@@ -165,7 +165,7 @@ public class ScoringFlow {
 ```
 
 Branching (`when` + SpEL), join modes (`trigger = ALL/ANY`), nesting (`subgraph`), and dynamic fan-out
-(`@Shard`) are all annotation attributes; concurrent channel writes merge through a reducer
+(`@Shard`) are all annotation attributes, concurrent channel writes merge through a reducer
 (`SUM_INT`, `MAX`/`MIN`, `JOIN_CSV`, … or your own `customReducer`). Trigger a flow by hand, from a
 finished `@Task`, or on a schedule.
 
@@ -184,8 +184,8 @@ Tune at deploy time (no rebuild) via `deploy/conf/server.properties`. The common
 |----------|---------|-------------|
 | `server.port` | `19090` | REST + console API port |
 | `cronsmith.server.api-prefix` | `/cronsmith` | Base path for the REST API (never moves `/actuator`) |
-| `spring.datasource.url` | H2 file | Point at MySQL/PostgreSQL for a **shared** store; omit for in-memory |
-| `cronsmith.server.scheduler.zone` | `UTC` | Fire-time zone — must match cluster-wide |
+| `spring.datasource.url` | H2 file | Point at MySQL/PostgreSQL for a **shared** store, omit for in-memory |
+| `cronsmith.server.scheduler.zone` | `UTC` | Fire-time zone: must match cluster-wide |
 | `cronsmith.server.scheduler.window-minutes` | `5` | Windowed-loading horizon |
 | `cronsmith.server.scheduler.claim-interval-seconds` | `15` | How often due tasks are claimed |
 | `cronsmith.server.scheduler.sharding` | `true` | Group sharding (auto-degrades to leader-only on a node-local store) |
@@ -193,7 +193,7 @@ Tune at deploy time (no rebuild) via `deploy/conf/server.properties`. The common
 | `management.endpoints.web.exposure.include` | `health,info,metrics,prometheus,configprops` | Powers Health, Prometheus, and the Settings page |
 
 Full reference and the `@Task` cheat-sheet: [`docs/configuration.md`](docs/configuration.md).
-Fire times are UTC everywhere; the console shows UTC by default with a one-click local toggle.
+Fire times are UTC everywhere, the console shows UTC by default with a one-click local toggle.
 
 ## How it compares
 
@@ -213,13 +213,13 @@ to run, not a tiny in-process library. For a single JVM with a couple of fixed j
 ## Documentation
 
 - **Docs site:** <https://paganini2008.github.io/cronflower/>
-- [`docs/architecture.md`](docs/architecture.md) — components, clustering, task lifecycle, storage & DAG (diagrams)
-- [`docs/developer-guide.md`](docs/developer-guide.md) — extension points and how to plug in your own, with examples
-- [`docs/configuration.md`](docs/configuration.md) — every config key, the `@Task` cheat-sheet, nginx / KONG
-- [`deploy/README.md`](deploy/README.md) · [`frontend/README.md`](frontend/README.md) — runners and the console
+- [`docs/architecture.md`](docs/architecture.md): components, clustering, task lifecycle, storage & DAG (diagrams)
+- [`docs/developer-guide.md`](docs/developer-guide.md): extension points and how to plug in your own, with examples
+- [`docs/configuration.md`](docs/configuration.md): every config key, the `@Task` cheat-sheet, nginx / KONG
+- [`deploy/README.md`](deploy/README.md) · [`frontend/README.md`](frontend/README.md): runners and the console
 
 ## Contributing & License
 
-Issues and PRs are welcome — open an issue to discuss a change first, keep PRs focused, and make sure
-`./mvnw -q verify` (backend) and the console build pass. Licensed under the **Apache License 2.0**; see
+Issues and PRs are welcome: open an issue to discuss a change first, keep PRs focused, and make sure
+`./mvnw -q verify` (backend) and the console build pass. Licensed under the **Apache License 2.0**, see
 [`LICENSE`](LICENSE).

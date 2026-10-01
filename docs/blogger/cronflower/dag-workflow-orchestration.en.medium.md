@@ -2,8 +2,7 @@
 
 **cronflower** is an open-source, distributed scheduler for the JVM with a web console. `cronflow` is
 its optional DAG add-on: declare the steps and how they depend on each other as a graph, and the same
-cluster runs the graph node by node, with data flowing between nodes over typed channels. (Its
-distributed `@Task` scheduling has its own post.)
+cluster runs the graph node by node, with data flowing between nodes over typed channels.
 
 ![Registered workflows and the selected graph's shape](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-workflows.jpg)
 
@@ -33,12 +32,12 @@ Workflows**, ready to trigger.
 - **JDK**: 17+ (builds via the bundled Maven Wrapper)
 - **Node**: 20+ (builds the console)
 - **cronflow add-on**: `cronflow-spring-boot-starter` on the scheduler, `cronflow-executor-spring-boot-starter` on the executor
-- **Database**: optional — none → embedded H2; MySQL / PostgreSQL for a shared store
+- **Database**: optional: none → embedded H2, MySQL / PostgreSQL for a shared store
 
 ## How it works
 
 A DAG is a Spring bean: `@Dag` names it, each `@DagNode` method is a step, and the `to` list is the
-edges. A node returns a `Map` of named **channel** writes; downstream nodes read them from a
+edges. A node returns a `Map` of named **channel** writes, downstream nodes read them from a
 `DagState`. Each `@Channel` says how concurrent writes to it merge, via a **reducer**. The engine
 drives the graph **across the whole cluster**, dispatching each node to a live executor.
 
@@ -57,9 +56,9 @@ drives the graph **across the whole cluster**, dispatching each node to a live e
 
 ## Code examples
 
-### Declare a workflow — `@Dag`
+### Declare a workflow: `@Dag`
 
-**Input** — a bean with `@Dag` + `@DagNode` methods and typed channels:
+**Input**: a bean with `@Dag` + `@DagNode` methods and typed channels:
 
 ```java
 @Dag(name = "scoring-flow", inputs = {"input"}, channels = {
@@ -87,11 +86,11 @@ public class ScoringFlow {
 }
 ```
 
-**Execution** — three scorers run in parallel, each writing `score`; the reducer merges the concurrent
+**Execution**: three scorers run in parallel, each writing `score`, the reducer merges the concurrent
 writes (summed to 90) so `decide` reads one combined value. No shared mutable state, no ordering
 assumptions.
 
-**Output** — the console renders the graph; a run lights up node by node, each node showing **which
+**Output**: the console renders the graph, a run lights up node by node, each node showing **which
 executor ran it**, so a wide fan-out really runs in parallel on different machines:
 
 ![Per-node results, including which executor ran each node](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-run-nodes.jpg)
@@ -110,7 +109,7 @@ public Map<String, Object> square(DagState state) { /* runs once per id, at run 
 ```
 
 - **`when` + `otherwise`**: route by a SpEL expression over the channels.
-- **`trigger`**: `ALL` waits for every upstream edge; `ANY` fires on the first arrival.
+- **`trigger`**: `ALL` waits for every upstream edge, `ANY` fires on the first arrival.
 - **`subgraph`**: a node is a whole other DAG, so you compose instead of copy.
 - **`@Shard`**: fan out dynamically, once per element of a list known only at run time.
 
@@ -122,7 +121,7 @@ public Map<String, Object> square(DagState state) { /* runs once per id, at run 
 
 ![A completed run: the graph and how it was triggered](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-run.jpg)
 
-## Configuration — channels & reducers
+## Configuration: channels & reducers
 
 Each `@Channel` merges concurrent writes with a built-in reducer, or your own via `customReducer`:
 
@@ -134,17 +133,17 @@ Each `@Channel` merges concurrent writes with a built-in reducer, or your own vi
 - **`MERGE_MAP`**: merge maps
 - **`LAST_WINS` / `FIRST_WINS` / `WRITE_ONCE`**: pick one writer
 
-The executor points at the scheduler with `cronflow.client.server-urls`; the server prefix is
+The executor points at the scheduler with `cronflow.client.server-urls`, the server prefix is
 `cronflow.server.api-prefix` (default `/cronflow`).
 
 ## Limitations & trade-offs
 
-- The DAG engine rides on the **cronflow add-on** over the scheduler cluster; it is not a standalone
+- The DAG engine rides on the **cronflow add-on** over the scheduler cluster, it is not a standalone
   workflow server. You run cronflower, then add `@Dag` beans.
 - Nodes are dispatched to executors over HTTP, so a node's bean must be **reachable and idempotent**
   enough to be retried.
 - Channel values cross the wire between nodes, so keep them **serializable and reasonably small**.
-- It orchestrates *your* steps; it is not a data-pipeline engine for streaming large datasets.
+- It orchestrates *your* steps, it is not a data-pipeline engine for streaming large datasets.
 
 ## Summary
 

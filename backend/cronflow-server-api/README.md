@@ -1,22 +1,22 @@
 # cronflow-server-api
 
-The runnable **Cronflow server** — the product you deploy. It bundles `cronsmith-spring-boot-starter`
+The runnable **Cronflow server**: the product you deploy. It bundles `cronsmith-spring-boot-starter`
 (distributed scheduler) and `cronflow-spring-boot-starter` (DAG engine) behind **login + role-based
 authorization**, and ships as `cronflow-server-api-<version>.jar` (what the deploy scripts stage and run).
 
 ## Features
 
-- **Scheduler + DAG in one** — the full cronsmith scheduler and the cronflow DAG engine, one process.
-- **Stateless JWT auth** — `POST /auth/login` returns a bearer token; any node signs with the same secret, so there is no session to pin.
-- **Role-based authorization** — `admin` / `scheduler_admin` / `workflow_admin` / `user`, enforced by URL + method.
-- **Multi-database** — store auto-detected from the JDBC connection (H2 / SQLite / MySQL / PostgreSQL / SQL Server / Oracle).
-- **Environment profiles** — a common jar + external per-env overrides (dev = embedded H2, prod = shared MySQL).
-- **Clustered** — one cluster port per machine; peers listed by host; every node shares the JWT secret.
+- **Scheduler + DAG in one**: the full cronsmith scheduler and the cronflow DAG engine, one process.
+- **Stateless JWT auth**: `POST /auth/login` returns a bearer token, any node signs with the same secret, so there is no session to pin.
+- **Role-based authorization**: `admin` / `scheduler_admin` / `workflow_admin` / `user`, enforced by URL + method.
+- **Multi-database**: store auto-detected from the JDBC connection (H2 / SQLite / MySQL / PostgreSQL / SQL Server / Oracle).
+- **Environment profiles**: a common jar + external per-env overrides (dev = embedded H2, prod = shared MySQL).
+- **Clustered**: one cluster port per machine, peers listed by host, every node shares the JWT secret.
 
 ## Requirements
 
 - **JDK 17+**, **Spring Boot 4.1+**.
-- A database only for a shared cluster — none needed for the embedded-H2 dev run.
+- A database only for a shared cluster: none needed for the embedded-H2 dev run.
 
 ## Quick Start
 
@@ -38,7 +38,7 @@ Swagger UI: <http://localhost:19090/swagger-ui.html>.
 ## Login & authorization
 
 Stateless **HMAC-signed JWT**: `POST /auth/login` verifies credentials and returns a token carrying the
-user's roles; send it as `Authorization: Bearer <token>` on every call.
+user's roles, send it as `Authorization: Bearer <token>` on every call.
 
 | Endpoint | Purpose |
 |----------|---------|
@@ -53,9 +53,9 @@ user's roles; send it as `Authorization: Bearer <token>` on every call.
 | `workflow_admin` | cronflow (DAG) + dashboard |
 | `user` | dashboard only |
 
-Writes under `cronsmith.server.api-prefix` need `admin`/`scheduler_admin`; writes under
-`cronflow.server.api-prefix` need `admin`/`workflow_admin`; `/actuator/**` beyond health/info needs
-`admin`; reads need any signed-in user. `/actuator/health` stays public (the console discovers the
+Writes under `cronsmith.server.api-prefix` need `admin`/`scheduler_admin`, writes under
+`cronflow.server.api-prefix` need `admin`/`workflow_admin`, `/actuator/**` beyond health/info needs
+`admin`, reads need any signed-in user. `/actuator/health` stays public (the console discovers the
 cluster from it). The **executor → scheduler machine endpoints stay open** (`/executors/register`,
 `/executors/heartbeat`, `/executions/complete`, cronflow `/dags/register`, `/dags/heartbeat`).
 
@@ -74,11 +74,11 @@ cronflow.security.users-file=file:/opt/cronflow/conf/users.xml
 </users>
 ```
 
-`password` is raw (bcrypt-encoded on load) or an already-encoded `{bcrypt}$2a$…`; changes take effect on
+`password` is raw (bcrypt-encoded on load) or an already-encoded `{bcrypt}$2a$…`, changes take effect on
 restart. `cronflow.security.jwt.secret` MUST be set and identical on every node in production
-(the prod profile requires `CRONFLOW_JWT_SECRET`); `cronflow.security.enabled=false` disables auth (dev only).
+(the prod profile requires `CRONFLOW_JWT_SECRET`), `cronflow.security.enabled=false` disables auth (dev only).
 
-## Configuration — common jar + external per-env overrides
+## Configuration: common jar + external per-env overrides
 
 The jar ships only `application.properties` (common defaults, incl. a dev H2 so a bare `java -jar` runs).
 Per-env differences live in `application-{dev,prod}.properties`:
@@ -102,7 +102,7 @@ java -jar target/cronflow-server-api-1.0.0-SNAPSHOT.jar \
 ```
 
 Store kind is **auto-detected** from the JDBC connection: MySQL/PostgreSQL/Oracle/SQL Server → shared
-(sharding-capable); H2/SQLite → node-local.
+(sharding-capable), H2/SQLite → node-local.
 
 | Database | Tested version | Driver | Store |
 |----------|----------------|--------|-------|
@@ -113,7 +113,7 @@ Store kind is **auto-detected** from the JDBC connection: MySQL/PostgreSQL/Oracl
 | SQL Server | 2022 | mssql-jdbc 12.8.1 | JPA¹ |
 | Oracle | Free 23c | ojdbc11 23.7 | JPA¹ |
 
-¹ jOOQ has no open-source dialect for SQL Server / Oracle; use the JPA store there.
+¹ jOOQ has no open-source dialect for SQL Server / Oracle, use the JPA store there.
 
 **Cluster (multi-node):** one cluster port per machine, list the peer hosts, same JWT secret on every node:
 
@@ -121,7 +121,7 @@ Store kind is **auto-detected** from the JDBC connection: MySQL/PostgreSQL/Oracl
 --spring.spreader.ip-addresses=host-a,host-b,host-c
 ```
 
-## Examples — REST API
+## Examples: REST API
 
 All business endpoints require a bearer token (see roles above).
 
@@ -133,7 +133,7 @@ All business endpoints require a bearer token (see roles above).
 | POST | `/cronsmith/tasks/{group}/{name}/pause`\|`resume`\|`cancel` | Task actions |
 | GET | `/cronsmith/executors` · `/cronsmith/cluster` | Registered executors · cluster nodes, leader, store |
 | GET · POST | `/cronflow/dags` · `/cronflow/runs` · `/cronflow/dags/{graph}/trigger` | DAG definitions, runs, trigger |
-| GET | `/actuator/health` | Health (incl. `spreaderCluster`); public |
+| GET | `/actuator/health` | Health (incl. `spreaderCluster`), public |
 
 ## See also
 

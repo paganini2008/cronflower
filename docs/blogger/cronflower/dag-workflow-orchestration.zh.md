@@ -1,6 +1,6 @@
 # cronflower：在集群上跑一张 DAG 工作流，别再手动串 cron 任务了
 
-**cronflower** 是一个面向 JVM、自带控制台的开源分布式调度器。`cronflow` 是它可选的 DAG 附加组件：把「有哪些步骤、彼此怎么依赖」声明成一张图，同一个集群按图逐个节点地跑，数据在节点间通过类型化 channel 流转。（它的分布式 `@Task` 调度另有[一篇](../cronsmith/distributed-task-scheduling.zh.md)。）
+**cronflower** 是一个面向 JVM、自带控制台的开源分布式调度器。`cronflow` 是它可选的 DAG 附加组件：把「有哪些步骤、彼此怎么依赖」声明成一张图，同一个集群按图逐个节点地跑，数据在节点间通过类型化 channel 流转。
 
 ![已注册的工作流，右侧是选中图的形状](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-workflows.jpg)
 

@@ -6,14 +6,14 @@ title: "Cronflower: Turn a Spring Boot app into a distributed cron cluster easil
 
 **cronflower** is an open-source, distributed cron scheduler for the JVM with a web console. It forms
 its own cluster and needs no external database, broker, or coordinator. This post is the usage tour of
-its distributed **task** scheduling (its DAG side has [its own post](../cronflower/dag-workflow-orchestration.en.html)).
+its distributed **task** scheduling.
 
 ![The task list in the console](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/tasks-list.jpg)
 
 ## What problem does it solve?
 
 `@Scheduled` runs in one JVM, so the moment you scale to two instances the job fires twice. It has no
-retry, no timeout, no history, and no view of what ran; if the box reboots at 02:00 the nightly rollup
+retry, no timeout, no history, and no view of what ran, if the box reboots at 02:00 the nightly rollup
 just quietly doesn't happen.
 
 The usual fix is to bolt on Quartz, a database, a lock table, and a dashboard you wrote yourself.
@@ -38,13 +38,13 @@ Scale into a real cluster with `./run-local.sh -n 3 -e 2`.
 | JDK | 17+ (builds via the bundled Maven Wrapper) |
 | Node | 20+ (builds the console) |
 | Docker | optional (container path only) |
-| Database | optional — none → embedded H2; MySQL / PostgreSQL for a shared store |
+| Database | optional: none → embedded H2, MySQL / PostgreSQL for a shared store |
 
 ## How it works
 
-Two kinds of process: a **scheduler** owns the schedule and durable state; an **executor** is your app,
+Two kinds of process: a **scheduler** owns the schedule and durable state, an **executor** is your app,
 which declares tasks and runs the code on callback. Run several schedulers and they elect a leader over
-gossip; state lives in the store, so a restart or failover loses nothing.
+gossip, state lives in the store, so a restart or failover loses nothing.
 
 ```mermaid
 flowchart LR
@@ -67,7 +67,7 @@ instantly.
 
 ### A task is a `@Task` bean method
 
-**Input** — annotate a method on an executor (0 args, or a single `String` parameter):
+**Input**: annotate a method on an executor (0 args, or a single `String` parameter):
 
 ```java
 @Component
@@ -86,13 +86,13 @@ public class DemoTasks {
 }
 ```
 
-**Execution** — discovered on boot, registered with the scheduler, which owns the schedule from then on.
+**Execution**: discovered on boot, registered with the scheduler, which owns the schedule from then on.
 
-**Output** — each task shows up in the console with its schedule, run count, and next fire time.
+**Output**: each task shows up in the console with its schedule, run count, and next fire time.
 
 ### Reliability is configured, not coded
 
-**Input** — add attributes; the **scheduler** enforces them, so every executor behaves the same:
+**Input**: add attributes, the **scheduler** enforces them, so every executor behaves the same:
 
 ```java
 @Task(cron = "*/20 * * * * ?", group = "reliability", name = "flaky",
@@ -103,7 +103,7 @@ public class DemoTasks {
 public String flaky(String parameter) { /* fails twice, then succeeds */ }
 ```
 
-**Output** — in the execution history a single fire is three rows (attempt `#0` fail, `#1` fail, `#2`
+**Output**: in the execution history a single fire is three rows (attempt `#0` fail, `#1` fail, `#2`
 success), each tagged with the scheduler that dispatched it and the executor that ran it:
 
 ![Execution history: retry attempts and the node that ran each](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/execution-history.jpg)
@@ -120,7 +120,7 @@ public void weeklyReport() { /* ... */ }
 ```
 
 For a job that is just "call this URL on a schedule", create an **HTTP-API task** from the console's
-*New task* form or the REST API — the scheduler makes the call itself, no executor involved, and
+*New task* form or the REST API: the scheduler makes the call itself, no executor involved, and
 operators add or edit tasks with no redeploy.
 
 The `@Task` attributes, for reference:
@@ -129,7 +129,7 @@ The `@Task` attributes, for reference:
 |-----------|--------------|
 | `cron` / `parser` | a cron schedule, or YCRON with `parser = "ycron"` |
 | `interval` + `intervalUnit` / `iso` | a fixed interval, or an ISO-8601 duration |
-| `builder` | a `CronExpressionBuilder` bean (wins over `cron`; the only way to set a deadline) |
+| `builder` | a `CronExpressionBuilder` bean (wins over `cron`, the only way to set a deadline) |
 | `initialParameter` | a constant, or a SpEL template evaluated on each fire |
 | `maxRetryCount` / `retryInterval` | retry a failed run, with back-off |
 | `timeout` | fail a run that overruns, in milliseconds |
@@ -140,8 +140,8 @@ The `@Task` attributes, for reference:
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `cronsmith.client.server-urls` | — | On the executor: scheduler seed URL(s) |
-| `cronsmith.server.scheduler.zone` | `UTC` | Fire-time zone — must match cluster-wide |
+| `cronsmith.client.server-urls` |: | On the executor: scheduler seed URL(s) |
+| `cronsmith.server.scheduler.zone` | `UTC` | Fire-time zone: must match cluster-wide |
 | `cronsmith.server.scheduler.window-minutes` | `5` | Windowed-loading horizon |
 | `cronsmith.server.scheduler.sharding` | `true` | Group sharding over a shared store (else leader-only) |
 | `cronsmith.server.dispatch.routing` | `ROUND_ROBIN` | …`WEIGHTED` / `CONSISTENT_HASH` / `RANDOM` / `FIRST` / `LAST` |
@@ -151,19 +151,19 @@ The `@Task` attributes, for reference:
 
 - It is a **platform to run** (its own gossip cluster + store), not a tiny in-process library. For one
   JVM with a couple of fixed jobs, plain `@Scheduled` is lighter.
-- **Group sharding** needs a **shared** database (MySQL/PostgreSQL); on node-local H2/SQLite it safely
+- **Group sharding** needs a **shared** database (MySQL/PostgreSQL), on node-local H2/SQLite it safely
   degrades to leader-only.
-- Fire-time **zone must match across nodes**; everything is computed and stored in UTC.
-- Bean tasks run on executors, so the scheduler reaches them over HTTP — they must be reachable from it.
+- Fire-time **zone must match across nodes**, everything is computed and stored in UTC.
+- Bean tasks run on executors, so the scheduler reaches them over HTTP: they must be reachable from it.
 
 ## Summary
 
 - A distributed, stateful cron scheduler for Spring Boot, **two dependencies**, no external infra.
-- Nodes **gossip and elect a leader**; a restart or failover loses nothing, and no cron fires twice.
-- `@Task` gives you cron / **YCRON** / interval / ISO-8601, plus retry, timeout, misfire, repeat — declarative.
-- **HTTP-API tasks** need no executor; operators add or edit tasks with no redeploy.
+- Nodes **gossip and elect a leader**, a restart or failover loses nothing, and no cron fires twice.
+- `@Task` gives you cron / **YCRON** / interval / ISO-8601, plus retry, timeout, misfire, repeat: declarative.
+- **HTTP-API tasks** need no executor, operators add or edit tasks with no redeploy.
 - Every run is **recorded** with result, timing, attempt, and the node that ran it.
-- **Group sharding** + **weighted dispatch** scale it horizontally; a timing wheel + windowed loading keep startup instant.
+- **Group sharding** + **weighted dispatch** scale it horizontally, a timing wheel + windowed loading keep startup instant.
 - A **console** shows tasks, cluster, executors, health, and live settings from one endpoint.
 
 Run it: [cronflower on GitHub](https://github.com/paganini2008/cronflower).

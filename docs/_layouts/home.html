@@ -162,7 +162,7 @@
       <h1>Distributed cron for the JVM, with a console.</h1>
       <p class="lead">cronflower is a distributed, stateful cron scheduler that forms its own cluster and
         needs no external database, broker, or coordinator. Drop <code>@Task</code> on a Spring bean and
-        the cluster owns the schedule; declare a <code>@Dag</code> and it runs a whole workflow across your machines.</p>
+        the cluster owns the schedule. Declare a <code>@Dag</code> and it runs a whole workflow across your machines.</p>
       <div class="cta">
         <a class="btn btn-primary" href="#quick-start">Get Started</a>
         <a class="btn btn-ghost" href="https://github.com/paganini2008/cronflower">GitHub</a>
@@ -177,7 +177,7 @@
         <img alt="License Apache 2.0" src="https://img.shields.io/badge/license-Apache%202.0-blue" />
       </div>
       <div class="hero-shot">
-        <img alt="cronflower console — tasks" src="{{ '/images/tasks-list.jpg' | relative_url }}" />
+        <img alt="cronflower console, tasks" src="{{ '/images/tasks-list.jpg' | relative_url }}" />
       </div>
     </div>
   </div>
@@ -193,9 +193,9 @@
         <div class="card"><p class="pain">Scale out and it fires twice</p>
           <p><code>@Scheduled</code> runs in every JVM, so two instances mean two fires. You end up bolting on Quartz, a database and a lock table.</p></div>
         <div class="card"><p class="pain">No retry, timeout, or history</p>
-          <p>A failed or hung job just fails. There is no record of what ran, no backoff, no misfire policy — you build the dashboard yourself.</p></div>
+          <p>A failed or hung job just fails. There is no record of what ran, no backoff, no misfire policy, you build the dashboard yourself.</p></div>
         <div class="card"><p class="pain">Chained cron isn't a workflow</p>
-          <p>"02:00 charge, 02:15 ship" has no real dependency and no shared data; you can't tell if step two ran because step one succeeded.</p></div>
+          <p>"02:00 charge, 02:15 ship" has no real dependency and no shared data. You can't tell if step two ran because step one succeeded.</p></div>
         <div class="card"><p class="pain">Clusters mean heavy infra</p>
           <p>Most distributed schedulers need ZooKeeper/etcd, a broker, or an external load balancer just to stand up.</p></div>
       </div>
@@ -211,17 +211,17 @@
       </div>
       <div class="grid3">
         <div class="card"><div class="ic">◈</div><h3>Self-clustering &amp; HA</h3>
-          <p>Nodes gossip and elect a leader — no ZooKeeper or etcd. Followers fail over; no cron fires twice, none goes missing.</p></div>
+          <p>Nodes gossip and elect a leader, no ZooKeeper or etcd. Followers fail over, no cron fires twice, none goes missing.</p></div>
         <div class="card"><div class="ic">⛁</div><h3>Stateful &amp; durable</h3>
           <p>Schedules and history in a store auto-detected from the JDBC URL (H2 → MySQL/PostgreSQL). A restart loses nothing.</p></div>
         <div class="card"><div class="ic">⚡</div><h3>Scales horizontally</h3>
-          <p>A timing wheel drives large volumes; group sharding spreads them and weighted dispatch fans out to executors by capacity.</p></div>
+          <p>A timing wheel drives large volumes, group sharding spreads them and weighted dispatch fans out to executors by capacity.</p></div>
         <div class="card"><div class="ic">⌗</div><h3>Rich <code>@Task</code> model</h3>
-          <p>Cron, year-based YCRON, interval or ISO-8601 — plus retry, timeout, misfire policy and repeat/stop-at, all declarative.</p></div>
+          <p>Cron, year-based YCRON, interval or ISO-8601, plus retry, timeout, misfire policy and repeat/stop-at, all declarative.</p></div>
         <div class="card"><div class="ic">⤳</div><h3>DAG orchestration</h3>
           <p>Declare a <code>@Dag</code> with typed channels, branching, joins, subgraphs and dynamic fan-out, driven across the cluster.</p></div>
         <div class="card"><div class="ic">▤</div><h3>Operator console</h3>
-          <p>Tasks, Executors, Cluster, DAG runs, Health and live Settings — one endpoint, UTC-first with a local toggle.</p></div>
+          <p>Tasks, Executors, Cluster, DAG runs, Health and live Settings, one endpoint, UTC-first with a local toggle.</p></div>
       </div>
     </div>
   </section>
@@ -231,7 +231,7 @@
     <div class="wrap">
       <div class="sec-head">
         <h2>How it works</h2>
-        <p>A console talks to one endpoint; a self-electing scheduler cluster owns the schedule and dispatches due runs to your executors. State lives in an auto-detected store, so a restart or failover loses nothing.</p>
+        <p>A console talks to one endpoint. A self-electing scheduler cluster owns the schedule and dispatches due runs to your executors. State lives in an auto-detected store, so a restart or failover loses nothing.</p>
       </div>
       <div class="flow">
         <div class="stage"><h4>Console</h4><p>one endpoint,<br/>self-balancing + failover</p></div>
@@ -250,7 +250,7 @@
     <div class="wrap quick">
       <div>
         <h2 style="margin-top:0">From clone to a live cluster in one command</h2>
-        <p style="color:var(--muted)">Nothing to provision — the store is an embedded H2 file and the nodes
+        <p style="color:var(--muted)">Nothing to provision, the store is an embedded H2 file and the nodes
           elect a leader themselves. Open <code>http://localhost:7200</code> and sign in with
           <code>admin / admin123</code>.</p>
         <p><a class="btn btn-primary" href="https://github.com/paganini2008/cronflower">Browse the repo</a></p>
@@ -273,7 +273,7 @@ git clone https://github.com/paganini2008/cronflower
     <div class="wrap">
       <div class="sec-head">
         <h2>Examples</h2>
-        <p>Schedule a method, or orchestrate a whole workflow — both are plain Spring beans.</p>
+        <p>Schedule a method, or orchestrate a whole workflow, both are plain Spring beans.</p>
       </div>
       <div class="grid2">
         <div class="codewrap">
@@ -295,9 +295,9 @@ git clone https://github.com/paganini2008/cronflower
       </div>
       <div class="shots" style="margin-top:1.4rem">
         <div class="shot"><figure><img alt="DAG workflows" src="{{ '/images/dag-workflows.jpg' | relative_url }}" />
-          <figcaption>DAG workflows — the shape of a graph before you run it</figcaption></figure></div>
+          <figcaption>DAG workflows, the shape of a graph before you run it</figcaption></figure></div>
         <div class="shot"><figure><img alt="Execution history" src="{{ '/images/execution-history.jpg' | relative_url }}" />
-          <figcaption>Execution history — retries, timing, and which node ran each attempt</figcaption></figure></div>
+          <figcaption>Execution history, retries, timing, and which node ran each attempt</figcaption></figure></div>
       </div>
       <p style="text-align:center;margin-top:1.6rem"><a href="{{ '/developer-guide.html' | relative_url }}">More examples &amp; every extension point →</a></p>
     </div>
@@ -308,7 +308,7 @@ git clone https://github.com/paganini2008/cronflower
     <div class="wrap">
       <div class="sec-head">
         <h2>How it compares</h2>
-        <p>Capability, not benchmarks — what you get out of the box.</p>
+        <p>Capability, not benchmarks, what you get out of the box.</p>
       </div>
       <div class="cmp">
         <table class="cmp-t">
@@ -337,7 +337,7 @@ git clone https://github.com/paganini2008/cronflower
         <a class="doc" href="#quick-start"><span class="tag">Start</span><h3>Getting started</h3>
           <p>Clone, run, and open the console in a few minutes.</p></a>
         <a class="doc" href="{{ '/architecture.html' | relative_url }}"><span class="tag">Reference</span><h3>Architecture</h3>
-          <p>Components, clustering, task lifecycle, storage &amp; DAG — with diagrams.</p></a>
+          <p>Components, clustering, task lifecycle, storage &amp; DAG, with diagrams.</p></a>
         <a class="doc" href="{{ '/developer-guide.html' | relative_url }}"><span class="tag">Reference</span><h3>Developer guide</h3>
           <p>Extension points and how to plug in your own, with examples.</p></a>
         <a class="doc" href="{{ '/configuration.html' | relative_url }}"><span class="tag">Reference</span><h3>Configuration</h3>
