@@ -1,0 +1,4 @@
+# Keep each image build context small. Only the files a given Dockerfile COPYs are needed.
+*.md
+docker-compose.yaml
+.gitignore

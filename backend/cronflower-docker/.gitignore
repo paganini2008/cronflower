@@ -1,0 +1,4 @@
+# Build outputs staged by CI (or by hand). The sources live in the backend modules and the frontend.
+bin/
+web-dist/
+web-server.mjs

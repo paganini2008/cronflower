@@ -1,0 +1,6 @@
+FROM eclipse-temurin:17-jre
+# An example cronflower executor (hosts the demo @Task / @Dag beans). The fat jar is staged into
+# bin/ by the GitHub Actions workflow. Optional: a real deployment hosts your own executor instead.
+COPY bin/cronflow-executor-example-*.jar /app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "/app.jar"]
