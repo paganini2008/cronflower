@@ -43,7 +43,12 @@ jobs:
         run: |
           cd backend
           chmod +x mvnw
-          ./mvnw -B -ntp -s "$GITHUB_WORKSPACE/.github/maven-settings.xml" -DskipTests package
+          # Override the local repo path pinned in backend/.mvn/maven.config (a developer machine
+          # path) so the build uses the runner's cached ~/.m2/repository.
+          ./mvnw -B -ntp \
+            -s "$GITHUB_WORKSPACE/.github/maven-settings.xml" \
+            -Dmaven.repo.local="$HOME/.m2/repository" \
+            -DskipTests package
 
       # --- Build the frontend (console) -----------------------------------------------------
       # "npm run build" runs the prebuild hook that writes public/config.json from .env.
