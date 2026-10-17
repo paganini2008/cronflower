@@ -1,0 +1,10 @@
+FROM node:20-alpine
+# The cronflower web console: a zero-dependency Node static server plus reverse proxy (no nginx).
+# web-server.mjs and the built SPA (web-dist/) are staged by the GitHub Actions workflow.
+WORKDIR /app
+COPY web-server.mjs /app/web-server.mjs
+COPY web-dist/ /usr/share/web/
+ENV WEB_ROOT=/usr/share/web
+ENV PORT=80
+EXPOSE 80
+CMD ["node", "/app/web-server.mjs"]

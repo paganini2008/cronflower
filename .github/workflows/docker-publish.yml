@@ -1,0 +1,144 @@
+name: Publish Docker images
+
+# Tag a release to publish. Pushing a tag like v1.0.0 builds the backend and the console, then
+# publishes three multi-arch images to Docker Hub, each overwriting :latest so users always pull it.
+#   git tag v1.0.0 && git push origin v1.0.0
+# A manual run (workflow_dispatch) publishes :latest only.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NAMESPACE: fredfeng033
+  DOCKER_DIR: backend/cronflower-docker
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # --- Build the backend fat jars -------------------------------------------------------
+      # cronsmith and openspreader resolve from the Central Portal snapshot repo declared in
+      # .github/maven-settings.xml.
+      - name: Build backend
+        run: |
+          cd backend
+          chmod +x mvnw
+          ./mvnw -B -ntp -s "$GITHUB_WORKSPACE/.github/maven-settings.xml" -DskipTests package
+
+      # --- Build the frontend (console) -----------------------------------------------------
+      # "npm run build" runs the prebuild hook that writes public/config.json from .env.
+      - name: Build frontend
+        run: |
+          cd frontend
+          cp -n .env.example .env
+          npm ci
+          npm run build -- --configuration production
+
+      # --- Stage the artifacts into the Docker build context --------------------------------
+      - name: Stage artifacts
+        run: |
+          mkdir -p "$DOCKER_DIR/bin" "$DOCKER_DIR/web-dist"
+          cp backend/cronflow-server-api/target/cronflow-server-api-*.jar "$DOCKER_DIR/bin/"
+          cp backend/cronflow-executor-example/target/cronflow-executor-example-*.jar "$DOCKER_DIR/bin/"
+          cp -r frontend/dist/cronflower/browser/* "$DOCKER_DIR/web-dist/"
+          cp deploy/web-server.mjs "$DOCKER_DIR/web-server.mjs"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Works whether the credentials are stored as Actions Secrets or as Actions Variables. A token
+      # is best kept as a Secret.
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME || vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN || vars.DOCKERHUB_TOKEN }}
+
+      # --- cronflower-server-api ------------------------------------------------------------
+      - name: Metadata (server-api)
+        id: meta-server
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.NAMESPACE }}/cronflower-server-api
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+      - name: Build and push (server-api)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ env.DOCKER_DIR }}
+          file: ./${{ env.DOCKER_DIR }}/Dockerfile.server
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta-server.outputs.tags }}
+          labels: ${{ steps.meta-server.outputs.labels }}
+          cache-from: type=gha,scope=server-api
+          cache-to: type=gha,mode=max,scope=server-api
+
+      # --- cronflower-ui --------------------------------------------------------------------
+      - name: Metadata (ui)
+        id: meta-ui
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.NAMESPACE }}/cronflower-ui
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+      - name: Build and push (ui)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ env.DOCKER_DIR }}
+          file: ./${{ env.DOCKER_DIR }}/Dockerfile.web
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta-ui.outputs.tags }}
+          labels: ${{ steps.meta-ui.outputs.labels }}
+          cache-from: type=gha,scope=ui
+          cache-to: type=gha,mode=max,scope=ui
+
+      # --- cronflower-executor-example (optional demo image) --------------------------------
+      - name: Metadata (executor-example)
+        id: meta-executor
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.NAMESPACE }}/cronflower-executor-example
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+      - name: Build and push (executor-example)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ env.DOCKER_DIR }}
+          file: ./${{ env.DOCKER_DIR }}/Dockerfile.executor
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta-executor.outputs.tags }}
+          labels: ${{ steps.meta-executor.outputs.labels }}
+          cache-from: type=gha,scope=executor-example
+          cache-to: type=gha,mode=max,scope=executor-example

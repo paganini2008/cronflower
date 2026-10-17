@@ -1,0 +1,142 @@
+# ============================================================================================
+# cronflower best-practice cluster. Published images, no local build needed.
+#
+# Quick start:
+#   docker compose up -d
+#   open http://localhost:7200   (sign in with admin / admin123)
+#
+# Topology (the recommended production shape):
+#   3 scheduler nodes  (required)  self-balancing cluster over the openspreader port 22000
+#   1 web console      (required)  http://localhost:7200, discovers and load-balances the 3 nodes
+#   1 example executor (optional)  start it with:  docker compose --profile example up -d
+#
+# Store: each node runs on its own embedded H2 by default (a per-node volume), and the leader
+# broadcasts writes to keep the nodes in sync. Nothing to configure. To use a shared PostgreSQL
+# instead (which also unlocks group sharding), see "SHARED POSTGRESQL (optional)" at the bottom.
+#
+# Every service pulls the :latest image. Re-run "docker compose pull && docker compose up -d" to
+# upgrade after a new release is published.
+#
+# Change before any real deployment:
+#   1. cronflow.security.jwt.secret inside x-scheduler-env, to one long random value that is the
+#      same on every node. All three nodes share this file, so one edit covers the cluster.
+#   2. The seeded demo accounts (admin / admin123). See docs/configuration.md for real accounts.
+# ============================================================================================
+
+name: cronflower
+
+# Shared scheduler config. One definition, referenced by all three nodes. ip-addresses lists the
+# peer container names so the cluster can form over the openspreader port 22000.
+x-scheduler-env: &scheduler-env
+  SPRING_APPLICATION_JSON: '{"server":{"port":8080},"spring":{"spreader":{"port":22000,"ip-addresses":"cronflower-api-1,cronflower-api-2,cronflower-api-3"}},"cronflow":{"security":{"jwt":{"secret":"change-me-to-one-long-random-secret-shared-by-every-node"}}}}'
+  JAVA_TOOL_OPTIONS: "-Xmx1g"
+
+x-api-healthcheck: &api-healthcheck
+  test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
+  interval: 5s
+  timeout: 3s
+  retries: 30
+  start_period: 25s
+
+services:
+  cronflower-api-1:
+    image: fredfeng033/cronflower-server-api:latest
+    container_name: cronflower-api-1
+    environment: *scheduler-env
+    volumes:
+      - sched-data-1:/data
+    healthcheck: *api-healthcheck
+    restart: unless-stopped
+    networks: [cnet]
+
+  cronflower-api-2:
+    image: fredfeng033/cronflower-server-api:latest
+    container_name: cronflower-api-2
+    environment: *scheduler-env
+    volumes:
+      - sched-data-2:/data
+    healthcheck: *api-healthcheck
+    restart: unless-stopped
+    networks: [cnet]
+
+  cronflower-api-3:
+    image: fredfeng033/cronflower-server-api:latest
+    container_name: cronflower-api-3
+    environment: *scheduler-env
+    volumes:
+      - sched-data-3:/data
+    healthcheck: *api-healthcheck
+    restart: unless-stopped
+    networks: [cnet]
+
+  cronflower-ui:
+    image: fredfeng033/cronflower-ui:latest
+    container_name: cronflower-ui
+    environment:
+      # Seed the console with all three nodes. It discovers the full cluster from any one of them
+      # and round-robins the API with failover. Prefixes must match the backend.
+      SCHEDULER_URL: "http://cronflower-api-1:8080,http://cronflower-api-2:8080,http://cronflower-api-3:8080"
+      API_PREFIX: /cronsmith
+      CRONFLOW_PREFIX: /cronflow
+    ports:
+      - "7200:80"
+    depends_on:
+      cronflower-api-1: { condition: service_healthy }
+      cronflower-api-2: { condition: service_healthy }
+      cronflower-api-3: { condition: service_healthy }
+    restart: unless-stopped
+    networks: [cnet]
+
+  # Optional demo executor. It is only started with:  docker compose --profile example up -d
+  cronflower-example:
+    image: fredfeng033/cronflower-executor-example:latest
+    container_name: cronflower-example
+    profiles: ["example"]
+    environment:
+      SPRING_APPLICATION_JSON: '{"server":{"port":8080},"spring":{"application":{"name":"demo-executor"}},"cronsmith":{"client":{"server-urls":"http://cronflower-api-1:8080,http://cronflower-api-2:8080,http://cronflower-api-3:8080","server-api-prefix":"/cronsmith"}},"cronflow":{"client":{"server-urls":"http://cronflower-api-1:8080,http://cronflower-api-2:8080,http://cronflower-api-3:8080","server-api-prefix":"/cronflow"}}}'
+      JAVA_TOOL_OPTIONS: "-Xmx1g"
+    depends_on:
+      cronflower-api-1: { condition: service_healthy }
+    restart: unless-stopped
+    networks: [cnet]
+
+networks:
+  cnet: {}
+
+volumes:
+  sched-data-1: {}
+  sched-data-2: {}
+  sched-data-3: {}
+
+# ============================================================================================
+# SHARED POSTGRESQL (optional)
+#
+# A shared database replaces the per-node H2 and unlocks group sharding, where each node fires only
+# the task groups that hash to it. To switch:
+#
+#   1. Add a postgres service (uncomment the block below) under "services:".
+#   2. Drop the three "volumes:" blocks from the api services (H2 is no longer used), and add
+#        depends_on:
+#          postgres: { condition: service_healthy }
+#      to each api service.
+#   3. Replace the SPRING_APPLICATION_JSON in x-scheduler-env with the datasource + sharding form:
+#        {"server":{"port":8080},"spring":{"spreader":{"port":22000,"ip-addresses":"cronflower-api-1,cronflower-api-2,cronflower-api-3"},"datasource":{"url":"jdbc:postgresql://postgres:5432/cronflow","username":"cronflow","password":"cronflow"}},"cronsmith":{"server":{"scheduler":{"sharding":true}}},"cronflow":{"security":{"jwt":{"secret":"change-me-to-one-long-random-secret-shared-by-every-node"}}}}
+#   4. Remove the sched-data-* entries under the top-level "volumes:" and add "pgdata: {}".
+#
+#   postgres:
+#     image: postgres:16-alpine
+#     container_name: cronflower-postgres
+#     environment:
+#       POSTGRES_DB: cronflow
+#       POSTGRES_USER: cronflow
+#       POSTGRES_PASSWORD: cronflow        # change this and the datasource password in production
+#     volumes:
+#       - pgdata:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U cronflow -d cronflow"]
+#       interval: 5s
+#       timeout: 3s
+#       retries: 30
+#     restart: unless-stopped
+#     networks: [cnet]
+# ============================================================================================

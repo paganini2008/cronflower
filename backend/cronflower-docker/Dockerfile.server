@@ -1,0 +1,10 @@
+FROM eclipse-temurin:17-jre
+# The cronflower scheduler (cronsmith + cronflow server). The fat jar is staged into bin/ by the
+# GitHub Actions workflow (or by hand, see README). curl is added so the compose healthcheck can
+# probe /actuator/health reliably.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+COPY bin/cronflow-server-api-*.jar /app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "/app.jar"]
