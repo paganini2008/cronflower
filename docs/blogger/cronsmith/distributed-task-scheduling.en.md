@@ -10,9 +10,9 @@ its distributed **task** scheduling.
 
 ![The task list in the console](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/tasks-list.jpg)
 
-[![Watch the distributed task scheduling screencast](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.poster.jpg)](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.mp4)
+<video src="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.mp4" poster="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.poster.jpg" controls width="100%"></video>
 
-*▶ Two-minute screencast. Click to play.*
+*▶ Two-minute screencast.*
 
 ## What problem does it solve?
 

@@ -21,11 +21,15 @@ cronflower = cronsmith (distributed scheduling) + cronflow (DAG orchestration)
 
 ## See it in action
 
-Two short screencasts, under two minutes each. Click a thumbnail to play.
+Two short screencasts, under two minutes each. Press play.
 
-| [![Distributed task scheduling](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.poster.jpg)](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.mp4) | [![DAG workflow orchestration](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.poster.jpg)](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.mp4) |
-|:--:|:--:|
-| **Distributed task scheduling**: create an HTTP API task, preview a cron or YCRON schedule, run it now, and read the result. | **DAG workflow orchestration**: trigger a `@Dag` and watch it flow node by node across the cluster. |
+**Distributed task scheduling**: create an HTTP API task, preview a cron or YCRON schedule, run it now, and read the result.
+
+<video src="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.mp4" poster="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.poster.jpg" controls width="100%"></video>
+
+**DAG workflow orchestration**: trigger a `@Dag` and watch it flow node by node across the cluster.
+
+<video src="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.mp4" poster="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.poster.jpg" controls width="100%"></video>
 
 ## Features
 

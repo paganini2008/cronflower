@@ -4,9 +4,9 @@
 
 ![已注册的工作流，右侧是选中图的形状](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-workflows.jpg)
 
-[![观看 DAG 工作流编排演示](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.poster.jpg)](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.mp4)
+<video src="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.mp4" poster="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.poster.jpg" controls width="100%"></video>
 
-*▶ 两分钟演示，点击播放。*
+*▶ 两分钟演示。*
 
 ## 它解决什么问题？
 
