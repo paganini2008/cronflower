@@ -4,6 +4,10 @@
 
 ![已注册的工作流，右侧是选中图的形状](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-workflows.jpg)
 
+[![观看 DAG 工作流编排演示](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.poster.jpg)](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.mp4)
+
+*▶ 两分钟演示，点击播放。*
+
 ## 它解决什么问题？
 
 团队最后都会去手动串 cron：一个 02:00 给订单扣款，另一个 02:15 发货，之所以晚 15 分钟，是赌第一个**通常**能在之前跑完。两者没有真正的依赖、没有共享数据，事后也无从判断：第二步跑起来，是因为第一步真的成功了，还是仅仅因为时钟到点了。
@@ -19,6 +23,13 @@ cd cronflower/deploy
 ```
 
 打开 <http://localhost:7200>（`admin` / `admin123`），示例 DAG 已经注册在 **DAG > Workflows** 下，随时可触发。
+
+想免构建？直接从 Docker Hub 或 GHCR 拉预构建镜像：
+
+```bash
+curl -O https://raw.githubusercontent.com/paganini2008/cronflower/main/backend/cronflower-docker/docker-compose.yaml
+docker compose up -d          # 3 个调度器 + 控制台，访问 http://localhost:7200
+```
 
 ## 环境要求
 

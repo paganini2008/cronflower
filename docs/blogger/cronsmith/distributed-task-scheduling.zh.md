@@ -4,6 +4,10 @@
 
 ![控制台里的任务列表](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/tasks-list.jpg)
 
+[![观看分布式任务调度演示](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.poster.jpg)](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.mp4)
+
+*▶ 两分钟演示，点击播放。*
+
 ## 它解决什么问题？
 
 `@Scheduled` 只在一个 JVM 里跑，所以你一扩容到两个实例，任务就触发两次。它没有重试、没有超时、没有运行记录，也看不到跑过什么；机器要是凌晨 2 点重启，那个夜间汇总就悄无声息地没跑。
@@ -19,6 +23,13 @@ cd cronflower/deploy
 ```
 
 打开 <http://localhost:7200>，用 `admin` / `admin123` 登录，示例任务已经在跑。想变成真正的集群，用 `./run-local.sh -n 3 -e 2`。
+
+想免构建？直接从 Docker Hub 或 GHCR 拉预构建镜像：
+
+```bash
+curl -O https://raw.githubusercontent.com/paganini2008/cronflower/main/backend/cronflower-docker/docker-compose.yaml
+docker compose up -d          # 3 个调度器 + 控制台，访问 http://localhost:7200
+```
 
 ## 环境要求
 

@@ -31,6 +31,12 @@ deploy/run/
 deploy/docker-compose.generated.yml
 !deploy/bin/.gitkeep
 
+# --- Tutorial video tooling (tools/video-gen): keep sources + the synth BGM + final mp4s, ---
+#     drop the raw screen recordings and any stray encodes. The playable mp4s live in docs/video/.
+tools/video-gen/raw/
+tools/video-gen/**/*.webm
+tools/video-gen/node_modules/
+
 # --- IDE / editor ---------------------------------------------------------------------------
 .idea/
 *.iml

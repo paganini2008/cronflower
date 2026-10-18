@@ -10,6 +10,10 @@ its distributed **task** scheduling.
 
 ![The task list in the console](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/tasks-list.jpg)
 
+[![Watch the distributed task scheduling screencast](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.poster.jpg)](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.mp4)
+
+*▶ Two-minute screencast. Click to play.*
+
 ## What problem does it solve?
 
 `@Scheduled` runs in one JVM, so the moment you scale to two instances the job fires twice. It has no
@@ -30,6 +34,13 @@ cd cronflower/deploy
 
 Open <http://localhost:7200>, sign in `admin` / `admin123`, and the example tasks are already running.
 Scale into a real cluster with `./run-local.sh -n 3 -e 2`.
+
+Prefer prebuilt images? Pull them from Docker Hub or GHCR, no checkout needed:
+
+```bash
+curl -O https://raw.githubusercontent.com/paganini2008/cronflower/main/backend/cronflower-docker/docker-compose.yaml
+docker compose up -d          # 3 schedulers + console on http://localhost:7200
+```
 
 ## Requirements
 

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Standalone Maven entry point for regenerating the cronflower tutorial videos. It is NOT part of the
+  backend reactor. The console must be running first (deploy/run-local.sh), then:
+
+      mvn -f tools/video-gen/pom.xml generate-resources
+
+  That runs bin/build.sh: ensure the BGM (synthesized once, then reused), record each flow with
+  Playwright, and encode each to docs/video/<name>.mp4 with ffmpeg. Requires node, npm and ffmpeg.
+  Record a single flow with:  mvn -f tools/video-gen/pom.xml generate-resources -Dvideo.flows=dag-workflows
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.github.cronsmith</groupId>
+  <artifactId>cronflower-video-gen</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>cronflower tutorial video generator</name>
+  <description>Generate the cronflower tutorial videos (Playwright recording plus ffmpeg).</description>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- Space-separated flow names, or blank for the default set (distributed-tasks dag-workflows). -->
+    <video.flows></video.flows>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <id>build-videos</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>bash</executable>
+              <workingDirectory>${project.basedir}</workingDirectory>
+              <arguments>
+                <argument>bin/build.sh</argument>
+                <argument>${video.flows}</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

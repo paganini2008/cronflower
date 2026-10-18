@@ -146,6 +146,7 @@
       <span class="brand">cronflower</span>
       <nav>
         <a href="#why">Why</a>
+        <a href="#watch">Watch</a>
         <a href="#features">Features</a>
         <a href="#how">How it works</a>
         <a href="#docs">Docs</a>
@@ -181,6 +182,32 @@
       </div>
     </div>
   </div>
+
+  <!-- 1b. WATCH -->
+  <section id="watch" class="soft">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>See it in action</h2>
+        <p>Two short screencasts, under two minutes each.</p>
+      </div>
+      <div class="shots">
+        <figure class="shot" style="margin:0">
+          <video controls preload="none" style="width:100%;border-radius:12px;border:1px solid var(--line);background:#0f2c4d"
+                 poster="{{ '/video/distributed-tasks.poster.jpg' | relative_url }}">
+            <source src="{{ '/video/distributed-tasks.mp4' | relative_url }}" type="video/mp4" />
+          </video>
+          <figcaption>Distributed task scheduling: create an HTTP API task, preview cron or YCRON, run it now, read the result.</figcaption>
+        </figure>
+        <figure class="shot" style="margin:0">
+          <video controls preload="none" style="width:100%;border-radius:12px;border:1px solid var(--line);background:#0f2c4d"
+                 poster="{{ '/video/dag-workflows.poster.jpg' | relative_url }}">
+            <source src="{{ '/video/dag-workflows.mp4' | relative_url }}" type="video/mp4" />
+          </video>
+          <figcaption>DAG orchestration: trigger a @Dag and watch it flow node by node across the cluster.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
 
   <!-- 2. WHY / PROBLEM -->
   <section id="why">
@@ -264,6 +291,21 @@ git clone https://github.com/paganini2008/cronflower
 
 <span class="c"># scale into a cluster:</span>
 ./run-local.sh -n 3 -e 2</pre>
+      </div>
+    </div>
+
+    <div class="wrap" style="margin-top:2.2rem">
+      <h3 style="margin:0 0 0.5rem">Or pull the published images, no build</h3>
+      <p style="color:var(--muted);margin:0 0 1rem">Multi-arch images (amd64 and arm64) on Docker Hub
+        and GHCR. The compose template brings up 3 schedulers plus the console.</p>
+      <div class="codewrap">
+        <button class="copy" type="button">Copy</button>
+        <pre class="code"><span class="c"># grab the template, then start 3 schedulers + console</span>
+curl -O https://raw.githubusercontent.com/paganini2008/cronflower/main/backend/cronflower-docker/docker-compose.yaml
+docker compose up -d
+
+<span class="c"># Docker Hub:  fredfeng033/cronflower-server-api, -ui, -executor-example</span>
+<span class="c"># GHCR:        ghcr.io/paganini2008/cronflower-server-api, -ui, -executor-example</span></pre>
       </div>
     </div>
   </section>

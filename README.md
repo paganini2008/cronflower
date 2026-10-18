@@ -19,6 +19,14 @@ cronflower = cronsmith (distributed scheduling) + cronflow (DAG orchestration)
 
 ![Dashboard](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dashboard.jpg)
 
+## See it in action
+
+Two short screencasts, under two minutes each. Click a thumbnail to play.
+
+| [![Distributed task scheduling](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.poster.jpg)](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.mp4) | [![DAG workflow orchestration](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.poster.jpg)](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.mp4) |
+|:--:|:--:|
+| **Distributed task scheduling**: create an HTTP API task, preview a cron or YCRON schedule, run it now, and read the result. | **DAG workflow orchestration**: trigger a `@Dag` and watch it flow node by node across the cluster. |
+
 ## Features
 
 Replacing `@Scheduled` + Quartz + a database + a lock table + a hand-rolled dashboard with two
@@ -87,6 +95,26 @@ with the example tasks already scheduled.
 ```
 
 `-n` = scheduler nodes, `-e` = executor nodes. More: [`deploy/README.md`](deploy/README.md).
+
+### Or pull the published images (no build)
+
+Prebuilt multi-arch images (linux/amd64 and arm64) ship on both Docker Hub and GHCR. The compose
+template brings up a 3-node cluster plus the console with no checkout:
+
+```bash
+curl -O https://raw.githubusercontent.com/paganini2008/cronflower/main/backend/cronflower-docker/docker-compose.yaml
+docker compose up -d                      # 3 schedulers (embedded H2) + console, open http://localhost:7200
+docker compose --profile example up -d    # optional demo executor
+```
+
+| Image | Docker Hub | GHCR |
+|-------|------------|------|
+| scheduler | `fredfeng033/cronflower-server-api` | `ghcr.io/paganini2008/cronflower-server-api` |
+| console | `fredfeng033/cronflower-ui` | `ghcr.io/paganini2008/cronflower-ui` |
+| demo executor | `fredfeng033/cronflower-executor-example` | `ghcr.io/paganini2008/cronflower-executor-example` |
+
+Each is tagged `latest` plus the release version. Details and a shared-PostgreSQL variant:
+[`backend/cronflower-docker/README.md`](backend/cronflower-docker/README.md).
 
 ## Examples
 
