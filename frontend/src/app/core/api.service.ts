@@ -126,8 +126,8 @@ export class CronsmithApi {
       `${this.base}/tasks/${enc(group)}/${enc(name)}/run`, body);
   }
 
-  cronPreview(expr: string, count = 5): Observable<{ valid: boolean; next?: string[]; error?: string }> {
-    const params = new HttpParams().set('expr', expr).set('count', String(count));
+  cronPreview(expr: string, count = 5, parser = 'cron'): Observable<{ valid: boolean; next?: string[]; error?: string }> {
+    const params = new HttpParams().set('expr', expr).set('count', String(count)).set('parser', parser);
     return this.http.get<{ valid: boolean; next?: string[]; error?: string }>(
       `${this.base}/cron/preview`, { params }).pipe(timeout(8000));
   }

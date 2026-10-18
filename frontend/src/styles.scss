@@ -40,8 +40,10 @@ body {
   // Inter for the UI, with a system fallback so text stays crisp before/without the web font.
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  // Let the OS use its default (heavier) smoothing. Forcing antialiased/grayscale renders text
+  // noticeably thinner and lighter on macOS.
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 
   // Reset the user agent margin.
   margin: 0;

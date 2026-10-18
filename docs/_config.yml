@@ -15,6 +15,7 @@ exclude:
   - blogger/cronflower/dag-workflow-orchestration.en.medium.md
   - blogger/cronsmith/distributed-task-scheduling.en.medium.md
   - images/README.md
+  - video/README.md
   - .DS_Store
 
 # Every page uses the one custom layout (which loads Mermaid and styles the docs). Individual pages

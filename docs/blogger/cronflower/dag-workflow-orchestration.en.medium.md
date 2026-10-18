@@ -6,6 +6,10 @@ cluster runs the graph node by node, with data flowing between nodes over typed 
 
 ![Registered workflows and the selected graph's shape](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-workflows.jpg)
 
+[![Watch the DAG workflow orchestration screencast](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.poster.jpg)](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.mp4)
+
+*▶ Two-minute screencast. Click to play.*
+
 ## What problem does it solve?
 
 Teams end up chaining cron jobs: one at 02:00 charges the orders, another at 02:15 ships them, set
@@ -26,6 +30,13 @@ cd cronflower/deploy
 
 Open http://localhost:7200 (`admin` / `admin123`) and the example DAGs are registered under **DAG >
 Workflows**, ready to trigger.
+
+Prefer prebuilt images? Pull them from Docker Hub or GHCR, no checkout needed:
+
+```bash
+curl -O https://raw.githubusercontent.com/paganini2008/cronflower/main/backend/cronflower-docker/docker-compose.yaml
+docker compose up -d          # 3 schedulers + console on http://localhost:7200
+```
 
 ## Requirements
 

@@ -38,7 +38,7 @@ interface NavItem {
         </a>
         <mat-nav-list class="nav-list">
           @for (item of nav(); track item.path) {
-            <a mat-list-item [routerLink]="item.path" routerLinkActive="active-link"
+            <a mat-list-item [disableRipple]="true" [routerLink]="item.path" routerLinkActive="active-link"
                [matTooltip]="collapsed() ? item.label : ''" matTooltipPosition="right">
               <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
               <span matListItemTitle class="nav-label">{{ item.label }}</span>

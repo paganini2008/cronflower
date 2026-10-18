@@ -11,7 +11,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { CronsmithApi, DagScheduleRequest } from '../../core/api.service';
 import { DagGraphView, HTTP_METHODS, MISFIRE_POLICIES, TaskMetadata } from '../../core/models';
-import { fromInputDateTime, toInputDateTime, tzLabel } from '../../core/util';
+import { fmt, fromInputDateTime, toInputDateTime, tzLabel } from '../../core/util';
 import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-builder-dialog';
 
 @Component({
@@ -200,7 +200,20 @@ import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-bu
                   matTooltip="The visual builder produces traditional cron only">
             <mat-icon>tune</mat-icon> Build
           </button>
+          <button mat-stroked-button type="button" class="build-btn" (click)="testSchedule()"
+                  [disabled]="!form.controls.cron.value || testing()"
+                  matTooltip="Validate the expression and preview the next fire times">
+            <mat-icon>science</mat-icon> {{ testing() ? 'Testing…' : 'Test' }}
+          </button>
         </div>
+
+        @if (testError()) { <p class="sched-err">{{ testError() }}</p> }
+        @if (testTimes().length) {
+          <div class="sched-preview">
+            <div class="sp-label">Next fire times · {{ tzLabel() }}</div>
+            <ol>@for (t of testTimes(); track t) { <li class="mono">{{ fmt(t) }}</li> }</ol>
+          </div>
+        }
       </section>
 
       <section class="form-section">
@@ -306,6 +319,14 @@ import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-bu
       background: var(--cf-surface); border-top: 1px solid var(--cf-line);
     }
 
+    .sched-err { margin: 0.6rem 0 0; color: #c0506a; font-size: 0.85rem; }
+    .sched-preview { margin-top: 0.75rem; padding: 0.8rem 1rem; background: var(--cf-blue-light);
+      border: 1px solid var(--cf-line); border-radius: var(--cf-radius-sm); }
+    .sched-preview .sp-label { color: var(--cf-ink-2); font-size: 0.78rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .sched-preview ol { margin: 0; padding-left: 1.2rem; }
+    .sched-preview li { font-size: 0.85rem; color: var(--cf-ink-2); line-height: 1.7; }
+    .sched-preview .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
     @media (max-width: 720px) {
       .field-grid.cols-3, .field-grid.cols-4 { grid-template-columns: 1fr 1fr; }
       .type-cards { grid-template-columns: 1fr; }
@@ -329,6 +350,10 @@ export class TaskForm {
   protected readonly type = signal<TaskKind>('BEAN');
   protected readonly dags = signal<DagGraphView[]>([]);
   protected readonly tzLabel = tzLabel;
+  protected readonly fmt = fmt;
+  protected readonly testing = signal(false);
+  protected readonly testError = signal('');
+  protected readonly testTimes = signal<string[]>([]);
 
   protected readonly form = this.fb.nonNullable.group({
     taskGroup: ['', Validators.required],
@@ -428,6 +453,32 @@ export class TaskForm {
     } catch {
       this.snack.open('Not valid JSON — left as is', 'OK', { duration: 2500 });
     }
+  }
+
+  testSchedule(): void {
+    const expr = this.form.controls.cron.value?.trim();
+    if (!expr) {
+      return;
+    }
+    this.testing.set(true);
+    this.testError.set('');
+    this.testTimes.set([]);
+    this.api.cronPreview(expr, 5, this.form.controls.parser.value).subscribe({
+      next: (r) => {
+        this.testing.set(false);
+        if (r.valid) {
+          this.testTimes.set(r.next ?? []);
+        } else {
+          this.testError.set(r.error || 'Invalid expression.');
+        }
+      },
+      error: (e) => {
+        this.testing.set(false);
+        this.testError.set(
+          e?.name === 'TimeoutError' ? 'Timed out, is the server running?'
+            : e?.error?.message ?? e?.message ?? 'Test failed.');
+      },
+    });
   }
 
   openBuilder(): void {

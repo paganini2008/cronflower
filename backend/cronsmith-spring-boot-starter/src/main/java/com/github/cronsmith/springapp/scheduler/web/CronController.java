@@ -28,11 +28,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.github.cronsmith.CRON;
 import com.github.cronsmith.cron.CronExpression;
+import com.github.cronsmith.cron.CronType;
 
 /**
- * Tests a schedule expression without saving anything: parses a cron (or an ISO-8601 duration,
- * anything starting with {@code P}) and returns the next few fire times. Powers the schedule
- * builder's "Test" button.
+ * Tests a schedule expression without saving anything: parses a cron (traditional or YCRON, per the
+ * {@code parser} parameter) or an ISO-8601 duration (anything starting with {@code P}) and returns
+ * the next few fire times. Powers the schedule builder's "Test" button and the task form's inline
+ * schedule preview.
  *
  * @Description: CronController
  * @Author: Fred Feng
@@ -51,14 +53,15 @@ public class CronController {
 
     @GetMapping("/preview")
     public Map<String, Object> preview(@RequestParam String expr,
-            @RequestParam(defaultValue = "5") int count) {
+            @RequestParam(defaultValue = "5") int count,
+            @RequestParam(defaultValue = "cron") String parser) {
         Map<String, Object> out = new LinkedHashMap<>();
         String e = expr == null ? "" : expr.trim();
         CronExpression cron;
         try {
             cron = e.length() > 1 && (e.charAt(0) == 'P' || e.charAt(0) == 'p')
                     ? CRON.every(Duration.parse(e))
-                    : CRON.parse(e);
+                    : CRON.parse(e, CronType.of(parser));
         } catch (Exception ex) {
             out.put("valid", false);
             out.put("error", messageOf(ex));
