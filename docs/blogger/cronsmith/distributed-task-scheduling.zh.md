@@ -4,9 +4,9 @@
 
 ![控制台里的任务列表](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/tasks-list.jpg)
 
-[![观看分布式任务调度演示](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.poster.jpg)](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.mp4)
+<video src="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.mp4" poster="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.poster.jpg" controls width="100%"></video>
 
-*▶ 两分钟演示，点击播放。*
+*▶ 两分钟演示。*
 
 ## 它解决什么问题？
 

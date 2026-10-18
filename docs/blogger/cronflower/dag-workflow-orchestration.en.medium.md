@@ -6,9 +6,9 @@ cluster runs the graph node by node, with data flowing between nodes over typed 
 
 ![Registered workflows and the selected graph's shape](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-workflows.jpg)
 
-[![Watch the DAG workflow orchestration screencast](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.poster.jpg)](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.mp4)
+<video src="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.mp4" poster="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.poster.jpg" controls width="100%"></video>
 
-*▶ Two-minute screencast. Click to play.*
+*▶ Two-minute screencast.*
 
 ## What problem does it solve?
 
