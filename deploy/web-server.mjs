@@ -14,7 +14,7 @@
 //   WEB_ROOT              static dir (default /usr/share/web)
 //   SCHEDULER_URL         one or more seed scheduler URLs, comma-separated
 //                         (default http://scheduler-1:8080). Any live one bootstraps discovery.
-//   API_PREFIX            backend cronsmith.server.api-prefix (default /cronsmith)
+//   API_PREFIX            backend cronflow.scheduler.api-prefix (default /cronflow/scheduler)
 //   SCHED_HTTP_PORT       FALLBACK HTTP port, used only for nodes whose roster entry has no advertised
 //                         httpPort (older backend). Normally each node advertises its real HTTP port
 //                         via metadata, so discovery works even with different/random ports per node.
@@ -32,9 +32,9 @@ const SEEDS = (process.env.SCHEDULER_URL || 'http://scheduler-1:8080')
   .split(',').map((s) => s.trim()).filter(Boolean).map((s) => new URL(s));
 
 const API_PREFIX = (() => {
-  let p = (process.env.API_PREFIX || '/cronsmith').trim();
+  let p = (process.env.API_PREFIX || '/cronflow/scheduler').trim();
   if (!p.startsWith('/')) p = '/' + p;
-  return p.replace(/\/+$/, '') || '/cronsmith';
+  return p.replace(/\/+$/, '') || '/cronflow/scheduler';
 })();
 // The cronflow (DAG) API prefix, tracking cronflow.server.api-prefix (default /cronflow). Proxied like
 // the cronsmith prefix so the DAG console pages reach the cluster; harmless when the backend has no

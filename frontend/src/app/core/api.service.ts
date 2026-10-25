@@ -58,12 +58,12 @@ export class CronsmithApi {
     return this.config.apiBaseUrl;
   }
 
-  /** The REST base — `{apiBaseUrl}{apiPrefix}` (apiPrefix defaults to `/cronsmith`). */
+  /** The REST base — `{apiBaseUrl}{apiPrefix}` (apiPrefix defaults to `/cronflow/scheduler`). */
   private get base(): string {
     return `${this.root()}${this.config.apiPrefix}`;
   }
 
-  /** The cronflow (DAG) REST base — `{apiBaseUrl}{cronflowPrefix}` (defaults to `/cronflow`). */
+  /** The cronflow (DAG) REST base — `{apiBaseUrl}{cronflowPrefix}` (defaults to `/cronflow/dag`). */
   private get cronflowBase(): string {
     return `${this.root()}${this.config.cronflowPrefix}`;
   }

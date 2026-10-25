@@ -15,8 +15,10 @@
  */
 package com.github.cronflow.springapp;
 
+import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 
@@ -27,17 +29,35 @@ import io.swagger.v3.oas.annotations.info.Info;
  * (prod).
  *
  * <p>
- * Swagger UI is served at {@code /swagger-ui.html} (OpenAPI spec at {@code /v3/api-docs}); the cronsmith
- * REST controllers appear there under {@code cronsmith.server.api-prefix} and the cronflow ones under
- * {@code cronflow.server.api-prefix}. Sign in first via {@code POST /auth/login}.
+ * Swagger UI is served at {@code /swagger-ui.html} (OpenAPI spec at {@code /v3/api-docs}). The API is
+ * split into two groups in the UI dropdown: <b>scheduler</b> ({@code /cronflow/scheduler/**}: tasks,
+ * executors, cluster, cron) and <b>dag</b> ({@code /cronflow/dag/**}: workflows and runs). Sign in first
+ * via {@code POST /auth/login}.
  */
 @OpenAPIDefinition(info = @Info(title = "Cronflow Server API", version = "1.0.0",
         description = "REST API of the Cronflow server: tasks, executors, cluster, DAG and cron tools."))
-@SpringBootApplication
+// Scan only this application's own components (the security package). The cronflow scheduler + DAG
+// beans — including all REST controllers — come from the starter's auto-configuration, not component
+// scanning, so the app class living at the root package never double-instantiates them.
+@SpringBootApplication(scanBasePackages = "com.github.cronflow.springapp.security")
 public class CronflowServerApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(CronflowServerApplication.class, args);
+    }
+
+    /** Swagger UI group for the scheduler (task) endpoints: everything under {@code /cronflow/scheduler}. */
+    @Bean
+    public GroupedOpenApi schedulerApiGroup() {
+        return GroupedOpenApi.builder().group(CronflowConstants.SWAGGER_GROUP_SCHEDULER)
+                .pathsToMatch(CronflowConstants.SCHEDULER_API_PREFIX + "/**").build();
+    }
+
+    /** Swagger UI group for the DAG (workflow) endpoints: everything under {@code /cronflow/dag}. */
+    @Bean
+    public GroupedOpenApi dagApiGroup() {
+        return GroupedOpenApi.builder().group(CronflowConstants.SWAGGER_GROUP_DAG)
+                .pathsToMatch(CronflowConstants.DAG_API_PREFIX + "/**").build();
     }
 
 }

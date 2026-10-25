@@ -1,7 +1,7 @@
 {
   "apiBaseUrl": "",
-  "apiPrefix": "/cronsmith",
-  "cronflowPrefix": "/cronflow",
+  "apiPrefix": "/cronflow/scheduler",
+  "cronflowPrefix": "/cronflow/dag",
   "auth": {
     "username": "admin",
     "password": "admin"

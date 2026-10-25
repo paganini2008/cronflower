@@ -19,7 +19,7 @@ import com.github.cronflow.springapp.executor.pojo.DagRegistrationRequest;
 
 /**
  * The executor's view of the cronflow server: register DAG definitions + trigger bindings, and
- * heartbeat. Mirrors {@code CronsmithServerClient}; the implementation fails over across the
+ * heartbeat. Mirrors {@code CronflowExecutorServerClient}; the implementation fails over across the
  * configured server URLs.
  *
  * @Description: CronflowServerClient

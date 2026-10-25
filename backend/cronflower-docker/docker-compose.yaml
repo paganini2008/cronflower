@@ -76,8 +76,8 @@ services:
       # Seed the console with all three nodes. It discovers the full cluster from any one of them
       # and round-robins the API with failover. Prefixes must match the backend.
       SCHEDULER_URL: "http://cronflower-api-1:8080,http://cronflower-api-2:8080,http://cronflower-api-3:8080"
-      API_PREFIX: /cronsmith
-      CRONFLOW_PREFIX: /cronflow
+      API_PREFIX: /cronflow/scheduler
+      CRONFLOW_PREFIX: /cronflow/dag
     ports:
       - "7200:80"
     depends_on:
@@ -93,7 +93,7 @@ services:
     container_name: cronflower-example
     profiles: ["example"]
     environment:
-      SPRING_APPLICATION_JSON: '{"server":{"port":8080},"spring":{"application":{"name":"demo-executor"}},"cronsmith":{"client":{"server-urls":"http://cronflower-api-1:8080,http://cronflower-api-2:8080,http://cronflower-api-3:8080","server-api-prefix":"/cronsmith"}},"cronflow":{"client":{"server-urls":"http://cronflower-api-1:8080,http://cronflower-api-2:8080,http://cronflower-api-3:8080","server-api-prefix":"/cronflow"}}}'
+      SPRING_APPLICATION_JSON: '{"server":{"port":8080},"spring":{"application":{"name":"demo-executor"}},"cronflow":{"executor":{"server-urls":"http://cronflower-api-1:8080,http://cronflower-api-2:8080,http://cronflower-api-3:8080","server-api-prefix":"/cronflow/scheduler"},"client":{"server-urls":"http://cronflower-api-1:8080,http://cronflower-api-2:8080,http://cronflower-api-3:8080","server-api-prefix":"/cronflow/dag"}}}'
       JAVA_TOOL_OPTIONS: "-Xmx1g"
     depends_on:
       cronflower-api-1: { condition: service_healthy }

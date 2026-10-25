@@ -18,7 +18,7 @@
 # Ports on the host: web console 7200 (the one entry point) · schedulers AND executors on random free
 # ports in 50000-60000 (scheduler host ports are for external access only — the console discovers the
 # cluster by container name, not host port). No fixed 19090.
-# The web console proxies /cronsmith + /actuator to the first scheduler, so the browser talks to a
+# The web console proxies /cronflow/scheduler + /actuator to the first scheduler, so the browser talks to a
 # single origin (:7200).
 # ============================================================================================
 set -euo pipefail
@@ -54,7 +54,7 @@ server_json() {
   # SPRING_APPLICATION_JSON so it wins over the jar's H2 default and the staged conf/server.properties.
   # On Rancher Desktop / lima the host is reached by its LAN IP, not host.docker.internal.
   if [ -n "${SHARED_DB_URL:-}" ]; then
-    printf '{"server":{"port":8080},"spring":{%s,"datasource":{"url":"%s","username":"%s","password":"%s"}},"cronsmith":{"server":{"scheduler":{"sharding":true}}}}' \
+    printf '{"server":{"port":8080},"spring":{%s,"datasource":{"url":"%s","username":"%s","password":"%s"}},"cronflow":{"scheduler":{"sharding":true}}}' \
       "$(spring_inner "$1")" "$SHARED_DB_URL" "${SHARED_DB_USER:-}" "${SHARED_DB_PASS:-}"
   else
     printf '{"server":{"port":8080},"spring":{%s}}' "$(spring_inner "$1")"
@@ -95,7 +95,7 @@ generate_compose() {
     # leader) is killed.
     local sched_urls; sched_urls=$(for i in $(seq 1 "$nodes"); do printf ',http://cronflow-server-api-%s:8080' "$i"; done); sched_urls=${sched_urls#,}
 
-    # cronflower web console — a Node static server that proxies /cronsmith + /cronflow + /actuator.
+    # cronflower web console — a Node static server that proxies /cronflow/scheduler + /cronflow + /actuator.
     # Seeded with EVERY scheduler's in-network address (container name : 8080, not a host port), so any
     # reachable one bootstraps discovery of the full member list; nodes join/leave without config here.
     # Discovery is by container name + advertised port, so it does not depend on the (random) host ports.
@@ -105,7 +105,7 @@ generate_compose() {
     echo "    environment:"
     echo "      SCHEDULER_URL: $sched_urls"
     echo "      API_PREFIX: $API_PREFIX"
-    echo "      CRONFLOW_PREFIX: ${CRONFLOW_PREFIX:-/cronflow}"
+    echo "      CRONFLOW_PREFIX: ${CRONFLOW_PREFIX:-/cronflow/dag}"
     echo "    ports: [\"$WEB_PORT:80\"]"
     echo "    depends_on:"
     echo "      cronflow-server-api-1: { condition: service_started }"
@@ -118,7 +118,7 @@ generate_compose() {
       echo "    image: cronflow-executor:local"
       echo "    container_name: cronflow-executor-$i"
       echo "    environment:"
-      echo "      SPRING_APPLICATION_JSON: '{\"server\":{\"port\":8080},\"spring\":{\"application\":{\"name\":\"demo-executor\"}},\"cronsmith\":{\"client\":{\"server-urls\":\"$sched_urls\",\"server-api-prefix\":\"$API_PREFIX\"}},\"cronflow\":{\"client\":{\"server-urls\":\"$sched_urls\",\"server-api-prefix\":\"${CRONFLOW_PREFIX:-/cronflow}\"}}}'"
+      echo "      SPRING_APPLICATION_JSON: '{\"server\":{\"port\":8080},\"spring\":{\"application\":{\"name\":\"demo-executor\"}},\"cronflow\":{\"executor\":{\"server-urls\":\"$sched_urls\",\"server-api-prefix\":\"$API_PREFIX\"},\"client\":{\"server-urls\":\"$sched_urls\",\"server-api-prefix\":\"${CRONFLOW_PREFIX:-/cronflow/dag}\"}}}'"
       echo "      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/config/executor.properties"
       echo "      JAVA_TOOL_OPTIONS: -Xmx${EXEC_XMX}"
       echo "    volumes:"
@@ -148,7 +148,7 @@ do_up() {
   check_prereqs docker
   check_capacity "$nodes" "$execs" "$(docker_mem_gb)" "Docker engine RAM"
 
-  # One source of truth: the API prefix from conf/server.properties (default /cronsmith). The
+  # One source of truth: the API prefix from conf/server.properties (default /cronflow/scheduler). The
   # scheduler reads it from the mounted file; here we propagate the SAME value to the executor
   # (server-api-prefix), the web proxy (API_PREFIX env) and the served config.json (apiPrefix).
   API_PREFIX="$(read_api_prefix)"

@@ -1,6 +1,6 @@
 # cronflow-server-api
 
-The runnable **Cronflow server**: the product you deploy. It bundles `cronsmith-spring-boot-starter`
+The runnable **Cronflow server**: the product you deploy. It bundles `cronflow-spring-boot-starter`
 (distributed scheduler) and `cronflow-spring-boot-starter` (DAG engine) behind **login + role-based
 authorization**, and ships as `cronflow-server-api-<version>.jar` (what the deploy scripts stage and run).
 
@@ -30,7 +30,7 @@ Sign in, then call the API with the returned bearer token:
 ```bash
 TOKEN=$(curl -s localhost:19090/auth/login -H 'Content-Type: application/json' \
   -d '{"username":"admin","password":"admin123"}' | sed 's/.*"token":"\([^"]*\)".*/\1/')
-curl -s localhost:19090/cronsmith/tasks -H "Authorization: Bearer $TOKEN"
+curl -s localhost:19090/cronflow/scheduler/tasks -H "Authorization: Bearer $TOKEN"
 ```
 
 Swagger UI: <http://localhost:19090/swagger-ui.html>.
@@ -53,7 +53,7 @@ user's roles, send it as `Authorization: Bearer <token>` on every call.
 | `workflow_admin` | cronflow (DAG) + dashboard |
 | `user` | dashboard only |
 
-Writes under `cronsmith.server.api-prefix` need `admin`/`scheduler_admin`, writes under
+Writes under `cronflow.scheduler.api-prefix` need `admin`/`scheduler_admin`, writes under
 `cronflow.server.api-prefix` need `admin`/`workflow_admin`, `/actuator/**` beyond health/info needs
 `admin`, reads need any signed-in user. `/actuator/health` stays public (the console discovers the
 cluster from it). The **executor → scheduler machine endpoints stay open** (`/executors/register`,
@@ -89,15 +89,15 @@ Per-env differences live in `application-{dev,prod}.properties`:
 
 | | dev (default) | prod (`mvn -Pprod`) |
 |---|---|---|
-| Store | embedded H2 `./data/cronflow` (node-local) | shared **MySQL** (`CRONFLOW_DB_*`), sharding on |
-| Logs | `DEBUG` (cronsmith/cronflow) | `INFO` |
+| Store | embedded H2 `./data/cronflow/dag` (node-local) | shared **MySQL** (`CRONFLOW_DB_*`), sharding on |
+| Logs | `DEBUG` (cronsmith/cronflow/dag) | `INFO` |
 | JWT secret | packaged dev default | **required** via `CRONFLOW_JWT_SECRET` (fail fast) |
 
 ```bash
 mvn -Pprod clean package
-export CRONFLOW_DB_URL='jdbc:mysql://HOST:3306/cronflow?...' CRONFLOW_DB_USERNAME=... CRONFLOW_DB_PASSWORD=...
+export CRONFLOW_DB_URL='jdbc:mysql://HOST:3306/cronflow/dag?...' CRONFLOW_DB_USERNAME=... CRONFLOW_DB_PASSWORD=...
 export CRONFLOW_JWT_SECRET='a-long-random-secret-shared-by-every-node'
-java -jar target/cronflow-server-api-1.0.0-SNAPSHOT.jar \
+java -jar target/cronflow/dag-server-api-1.0.0-SNAPSHOT.jar \
   --spring.config.additional-location=file:target/conf/server.properties
 ```
 
@@ -127,11 +127,11 @@ All business endpoints require a bearer token (see roles above).
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/cronsmith/stats` | Dashboard aggregates (task counts by status, executor counts) |
-| GET · POST · DELETE | `/cronsmith/tasks` … `/{group}/{name}` | List / detail / create-update / delete tasks |
-| GET | `/cronsmith/tasks/{group}/{name}/logs` | Execution history |
-| POST | `/cronsmith/tasks/{group}/{name}/pause`\|`resume`\|`cancel` | Task actions |
-| GET | `/cronsmith/executors` · `/cronsmith/cluster` | Registered executors · cluster nodes, leader, store |
+| GET | `/cronflow/scheduler/stats` | Dashboard aggregates (task counts by status, executor counts) |
+| GET · POST · DELETE | `/cronflow/scheduler/tasks` … `/{group}/{name}` | List / detail / create-update / delete tasks |
+| GET | `/cronflow/scheduler/tasks/{group}/{name}/logs` | Execution history |
+| POST | `/cronflow/scheduler/tasks/{group}/{name}/pause`\|`resume`\|`cancel` | Task actions |
+| GET | `/cronflow/scheduler/executors` · `/cronflow/scheduler/cluster` | Registered executors · cluster nodes, leader, store |
 | GET · POST | `/cronflow/dags` · `/cronflow/runs` · `/cronflow/dags/{graph}/trigger` | DAG definitions, runs, trigger |
 | GET | `/actuator/health` | Health (incl. `spreaderCluster`), public |
 

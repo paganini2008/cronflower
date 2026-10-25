@@ -151,11 +151,11 @@ The `@Task` attributes, for reference:
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `cronsmith.client.server-urls` |: | On the executor: scheduler seed URL(s) |
-| `cronsmith.server.scheduler.zone` | `UTC` | Fire-time zone: must match cluster-wide |
-| `cronsmith.server.scheduler.window-minutes` | `5` | Windowed-loading horizon |
-| `cronsmith.server.scheduler.sharding` | `true` | Group sharding over a shared store (else leader-only) |
-| `cronsmith.server.dispatch.routing` | `ROUND_ROBIN` | …`WEIGHTED` / `CONSISTENT_HASH` / `RANDOM` / `FIRST` / `LAST` |
+| `cronflow.executor.server-urls` |: | On the executor: scheduler seed URL(s) |
+| `cronflow.scheduler.zone` | `UTC` | Fire-time zone: must match cluster-wide |
+| `cronflow.scheduler.window-minutes` | `5` | Windowed-loading horizon |
+| `cronflow.scheduler.sharding` | `true` | Group sharding over a shared store (else leader-only) |
+| `cronflow.scheduler.dispatch.routing` | `ROUND_ROBIN` | …`WEIGHTED` / `CONSISTENT_HASH` / `RANDOM` / `FIRST` / `LAST` |
 | `spring.datasource.url` | H2 file | Point at MySQL/PostgreSQL for a shared, sharding-capable store |
 
 ## Limitations & trade-offs

@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * The executor → server registration: this executor's callback address plus every DAG definition it
  * hosts and every task→DAG trigger binding. Sent once at startup (then heartbeats), the same shape as
- * cronsmith's executor registration.
+ * the scheduler's executor registration.
  *
  * @Description: DagRegistrationRequest
  * @Author: Fred Feng

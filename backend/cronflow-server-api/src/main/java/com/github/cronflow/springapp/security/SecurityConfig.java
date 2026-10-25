@@ -15,6 +15,7 @@
  */
 package com.github.cronflow.springapp.security;
 
+import com.github.cronflow.springapp.CronflowConstants;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -76,16 +77,16 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
  * <p>
  * Roles (authorities carry the {@code ROLE_} prefix):
  * <ul>
- * <li>{@code ADMIN} manages cronsmith, cronflow, system and dashboard (everything).</li>
- * <li>{@code SCHEDULER_ADMIN} manages cronsmith and views the dashboard.</li>
+ * <li>{@code ADMIN} manages the scheduler, cronflow, system and dashboard (everything).</li>
+ * <li>{@code SCHEDULER_ADMIN} manages the scheduler and views the dashboard.</li>
  * <li>{@code WORKFLOW_ADMIN} manages cronflow and views the dashboard.</li>
  * <li>{@code USER} views the dashboard only.</li>
  * </ul>
  *
  * <p>
  * Only the human console API is protected. The executor -> scheduler machine endpoints (register,
- * heartbeat, execution callback for both cronsmith and cronflow) stay OPEN, because they are driven by
- * the cronsmith / cronflow executor starters which are not modified here. A shared bearer for those
+ * heartbeat, execution callback for both the scheduler and cronflow) stay OPEN, because they are driven by
+ * the scheduler / cronflow executor starters which are not modified here. A shared bearer for those
  * endpoints is left as an extension point: both ends would have to agree on it.
  *
  * @Description: SecurityConfig
@@ -109,16 +110,18 @@ public class SecurityConfig {
     private final ResourceLoader resourceLoader;
 
     /** Business API prefixes; matched on the real request path (the console calls the full path). */
-    private final String cronsmithPrefix;
+    private final String cronflowSchedulerPrefix;
     private final String cronflowPrefix;
 
     public SecurityConfig(SecurityProperties properties, ResourceLoader resourceLoader,
-            @Value("${cronsmith.server.api-prefix:/cronsmith}") String cronsmithPrefix,
-            @Value("${cronflow.server.api-prefix:/cronflow}") String cronflowPrefix) {
+            @Value("${cronflow.scheduler.api-prefix:" + CronflowConstants.SCHEDULER_API_PREFIX
+                    + "}") String cronflowSchedulerPrefix,
+            @Value("${cronflow.server.api-prefix:" + CronflowConstants.DAG_API_PREFIX
+                    + "}") String cronflowPrefix) {
         this.properties = properties;
         this.resourceLoader = resourceLoader;
-        this.cronsmithPrefix = normalize(cronsmithPrefix, "/cronsmith");
-        this.cronflowPrefix = normalize(cronflowPrefix, "/cronflow");
+        this.cronflowSchedulerPrefix = normalize(cronflowSchedulerPrefix, CronflowConstants.SCHEDULER_API_PREFIX);
+        this.cronflowPrefix = normalize(cronflowPrefix, CronflowConstants.DAG_API_PREFIX);
     }
 
     @Bean
@@ -135,7 +138,7 @@ public class SecurityConfig {
             return http.build();
         }
 
-        final String cs = cronsmithPrefix;
+        final String cs = cronflowSchedulerPrefix;
         final String cf = cronflowPrefix;
         http.authorizeHttpRequests(reg -> reg
                 // CORS preflight.
@@ -159,7 +162,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, cf + "/nodes/self-health").permitAll()
                 // System (actuator beyond health/info) is admin only.
                 .requestMatchers("/actuator/**").hasRole(ADMIN)
-                // cronsmith management (writes) -> admin or scheduler_admin.
+                // scheduler management (writes) -> admin or scheduler_admin.
                 .requestMatchers(HttpMethod.POST, cs + "/**").hasAnyRole(ADMIN, SCHEDULER_ADMIN)
                 .requestMatchers(HttpMethod.PUT, cs + "/**").hasAnyRole(ADMIN, SCHEDULER_ADMIN)
                 .requestMatchers(HttpMethod.DELETE, cs + "/**").hasAnyRole(ADMIN, SCHEDULER_ADMIN)

@@ -133,11 +133,11 @@ public void weeklyReport() { /* ... */ }
 
 | 属性 | 默认 | 说明 |
 |------|------|------|
-| `cronsmith.client.server-urls` |: | 执行器上：调度器种子 URL |
-| `cronsmith.server.scheduler.zone` | `UTC` | 触发时区，必须全集群一致 |
-| `cronsmith.server.scheduler.window-minutes` | `5` | 窗口加载视野 |
-| `cronsmith.server.scheduler.sharding` | `true` | 共享库上的分组分片（否则 leader-only） |
-| `cronsmith.server.dispatch.routing` | `ROUND_ROBIN` | …`WEIGHTED` / `CONSISTENT_HASH` / `RANDOM` / `FIRST` / `LAST` |
+| `cronflow.executor.server-urls` |: | 执行器上：调度器种子 URL |
+| `cronflow.scheduler.zone` | `UTC` | 触发时区，必须全集群一致 |
+| `cronflow.scheduler.window-minutes` | `5` | 窗口加载视野 |
+| `cronflow.scheduler.sharding` | `true` | 共享库上的分组分片（否则 leader-only） |
+| `cronflow.scheduler.dispatch.routing` | `ROUND_ROBIN` | …`WEIGHTED` / `CONSISTENT_HASH` / `RANDOM` / `FIRST` / `LAST` |
 | `spring.datasource.url` | H2 文件 | 指向 MySQL/PostgreSQL 得到共享、可分片的存储 |
 
 ## 局限与取舍

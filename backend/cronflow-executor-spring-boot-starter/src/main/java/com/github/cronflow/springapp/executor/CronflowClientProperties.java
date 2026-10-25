@@ -26,7 +26,7 @@ import lombok.Data;
  * Configuration for the cronflow executor (workflow node runner) side.
  *
  * <p>
- * Deliberately mirrors {@code cronsmith.client.*}: a cronflow executor is, like a cronsmith executor,
+ * Deliberately mirrors {@code cronflow.executor.*}: a cronflow executor is, like a task executor,
  * a callee that registers to the server and is dialled back over HTTP — here to run a DAG node bean
  * method rather than a scheduled task.
  *
@@ -48,8 +48,8 @@ public class CronflowClientProperties {
      */
     private List<String> serverUrls = new ArrayList<>(List.of("http://localhost:19090"));
 
-    /** The cronflow server's REST API prefix (must match {@code cronflow.server.api-prefix}). Default {@code /cronflow}. */
-    private String serverApiPrefix = "/cronflow";
+    /** The cronflow DAG server's REST API prefix (must match {@code cronflow.server.api-prefix}). Default {@code /cronflow/dag}. */
+    private String serverApiPrefix = CronflowConstants.DAG_API_PREFIX;
 
     /** Executor application name. Defaults to {@code spring.application.name}. */
     private String application;

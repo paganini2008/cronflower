@@ -45,7 +45,7 @@ import com.github.cronflow.springapp.executor.pojo.TriggerBinding;
  *             .node("riskScore").bean("orderFlow").method("riskScore")
  *                 .when("#risk > 80", "humanReview").otherwise("fulfilment")
  *             .node("transfer").bean("bank").method("transfer").retry(2).onFailure("flag")
- *             .triggeredBy("cronsmith-executor", "orderFlow.kickoff");
+ *             .triggeredBy("cronflow-executor", "orderFlow.kickoff");
  * }
  * }</pre>
  *
@@ -76,7 +76,7 @@ public final class CronflowDag {
     }
 
     /**
-     * Bind a cronsmith {@code @Task} (by its group + name) to this graph, so the task's completion
+     * Bind a {@code @Task} (by its group + name) to this graph, so the task's completion
      * triggers a run with its return value as the initial state — the programmatic equivalent of putting
      * a {@code @Task} in a {@code @Dag} class. Call once per triggering task.
      */
