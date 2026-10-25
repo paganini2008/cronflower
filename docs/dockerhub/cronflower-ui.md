@@ -43,8 +43,8 @@ The container listens on port 80. Map it to a host port, for example `7200:80`.
 | Env var | Purpose |
 |---------|---------|
 | `SCHEDULER_URL` | comma separated scheduler addresses to seed discovery, for example `http://cronflower-api-1:8080,http://cronflower-api-2:8080` |
-| `API_PREFIX` | REST prefix, must match the backend. Default `/cronsmith` |
-| `CRONFLOW_PREFIX` | DAG REST prefix, must match the backend. Default `/cronflow` |
+| `API_PREFIX` | REST prefix, must match the backend. Default `/cronflow/scheduler` |
+| `CRONFLOW_PREFIX` | DAG REST prefix, must match the backend. Default `/cronflow/dag` |
 | `DISCOVERY` | set `off` to pin to the seeds only. Default `on` |
 | `PORT` / `WEB_ROOT` | listen port (80) and the built SPA directory |
 

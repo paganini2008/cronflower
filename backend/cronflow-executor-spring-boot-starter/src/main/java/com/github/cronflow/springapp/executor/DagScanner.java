@@ -28,14 +28,14 @@ import org.springframework.aop.support.AopUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.util.ReflectionUtils;
-import com.github.cronsmith.springapp.executor.Task;
+import com.github.cronflow.springapp.executor.Task;
 import com.github.cronflow.springapp.executor.pojo.DagDefinition;
 import com.github.cronflow.springapp.executor.pojo.TriggerBinding;
 
 /**
  * Weaves DAG definitions on the executor at startup, from both styles: the {@link Dag}/{@link DagNode}
  * annotations and programmatic {@link CronflowDag} beans. It also derives the task→DAG trigger
- * bindings by the simplest possible rule: a cronsmith {@code @Task} method that sits in a {@code @Dag}
+ * bindings by the simplest possible rule: a {@code @Task} method that sits in a {@code @Dag}
  * class triggers that class's graph (its return value seeds the run). No separate trigger annotation.
  *
  * <p>
@@ -134,11 +134,11 @@ public class DagScanner {
         try {
             return AopUtils.getTargetClass(applicationContext.getBean(beanName));
         } catch (RuntimeException e) {
-            return null; // not instantiable / lazy-broken; skip like cronsmith's TaskRegistry does
+            return null; // not instantiable / lazy-broken; skip like the task registry does
         }
     }
 
-    /** A cronsmith @Task in a @Dag class triggers that graph (group/name taken from @Task). */
+    /** A @Task in a @Dag class triggers that graph (group/name taken from @Task). */
     private List<TriggerBinding> bindings(String beanName, Class<?> targetClass, String graph) {
         List<TriggerBinding> triggers = new ArrayList<>();
         for (Method method : ReflectionUtils.getAllDeclaredMethods(targetClass)) {

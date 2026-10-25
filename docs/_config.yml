@@ -10,10 +10,10 @@ baseurl: /cronflower
 # so they never appear on GitHub Pages.
 exclude:
   - blogger/cronflower/dag-workflow-orchestration.zh.md
-  - blogger/cronsmith/distributed-task-scheduling.zh.md
+  - blogger/cronflow/scheduler/distributed-task-scheduling.zh.md
   # Medium-paste variants (tables rewritten as lists) — not part of the site.
   - blogger/cronflower/dag-workflow-orchestration.en.medium.md
-  - blogger/cronsmith/distributed-task-scheduling.en.medium.md
+  - blogger/cronflow/scheduler/distributed-task-scheduling.en.medium.md
   - images/README.md
   - video/README.md
   - .DS_Store

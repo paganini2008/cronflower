@@ -145,7 +145,7 @@ Each `@Channel` merges concurrent writes with a built-in reducer, or your own vi
 - **`LAST_WINS` / `FIRST_WINS` / `WRITE_ONCE`**: pick one writer
 
 The executor points at the scheduler with `cronflow.client.server-urls`, the server prefix is
-`cronflow.server.api-prefix` (default `/cronflow`).
+`cronflow.server.api-prefix` (default `/cronflow/dag`).
 
 ## Limitations & trade-offs
 

@@ -14,7 +14,7 @@ business code, and the **console** is the operator's window onto both.
 ```mermaid
 flowchart TB
     UI["cronflower console (Angular)<br/>Dashboard · Tasks · Cluster · DAG · System"]
-    UI -->|"/cronsmith · /cronflow · /actuator (one origin)"| Entry{{"single entry point<br/>self-balancing, or nginx / KONG"}}
+    UI -->|"/cronflow/scheduler · /cronflow/dag · /actuator (one origin)"| Entry{{"single entry point<br/>self-balancing, or nginx / KONG"}}
 
     subgraph Cluster["scheduler cluster (server)"]
         direction LR
@@ -97,7 +97,7 @@ flowchart TB
 {% endraw %}
 
 **Weighted dispatch** routes runs to executors by capacity, routing is configurable
-(`cronsmith.server.dispatch.routing`: round-robin / weighted / consistent-hash / random / first / last).
+(`cronflow.scheduler.dispatch.routing`: round-robin / weighted / consistent-hash / random / first / last).
 
 ## DAG orchestration (cronflow)
 
@@ -169,7 +169,7 @@ source of truth, a human-readable `cron` string is kept alongside for display.
 
 | Layer | Module | Responsibility |
 |-------|--------|----------------|
-| Scheduler | `cronsmith-spring-boot-starter` → `cronflow-server-api` | owns schedules & durable state, leader election, windowed loading, dispatch, sharding |
-| Executor | `cronsmith-executor-spring-boot-starter` → `cronflow-executor-example` | hosts `@Task` / `@Dag` beans, registers on boot, runs the code on callback |
+| Scheduler | `cronflow-spring-boot-starter` → `cronflow-server-api` | owns schedules & durable state, leader election, windowed loading, dispatch, sharding |
+| Executor | `cronflow-executor-spring-boot-starter` → `cronflow-executor-example` | hosts `@Task` / `@Dag` beans, registers on boot, runs the code on callback |
 | DAG add-on | `cronflow-spring-boot-starter` / `cronflow-executor-spring-boot-starter` | graph orchestration over the same cluster |
 | Console | `cronflower/frontend` | Angular standalone + signals, one endpoint, live cluster / tasks / DAG / settings |

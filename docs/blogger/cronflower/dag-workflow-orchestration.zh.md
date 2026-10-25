@@ -133,7 +133,7 @@ public Map<String, Object> square(DagState state) { /* 运行时每个 id 跑一
 | `MERGE_MAP` | 合并 map |
 | `LAST_WINS` / `FIRST_WINS` / `WRITE_ONCE` | 只取一个写入者 |
 
-执行器用 `cronflow.client.server-urls` 指向调度器；服务端前缀是 `cronflow.server.api-prefix`（默认 `/cronflow`）。
+执行器用 `cronflow.client.server-urls` 指向调度器；服务端前缀是 `cronflow.server.api-prefix`（默认 `/cronflow/dag`）。
 
 ## 局限与取舍
 

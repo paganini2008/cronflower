@@ -19,15 +19,15 @@ export interface RuntimeConfig {
    */
   apiBaseUrl: string;
   /**
-   * The backend's REST API prefix — must match the scheduler's `cronsmith.server.api-prefix`
-   * (default `/cronsmith`). All API calls are made under it; `/actuator` is separate and never
+   * The backend's REST API prefix — must match the scheduler's `cronflow.scheduler.api-prefix`
+   * (default `/cronflow/dag/scheduler`). All API calls are made under it; `/actuator` is separate and never
    * prefixed. Change this only if you changed the backend prefix (then also update the dev/Node
    * proxies, which forward this same prefix).
    */
   apiPrefix: string;
   /**
    * The cronflow (DAG) REST API prefix — must match the scheduler's `cronflow.server.api-prefix`
-   * (default `/cronflow`). The DAG console pages call under it, separately from `apiPrefix`. Only
+   * (default `/cronflow/dag/dag`). The DAG console pages call under it, separately from `apiPrefix`. Only
    * meaningful when the backend has the cronflow add-on; the console auto-detects that via
    * `/actuator/health` and hides all DAG menus/pages when it is absent, so this is harmless on a
    * cronsmith-only backend. Change it only if you changed the backend prefix (then also update the
@@ -38,8 +38,8 @@ export interface RuntimeConfig {
 
 export const DEFAULT_CONFIG: RuntimeConfig = {
   apiBaseUrl: 'http://localhost:19090',
-  apiPrefix: '/cronsmith',
-  cronflowPrefix: '/cronflow',
+  apiPrefix: '/cronflow/dag/scheduler',
+  cronflowPrefix: '/cronflow/dag/dag',
 };
 
 @Injectable({ providedIn: 'root' })
@@ -58,10 +58,10 @@ export class ConfigService {
 
   /**
    * REST API prefix, normalized to a leading slash and no trailing slash; '' (or '/') means the API
-   * is served at the root. Defaults to '/cronsmith'.
+   * is served at the root. Defaults to '/cronflow/dag/scheduler'.
    */
   get apiPrefix(): string {
-    let p = (this._config().apiPrefix ?? '/cronsmith').trim();
+    let p = (this._config().apiPrefix ?? '/cronflow/dag/scheduler').trim();
     if (p === '' || p === '/') {
       return '';
     }
@@ -71,9 +71,9 @@ export class ConfigService {
     return p.replace(/\/+$/, '');
   }
 
-  /** cronflow (DAG) REST API prefix, normalized like {@link apiPrefix}. Defaults to '/cronflow'. */
+  /** cronflow (DAG) REST API prefix, normalized like {@link apiPrefix}. Defaults to '/cronflow/dag/dag'. */
   get cronflowPrefix(): string {
-    let p = (this._config().cronflowPrefix ?? '/cronflow').trim();
+    let p = (this._config().cronflowPrefix ?? '/cronflow/dag/dag').trim();
     if (p === '' || p === '/') {
       return '';
     }

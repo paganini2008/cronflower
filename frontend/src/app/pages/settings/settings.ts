@@ -72,10 +72,10 @@ export class Settings implements OnInit {
 
   /** Keep the app's own property beans and flatten each to sorted key/value rows, grouped by prefix. */
   private build(cp: ConfigProps): Section[] {
-    // Operational config only: the cronsmith/cronflow server properties. Auth config (cronflow.security)
+    // Operational config only: the cronflow scheduler/server properties. Auth config (cronflow.security)
     // is excluded — it is secrets and account setup, not the deployment tuning this view is for.
     const wanted = (p?: string) => !!p
-      && (p.startsWith('cronsmith') || p.startsWith('cronflow'))
+      && p.startsWith('cronflow')
       && !p.startsWith('cronflow.security');
     const byPrefix = new Map<string, KV[]>();
     for (const ctx of Object.values(cp.contexts ?? {})) {

@@ -27,7 +27,7 @@ fi
 # `com.chaconneai:openspreader` are NOT published to Maven Central yet (they will be), so for now
 # they are resolved from the LOCAL Maven repository. If a cronsmith checkout is present next to
 # cronflower, install it (and thus refresh the local artifact) first.
-CRONSMITH_REPO="${CRONSMITH_REPO:-$ROOT/../cronsmith}"
+CRONSMITH_REPO="${CRONSMITH_REPO:-$ROOT/../cronflow/scheduler}"
 
 # The Maven Wrapper downloads a fresh Maven whose default localRepository is ~/.m2/repository, which
 # does NOT hold cronsmith/openspreader. Pin the local repo that does (override with M2_REPO=). Once
@@ -65,21 +65,21 @@ rand_free_port() {
   done
 }
 
-# Read cronsmith.server.api-prefix from conf/server.properties (default /cronsmith), normalized to a
-# leading slash and no trailing slash; blank or "/" falls back to /cronsmith (the proxies need a
+# Read cronflow.scheduler.api-prefix from conf/server.properties (default /cronflow/scheduler), normalized to a
+# leading slash and no trailing slash; blank or "/" falls back to /cronflow/scheduler (the proxies need a
 # non-empty prefix). The scheduler reads the property itself; this lets the runners propagate the SAME
 # value to the executor (server-api-prefix), the console proxy (API_PREFIX env) and the served
 # config.json (apiPrefix), so changing it in ONE place flows through the whole chain.
 read_api_prefix() {
   local conf="$HERE/conf/server.properties" p=""
   if [ -f "$conf" ]; then
-    p=$(grep -E '^[[:space:]]*cronsmith\.server\.api-prefix[[:space:]]*=' "$conf" 2>/dev/null \
+    p=$(grep -E '^[[:space:]]*cronflow\.scheduler\.api-prefix[[:space:]]*=' "$conf" 2>/dev/null \
         | tail -1 | sed -E 's/^[^=]*=[[:space:]]*//; s/[[:space:]]*$//')
   fi
-  [ -z "$p" ] && p="/cronsmith"
+  [ -z "$p" ] && p="/cronflow/scheduler"
   case "$p" in /*) ;; *) p="/$p" ;; esac
   p="${p%/}"
-  [ -z "$p" ] && p="/cronsmith"
+  [ -z "$p" ] && p="/cronflow/scheduler"
   printf '%s' "$p"
 }
 
@@ -89,7 +89,7 @@ read_api_prefix() {
 # cronflowPrefix (default /cronflow) so the DAG console reaches the same backend. The source under
 # frontend/public is never touched.
 apply_config_apiprefix() {
-  local file="$1" prefix="$2" cfprefix="${CRONFLOW_PREFIX:-/cronflow}"
+  local file="$1" prefix="$2" cfprefix="${CRONFLOW_PREFIX:-/cronflow/dag}"
   [ -f "$file" ] || return 0
   node -e '
     const fs = require("fs");

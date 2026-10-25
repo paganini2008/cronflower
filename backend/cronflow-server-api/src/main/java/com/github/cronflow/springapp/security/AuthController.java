@@ -41,7 +41,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Login and identity endpoints for the Cronflow console. These live at the root ({@code /auth/**}),
- * outside the cronsmith / cronflow business API prefixes, and are the ONLY way a client obtains a bearer
+ * outside the scheduler / cronflow business API prefixes, and are the ONLY way a client obtains a bearer
  * token.
  *
  * <p>

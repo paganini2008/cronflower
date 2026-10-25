@@ -1,0 +1,70 @@
+/*
+ * Copyright 2026 Fred Feng
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.github.cronflow.springapp.web;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import com.github.cronflow.springapp.scheduler.TaskManager;
+import com.github.cronflow.springapp.scheduler.TaskQuery;
+import com.github.cronflow.springapp.scheduler.TaskStatus;
+import com.github.cronflow.springapp.scheduler.ExecutorRegistry;
+
+/**
+ * Aggregate counts for the Dashboard: total tasks, tasks per status, and executor counts.
+ *
+ * @Description: StatsController
+ * @Author: Fred Feng
+ * @Date: 26/08/2026
+ * @Version 1.0.0
+ */
+@RestController
+@RequestMapping("/stats")
+public class StatsController {
+
+    private final TaskManager taskManager;
+    private final ExecutorRegistry registry;
+    private final long executorTtlMillis;
+
+    public StatsController(TaskManager taskManager, ExecutorRegistry registry,
+            long executorTtlMillis) {
+        this.taskManager = taskManager;
+        this.registry = registry;
+        this.executorTtlMillis = executorTtlMillis;
+    }
+
+    @GetMapping
+    public Map<String, Object> stats() {
+        Map<String, Object> byStatus = new LinkedHashMap<>();
+        for (TaskStatus status : TaskStatus.values()) {
+            byStatus.put(status.name(), taskManager.getTaskCount(TaskQuery.newQuery().statuses(status)));
+        }
+        long now = System.currentTimeMillis();
+        int executorsTotal = registry.snapshot().size();
+        long executorsLive = registry.snapshot().stream()
+                .filter(e -> now - e.lastSeen() <= executorTtlMillis).count();
+
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("taskTotal", taskManager.getTaskCount(TaskQuery.newQuery()));
+        out.put("tasksByStatus", byStatus);
+        out.put("executorsTotal", executorsTotal);
+        out.put("executorsLive", executorsLive);
+        return out;
+    }
+
+}

@@ -16,7 +16,7 @@
 # Ports: frontend console 7200 (the one entry point) · scheduler nodes AND executors on random free
 # ports in 50000-60000. No fixed scheduler port: server.mjs is handed every node's address as a seed
 # and discovers the full member list (and each node's real port) from /actuator/health, then
-# load-balances /cronsmith + /cronflow + /actuator across them.
+# load-balances /cronflow/scheduler + /cronflow + /actuator across them.
 #
 # Store: each node gets its OWN embedded H2 file (deploy/data/cronflow-<n>). Node-local replicated
 # model - the leader broadcasts every write and each node keeps its own copy in sync, so a failover
@@ -42,7 +42,7 @@ CONFIG_BAK="$RUN/config.json.bak"                # backup while we patch apiPref
 
 FRONTEND_PORT="${FRONTEND_PORT:-7200}"
 SPREADER_PORT="${SPREADER_PORT:-22000}"
-CRONFLOW_PREFIX="${CRONFLOW_PREFIX:-/cronflow}"   # DAG API prefix the web proxy also forwards
+CRONFLOW_PREFIX="${CRONFLOW_PREFIX:-/cronflow/dag}"   # DAG API prefix the web proxy also forwards
 
 # Each node gets its OWN independent H2 file (node-local replicated model: the leader broadcasts each
 # write and every node keeps its own copy). No AUTO_SERVER / shared file. conf wins if it sets a
@@ -129,7 +129,7 @@ start_frontend() {
   # browser talks same-origin (apiBaseUrl='') to this server, which proxies to the cluster.
   [ -f "$dist/config.json" ] && apply_config_apiprefix "$dist/config.json" "$API_PREFIX"
   # server.mjs: static dist + discover every member from ANY node's /actuator/health (all node ports are
-  # handed in as seeds) and round-robin /cronsmith + /cronflow + /actuator across them, with failover.
+  # handed in as seeds) and round-robin /cronflow/scheduler + /cronflow + /actuator across them, with failover.
   seeds="$(sched_urls_csv)"
   CF_WEB_PORT="$FRONTEND_PORT" CF_WEB_ROOT="$dist" CF_SEED_URL="$seeds" \
     CF_API_PREFIX="$API_PREFIX" CF_CRONFLOW_PREFIX="$CRONFLOW_PREFIX" node "$FRONTEND/server.mjs" \
@@ -155,8 +155,8 @@ start_executors() {
       --server.port="$port" \
       --spring.application.name="demo-executor" \
       --spring.config.additional-location="file:$CONF/executor.properties" \
-      --cronsmith.client.server-urls="$urls" \
-      --cronsmith.client.server-api-prefix="$API_PREFIX" \
+      --cronflow.executor.server-urls="$urls" \
+      --cronflow.executor.server-api-prefix="$API_PREFIX" \
       --cronflow.client.server-urls="$urls" \
       --cronflow.client.server-api-prefix="$CRONFLOW_PREFIX" \
       >"$LOGS/executor-$i.log" 2>&1 &
@@ -180,7 +180,7 @@ do_up() {
 
   mkdir -p "$RUN" "$LOGS" "$DATA"
 
-  # One source of truth: the API prefix from conf/server.properties (default /cronsmith). The
+  # One source of truth: the API prefix from conf/server.properties (default /cronflow/scheduler). The
   # scheduler reads it from that same file; here we propagate it to the executor, the dev proxy and
   # the served config.json so a single edit flows through the whole chain.
   API_PREFIX="$(read_api_prefix)"

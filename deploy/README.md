@@ -10,7 +10,7 @@ Two runners that **build the backend + console and start the whole stack** with 
 - **Zero-config store**: embedded H2 by default, each node gets its own file and the leader broadcasts writes (node-local replicated). Point at MySQL/PostgreSQL for a shared cluster, no flag.
 - **Builds itself**: uses the project's Maven Wrapper (`backend/mvnw`), no system Maven, stages runnable jars into `bin/`.
 - **Safe by default**: preflights JDK/Node/Docker and runs a capacity guard (refuses to start if the requested heap would exceed 70% of available RAM).
-- **One entry point**: the console (`:7200`) discovers every node and load-balances `/cronsmith` + `/cronflow` + `/actuator` with failover, no external nginx/KONG required.
+- **One entry point**: the console (`:7200`) discovers every node and load-balances `/cronflow/scheduler` + `/cronflow` + `/actuator` with failover, no external nginx/KONG required.
 
 | flag | meaning | default |
 |------|---------|---------|
@@ -68,7 +68,7 @@ container.
 - **Shared / sharded cluster:** uncomment a datasource block in `conf/server.properties` (store kind
   is auto-detected, it takes over with CAS instead of broadcast). Or build with `DEPLOY_ENV=prod`
   (`mvn -Pprod`) to emit the MySQL overrides.
-- **API prefix: one edit, whole chain:** set `cronsmith.server.api-prefix` (default `/cronsmith`) and
+- **API prefix: one edit, whole chain:** set `cronflow.scheduler.api-prefix` (default `/cronflow/scheduler`) and
   both runners propagate it to the executor, the console proxy, and the served `config.json`.
 - **Login + roles:** the server API needs a bearer token (`/auth/login`, default **admin / admin123**),
   accounts live in the XML user store. Full auth reference:

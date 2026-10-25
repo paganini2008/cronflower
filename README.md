@@ -51,7 +51,7 @@ dependencies:
 
 ```mermaid
 flowchart LR
-  Console["cronflower console<br/>(Angular)"] -->|"one endpoint: /cronsmith · /cronflow · /actuator"| Cluster
+  Console["cronflower console<br/>(Angular)"] -->|"one endpoint: /cronflow/scheduler · /cronflow/dag · /actuator"| Cluster
   subgraph Cluster["scheduler cluster"]
     L["scheduler-1<br/>leader"] <-->|gossip| F1["scheduler-2<br/>follower"]
     F1 <-->|gossip| F2["scheduler-3<br/>follower"]
@@ -215,13 +215,13 @@ Tune at deploy time (no rebuild) via `deploy/conf/server.properties`. The common
 | Property | Default | Description |
 |----------|---------|-------------|
 | `server.port` | `19090` | REST + console API port |
-| `cronsmith.server.api-prefix` | `/cronsmith` | Base path for the REST API (never moves `/actuator`) |
+| `cronflow.scheduler.api-prefix` | `/cronflow/scheduler` | Base path for the REST API (never moves `/actuator`) |
 | `spring.datasource.url` | H2 file | Point at MySQL/PostgreSQL for a **shared** store, omit for in-memory |
-| `cronsmith.server.scheduler.zone` | `UTC` | Fire-time zone: must match cluster-wide |
-| `cronsmith.server.scheduler.window-minutes` | `5` | Windowed-loading horizon |
-| `cronsmith.server.scheduler.claim-interval-seconds` | `15` | How often due tasks are claimed |
-| `cronsmith.server.scheduler.sharding` | `true` | Group sharding (auto-degrades to leader-only on a node-local store) |
-| `cronsmith.server.dispatch.routing` | `ROUND_ROBIN` | `FIRST`/`LAST`/`ROUND_ROBIN`/`RANDOM`/`CONSISTENT_HASH`/`WEIGHTED` |
+| `cronflow.scheduler.zone` | `UTC` | Fire-time zone: must match cluster-wide |
+| `cronflow.scheduler.window-minutes` | `5` | Windowed-loading horizon |
+| `cronflow.scheduler.claim-interval-seconds` | `15` | How often due tasks are claimed |
+| `cronflow.scheduler.sharding` | `true` | Group sharding (auto-degrades to leader-only on a node-local store) |
+| `cronflow.scheduler.dispatch.routing` | `ROUND_ROBIN` | `FIRST`/`LAST`/`ROUND_ROBIN`/`RANDOM`/`CONSISTENT_HASH`/`WEIGHTED` |
 | `management.endpoints.web.exposure.include` | `health,info,metrics,prometheus,configprops` | Powers Health, Prometheus, and the Settings page |
 
 Full reference and the `@Task` cheat-sheet: [`docs/configuration.md`](docs/configuration.md).

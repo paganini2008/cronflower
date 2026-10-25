@@ -31,7 +31,7 @@ import com.github.cronflow.springapp.executor.pojo.DagRegistrationRequest;
 /**
  * Weaves this executor's DAG definitions once the context is ready and registers them with the
  * cronflow server, then heartbeats on the same schedule (which doubles as re-registration and
- * survives a leader change) — the executor-side lifecycle mirrors cronsmith's registrar.
+ * survives a leader change) — the executor-side lifecycle mirrors the scheduler's registrar.
  *
  * @Description: CronflowClientRegistrar
  * @Author: Fred Feng
@@ -124,7 +124,7 @@ public class CronflowClientRegistrar
         if (properties.getHealthCheckUrl() != null && !properties.getHealthCheckUrl().isBlank()) {
             return properties.getHealthCheckUrl();
         }
-        // TODO: mirror cronsmith's actuator-vs-ping / management-port detection.
+        // TODO: mirror the scheduler's actuator-vs-ping / management-port detection.
         return properties.getScheme() + "://" + host() + ":" + port() + "/actuator/health";
     }
 

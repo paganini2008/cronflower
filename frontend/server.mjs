@@ -14,8 +14,8 @@
 //   CF_WEB_PORT              listen port (default 7200)
 //   CF_WEB_ROOT              built SPA dir (default dist/cronflower/browser)
 //   CF_SEED_URL              seed scheduler URL, e.g. http://localhost:19090 (a fixed, known address)
-//   CF_API_PREFIX            cronsmith API prefix (default /cronsmith)
-//   CF_CRONFLOW_PREFIX       cronflow (DAG) API prefix (default /cronflow)
+//   CF_API_PREFIX            cronsmith API prefix (default /cronflow/scheduler)
+//   CF_CRONFLOW_PREFIX       cronflow (DAG) API prefix (default /cronflow/dag)
 //   CF_DISCOVERY_INTERVAL_MS member-list refresh period (default 10000; 0 disables, uses the seed only)
 import { createServer, request as httpRequest } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
@@ -62,8 +62,8 @@ const SEEDS = (pick('CF_SEED_URL', '') || '')
 const API_BASE = pick('CF_API_BASE_URL', '');
 const EXTERNAL = API_BASE !== '';
 const prefix = (v, d) => { let p = (v || d).trim(); if (!p.startsWith('/')) p = '/' + p; return p.replace(/\/+$/, '') || d; };
-const API_PREFIX = prefix(env.CF_API_PREFIX, '/cronsmith');
-const CRONFLOW_PREFIX = prefix(env.CF_CRONFLOW_PREFIX, '/cronflow');
+const API_PREFIX = prefix(env.CF_API_PREFIX, '/cronflow/scheduler');
+const CRONFLOW_PREFIX = prefix(env.CF_CRONFLOW_PREFIX, '/cronflow/dag');
 // /auth holds the login/identity endpoints (bearer token), at the root outside the API prefixes.
 // /swagger-ui + /v3/api-docs back the embedded API explorer (System -> API tab).
 const PROXY_PREFIXES =

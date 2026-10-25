@@ -14,7 +14,7 @@ nginx/KONG required.
 - **Zero-dependency server**: `server.mjs` serves the built SPA and reverse-proxies the API, no nginx needed.
 
 ```
-┌──────────────┐   /cronsmith /cronflow /actuator   ┌──────── scheduler cluster ────────┐
+┌──────────────┐   /cronflow/scheduler /cronflow/dag /actuator   ┌──────── scheduler cluster ────────┐
 │  cronflower  │ ─ round-robin + failover ────────▶ │  node · node · node (random ports) │
 │  :7200       │   discovers members via            └────────────────────────────────────┘
 └──────────────┘   any node's /actuator/health
@@ -33,7 +33,7 @@ npm start                 # ng serve on http://localhost:7200 (regenerates confi
 ```
 
 Sign in with the demo credentials **admin / admin123**. The dev proxy (`proxy.conf.cjs`) forwards
-`/cronsmith` + `/cronflow` + `/actuator` to `CF_SEED_URL` (default `http://localhost:19090`).
+`/cronflow/scheduler` + `/cronflow/dag` + `/actuator` to `CF_SEED_URL` (default `http://localhost:19090`).
 
 To run the **whole stack** (backend + this console), use the root runners:
 
@@ -51,7 +51,7 @@ writes the browser's `public/config.json` from it, `server.mjs` and `proxy.conf.
 | `.env` key | What it does |
 |------------|--------------|
 | `CF_API_BASE_URL` | **the mode switch**: empty = same-origin, the console self-balances the cluster (default), a gateway origin (KONG/nginx) = the browser calls it directly and `server.mjs` serves static only |
-| `CF_API_PREFIX` / `CF_CRONFLOW_PREFIX` | REST prefixes, **must match** the backend `cronsmith.server.api-prefix` / `cronflow.server.api-prefix` (default `/cronsmith` / `/cronflow`) |
+| `CF_API_PREFIX` / `CF_CRONFLOW_PREFIX` | REST prefixes, **must match** the backend `cronflow.scheduler.api-prefix` / `cronflow.server.api-prefix` (default `/cronflow/scheduler` / `/cronflow/dag`) |
 | `CF_AUTH_USER` / `CF_AUTH_PASS` | the demo login (client-side only, not a secret) |
 | `CF_SEED_URL` | one or more seed schedulers (comma-separated) for `server.mjs` + the dev proxy. Blank by default: the launchers inject every node's address |
 | `CF_WEB_PORT` / `CF_WEB_ROOT` / `CF_DISCOVERY_INTERVAL_MS` | `server.mjs` only: listen port (7200), built-SPA dir, member-list refresh period |
@@ -75,9 +75,9 @@ console's origin, **including actuator CORS** so the System page can read `/actu
 upstream cronsmith { server node-a:8080; server node-b:8080; server node-c:8080; }
 server {
   listen 80; server_name console.example.com;
-  location /cronsmith/ { proxy_pass http://cronsmith; }
-  location /cronflow/  { proxy_pass http://cronsmith; }
-  location /actuator/  { proxy_pass http://cronsmith; }
+  location /cronflow/scheduler/ { proxy_pass http://cronflow/scheduler; }
+  location /cronflow/  { proxy_pass http://cronflow/scheduler; }
+  location /actuator/  { proxy_pass http://cronflow/scheduler; }
   location /           { root /var/www/cronflower; try_files $uri /index.html; }
 }
 ```

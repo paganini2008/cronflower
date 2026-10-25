@@ -10,8 +10,9 @@
 	<packaging>pom</packaging>
 	<name>cronsmith-backend</name>
 	<description>
-		Aggregator for the cronsmith backend: the two Spring Boot starters (scheduler + executor)
-		and their runnable reference applications. Build everything with:
+		Aggregator for the cronsmith backend: the two Spring Boot starters (scheduler server +
+		executor, each with the cronflow DAG support merged in) and their runnable reference
+		applications. Build everything with:
 
 		    mvn -f backend/pom.xml clean install -DskipTests
 
@@ -23,8 +24,6 @@
 	<!-- Aggregation only. Each module keeps its own spring-boot-starter-parent (inheritance is
 	     independent of aggregation), so a reactor build resolves inter-module order automatically. -->
 	<modules>
-		<module>cronsmith-spring-boot-starter</module>
-		<module>cronsmith-executor-spring-boot-starter</module>
 		<module>cronflow-spring-boot-starter</module>
 		<module>cronflow-executor-spring-boot-starter</module>
 		<module>cronflow-server-api</module>

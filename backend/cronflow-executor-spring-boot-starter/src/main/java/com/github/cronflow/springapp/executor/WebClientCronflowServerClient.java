@@ -29,7 +29,7 @@ import com.github.cronflow.springapp.executor.pojo.DagRegistrationResponse;
  * {@link CronflowServerClient} over HTTP: the actual calls go through the injected
  * {@link CronflowWebClient} wrapper; this class only owns the domain logic — building the API path and
  * failing over across the configured server URLs (a 4xx stops failover, since every node would answer
- * the same). Structurally identical to cronsmith's client.
+ * the same). Structurally identical to the scheduler client.
  *
  * @Description: WebClientCronflowServerClient
  * @Author: Fred Feng

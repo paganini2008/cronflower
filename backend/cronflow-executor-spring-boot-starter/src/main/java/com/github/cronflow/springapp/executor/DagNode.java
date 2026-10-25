@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
  * The method reads the run's state and returns the channels it changed, i.e. its signature is
  * {@code Map<String,Object> foo(DagState state)} (a no-arg form and a {@code void} return are also
  * accepted). At run time the server dials this executor over HTTP, resolves the bean+method and
- * invokes it — the same "HTTP → spring bean + method" mechanism cronsmith uses for a task.
+ * invokes it — the same "HTTP → spring bean + method" mechanism the scheduler uses for a task.
  *
  * <p>
  * Edges are declared here by target node name. Plain edges ({@link #to()}) carry on success; use

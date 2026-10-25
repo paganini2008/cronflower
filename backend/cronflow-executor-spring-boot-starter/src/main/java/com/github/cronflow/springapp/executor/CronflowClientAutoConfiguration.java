@@ -29,7 +29,7 @@ import org.springframework.core.env.Environment;
  *
  * <p>
  * Fully pluggable: active only in a web application and only when {@code cronflow.client.enabled} is
- * not {@code false}. An application that imports just cronsmith is untouched — none of this loads.
+ * not {@code false}. An application that imports just the scheduler is untouched — none of this loads.
  * Every bean is {@code @ConditionalOnMissingBean}, so any part can be overridden.
  *
  * @Description: CronflowClientAutoConfiguration

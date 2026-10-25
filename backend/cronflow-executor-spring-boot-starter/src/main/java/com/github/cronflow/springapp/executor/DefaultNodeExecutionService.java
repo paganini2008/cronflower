@@ -27,7 +27,7 @@ import com.github.cronflow.springapp.executor.pojo.NodeRunResult;
 
 /**
  * Default {@link NodeExecutionService}: the "HTTP → spring bean + method" invocation, the same shape
- * cronsmith uses for a task, but for a DAG node — the method reads a {@link DagState} and returns
+ * the scheduler uses for a task, but for a DAG node — the method reads a {@link DagState} and returns
  * the channels it changed.
  *
  * <p>

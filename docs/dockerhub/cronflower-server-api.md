@@ -46,7 +46,7 @@ Everything is passed through `SPRING_APPLICATION_JSON` (or plain Spring env vars
 |---------|---------|
 | `spring.spreader.port` / `spring.spreader.ip-addresses` | cluster port (22000) and the peer node addresses |
 | `spring.datasource.url` / `username` / `password` | the store. Omit for the bundled per-node H2 |
-| `cronsmith.server.scheduler.sharding` | set `true` with a shared database to spread task groups |
+| `cronflow.scheduler.sharding` | set `true` with a shared database to spread task groups |
 | `cronflow.security.jwt.secret` | one long random value, the same on every node |
 
 Default login is `admin` / `admin123`. Change the JWT secret and the demo accounts before any real
