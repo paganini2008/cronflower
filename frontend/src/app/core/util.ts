@@ -190,3 +190,35 @@ export function orderedEntries(
     })
     .map(([k, v]) => ({ k, v: String(v) }));
 }
+
+/**
+ * If `text` is a JSON document, return it pretty-printed (2-space); otherwise return it unchanged.
+ * `isJson` says which happened, so callers can switch on syntax highlighting.
+ */
+export function prettyJson(text: string): { isJson: boolean; text: string } {
+  const t = (text ?? '').trim();
+  if (!t || (t[0] !== '{' && t[0] !== '[')) { return { isJson: false, text }; }
+  try {
+    return { isJson: true, text: JSON.stringify(JSON.parse(t), null, 2) };
+  } catch {
+    return { isJson: false, text };
+  }
+}
+
+/**
+ * Wrap the tokens of a (pretty-printed) JSON string in <span class="jt-*"> for colouring. Input is
+ * HTML-escaped first, so the result is safe to bind with [innerHTML].
+ */
+export function highlightJson(json: string): string {
+  const esc = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return esc.replace(
+    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
+    (m) => {
+      let cls = 'jt-num';
+      if (/^"/.test(m)) { cls = /:$/.test(m) ? 'jt-key' : 'jt-str'; }
+      else if (/true|false/.test(m)) { cls = 'jt-bool'; }
+      else if (/null/.test(m)) { cls = 'jt-null'; }
+      return `<span class="${cls}">${m}</span>`;
+    },
+  );
+}

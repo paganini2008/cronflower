@@ -57,7 +57,7 @@ export interface ParamData {
     .pd-head { display: flex; align-items: center; gap: 0.6rem; padding: 0.25rem 0 0; }
     .pd-head h2 { margin: 0; padding: 0; font-size: 1.1rem; font-weight: 650; color: #0f2c4d; }
     .pd-head mat-icon { color: #1565c0; }
-    .pd-hint { margin: 0.25rem 0 0.6rem; color: #3d5372; line-height: 1.45; font-size: 0.88rem; }
+    .pd-hint { margin: 0.25rem 0 0.6rem; color: var(--muted-foreground); line-height: 1.45; font-size: 0.88rem; }
     .pd-input { width: 100%; box-sizing: border-box; border: 1px solid #d3e2f5; border-radius: 8px;
       padding: 0.6rem 0.7rem; font-size: 0.85rem; line-height: 1.5; color: #33415a; resize: vertical;
       background: #f8fbff; }

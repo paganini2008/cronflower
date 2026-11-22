@@ -1,5 +1,21 @@
 FROM eclipse-temurin:17-jre
 # The executor jar staged into bin/ by run-docker.sh (build context is the deploy/ dir).
+# SCRIPT tasks run in a per-run Docker container (copy-mode), so bundle a static docker CLI; the
+# executor drives the host daemon via it (mount /var/run/docker.sock at runtime).
+ARG TARGETARCH
+ARG DOCKER_VERSION=27.3.1
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && case "${TARGETARCH:-amd64}" in \
+         amd64) DL_ARCH=x86_64 ;; \
+         arm64) DL_ARCH=aarch64 ;; \
+         *) DL_ARCH=x86_64 ;; \
+       esac \
+    && curl -fsSL "https://download.docker.com/linux/static/stable/${DL_ARCH}/docker-${DOCKER_VERSION}.tgz" -o /tmp/docker.tgz \
+    && tar -xzf /tmp/docker.tgz -C /tmp docker/docker \
+    && install -m0755 /tmp/docker/docker /usr/local/bin/docker \
+    && rm -rf /tmp/docker.tgz /tmp/docker
 COPY bin/cronflow-executor-example-*.jar /app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app.jar"]

@@ -55,8 +55,8 @@ import { fmt, statusClass } from '../../core/util';
           <h2 class="section-title">Definition</h2>
           <dl class="meta">
             <div><dt>Type</dt><dd>
-              <span class="chip" [class]="t.taskType === 'HTTP' ? 'st-scheduled' : 'st-standby'">
-                {{ t.taskType === 'HTTP' ? 'HTTP API' : 'Spring Bean' }}</span></dd></div>
+              <span class="chip" [class]="t.taskType === 'HTTP' ? 'st-scheduled' : t.taskType === 'SCRIPT' ? 'st-running' : 'st-standby'">
+                {{ t.taskType === 'HTTP' ? 'HTTP API' : t.taskType === 'SCRIPT' ? 'Script' : 'Spring Bean' }}</span></dd></div>
             <div><dt>Schedule</dt><dd class="mono">{{ t.cron || '—' }}</dd></div>
             <div><dt>Next fire</dt><dd>{{ fmt(t.nextFiredDateTime) }}</dd></div>
             <div><dt>Previous fire</dt><dd>{{ fmt(t.previousFiredDateTime) }}</dd></div>
@@ -64,6 +64,12 @@ import { fmt, statusClass } from '../../core/util';
               <div><dt>Method</dt><dd class="mono">{{ t.httpMethod || 'GET' }}</dd></div>
               <div><dt>Endpoint</dt><dd class="mono">{{ t.url || '—' }}</dd></div>
               <div><dt>Payload</dt><dd class="mono">{{ t.initialParameter || '—' }}</dd></div>
+            } @else if (t.taskType === 'SCRIPT') {
+              <div><dt>Application</dt><dd>{{ t.application || '—' }}</dd></div>
+              <div><dt>Language</dt><dd class="mono">{{ t.language || '—' }}</dd></div>
+              @if (t.datasource) { <div><dt>Datasource</dt><dd class="mono">{{ t.datasource }}</dd></div> }
+              <div class="wide"><dt>Script</dt><dd><pre class="script-pre mono">{{ t.script || '—' }}</pre></dd></div>
+              <div><dt>Parameter</dt><dd class="mono">{{ t.initialParameter || '—' }}</dd></div>
             } @else {
               <div><dt>Application</dt><dd>{{ t.application || '—' }}</dd></div>
               <div><dt>Bean</dt><dd class="mono">{{ t.beanName || '—' }}</dd></div>
@@ -171,30 +177,35 @@ import { fmt, statusClass } from '../../core/util';
   `,
   styles: [`
     .back { display: inline-flex; align-items: center; gap: 0.25rem; color: #1565c0; text-decoration: none; font-size: 0.9rem; }
-    .l { color: #3d5372; font-size: 0.8rem; } .v { font-size: 1.6rem; font-weight: 700; color: #0f2c4d; }
+    .l { color: var(--muted-foreground); font-size: 0.8rem; } .v { font-size: 1.6rem; font-weight: 700; color: #0f2c4d; }
     .section-title { font-size: 1rem; font-weight: 600; color: #0f2c4d; margin: 0 0 1rem; }
     .table-wrap { overflow-x: auto; }
     table { min-width: 760px; }
     th.mat-mdc-header-cell, td.mat-mdc-cell { padding-right: 1.75rem; white-space: nowrap; }
     .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 0 2rem; }
     .meta div { display: flex; justify-content: space-between; gap: 1rem; padding: 0.45rem 0; border-bottom: 1px dashed #eef2f7; }
-    .meta dt { color: #3d5372; font-size: 0.82rem; white-space: nowrap; } .meta dd { margin: 0; text-align: right; word-break: break-all; }
+    .meta dt { color: var(--muted-foreground); font-size: 0.82rem; white-space: nowrap; } .meta dd { margin: 0; text-align: right; word-break: break-all; }
     .meta dd.pre { white-space: pre-line; }
+    .meta div.wide { grid-column: 1 / -1; flex-direction: column; align-items: stretch; }
+    .meta div.wide dd { text-align: left; width: 100%; }
+    .script-pre { margin: 0.35rem 0 0; white-space: pre-wrap; word-break: break-word; background: #f7f9fc;
+      border: 1px solid var(--cf-line, #e6edf6); border-radius: 8px; padding: 0.6rem 0.7rem;
+      font-size: 0.8rem; line-height: 1.5; max-height: 220px; overflow: auto; }
     .output { vertical-align: middle; }
     .ret { display: inline-block; vertical-align: middle; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .expand { width: 28px; height: 28px; vertical-align: middle; }
-    .expand mat-icon { font-size: 1rem; width: 1rem; height: 1rem; color: #3d5372; }
+    .expand mat-icon { font-size: 1rem; width: 1rem; height: 1rem; color: var(--muted-foreground); }
     .view { width: 32px; height: 32px; vertical-align: middle; }
     .view.ok-i mat-icon { color: #1565c0; }
     .view.bad-i mat-icon { color: #d93025; }
-    .attempt-chip { background: #eef2f7; color: #3d5372; }
+    .attempt-chip { background: #eef2f7; color: var(--muted-foreground); }
     .attempt-chip.retry { background: #fef3c7; color: #b45309; }
     .repr { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-            display: inline-block; vertical-align: middle; font-size: 12px; color: #3d5372; }
-    .node-ref { display: inline-flex; align-items: center; gap: 0.3rem; color: #3d5372;
+            display: inline-block; vertical-align: middle; font-size: 12px; color: var(--muted-foreground); }
+    .node-ref { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--muted-foreground);
             font-size: 0.82rem; white-space: nowrap; }
     .node-ref mat-icon { font-size: 16px; width: 16px; height: 16px; color: #1565c0; }
-    .empty { padding: 1.5rem; text-align: center; color: #3d5372; }
+    .empty { padding: 1.5rem; text-align: center; color: var(--muted-foreground); }
     mat-icon.ok { color: #0f9d58; } mat-icon.bad { color: #d93025; }
   `],
 })

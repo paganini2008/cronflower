@@ -123,6 +123,9 @@ generate_compose() {
       echo "      JAVA_TOOL_OPTIONS: -Xmx${EXEC_XMX}"
       echo "    volumes:"
       echo "      - ./conf/executor.properties:/config/executor.properties:ro"
+      # SCRIPT tasks run in per-run sibling containers via the host daemon (copy-mode), so the executor
+      # needs the Docker socket. Harmless for executors that run no SCRIPT tasks.
+      echo "      - /var/run/docker.sock:/var/run/docker.sock"
       echo "    ports: [\"$port:8080\"]"
       echo "    depends_on:"
       echo "      cronflow-server-api-1: { condition: service_started }"

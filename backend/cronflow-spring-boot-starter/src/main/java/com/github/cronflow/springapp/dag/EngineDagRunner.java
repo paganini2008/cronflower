@@ -232,8 +232,10 @@ public class EngineDagRunner implements DagCoordinator, SubGraphResolver {
                         "output", shard.output(), "size", (long) shard.size(),
                         "bean", n.beanName(), "method", n.methodName()));
             } else {
-                sg.node(n.name(), "cronflowNode",
-                        Map.of("bean", n.beanName(), "method", n.methodName()));
+                // bean/method are null for an HTTP node (and may be for a script node); Map.of rejects
+                // nulls, and CronflowNode re-resolves the full node from the stored definition anyway.
+                sg.node(n.name(), "cronflowNode", Map.of("bean", nullToEmpty(n.beanName()),
+                        "method", nullToEmpty(n.methodName())));
             }
             if (n.retries() > 0) {
                 sg.retry(n.name(), n.retries());
@@ -324,6 +326,10 @@ public class EngineDagRunner implements DagCoordinator, SubGraphResolver {
 
     private static boolean isSubgraph(DagDefinition.NodeDef n) {
         return n.subgraph() != null && !n.subgraph().isBlank();
+    }
+
+    private static String nullToEmpty(String s) {
+        return s == null ? "" : s;
     }
 
     private static boolean notEmpty(List<String> list) {

@@ -1,5 +1,5 @@
 title: cronflower
-description: A distributed, stateful cron scheduler for the JVM, with DAG orchestration and a web console.
+description: A distributed DAG workflow platform for the JVM. Author workflows from beans, scripts or HTTP nodes, generate them with AI, and run them across a self-forming cluster, with a web console.
 
 # Project site served at https://paganini2008.github.io/cronflower/ — baseurl must be the repo name so
 # the `relative_url` filter builds correct links and image paths.

@@ -55,7 +55,7 @@ import { fmt, poll } from '../../core/util';
     .table-scroll { overflow-x: auto; }
     .table-scroll table { min-width: 900px; }
     .table-scroll th, .table-scroll td { white-space: nowrap; }
-    .empty { padding: 2.5rem; text-align: center; color: #3d5372; }
+    .empty { padding: 2.5rem; text-align: center; color: var(--muted-foreground); }
     .empty mat-icon { font-size: 2.5rem; width: 2.5rem; height: 2.5rem; }
   `],
 })

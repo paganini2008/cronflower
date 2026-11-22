@@ -48,11 +48,11 @@ interface Arc extends DonutSegment {
     .donut-total { transform: rotate(90deg); transform-origin: 21px 21px; text-anchor: middle;
       font-size: 7px; font-weight: 700; fill: #0f2c4d; }
     .donut-caption { transform: rotate(90deg); transform-origin: 21px 21px; text-anchor: middle;
-      font-size: 2.6px; fill: #94a3b8; letter-spacing: .3px; }
+      font-size: 2.6px; fill: var(--muted-foreground); letter-spacing: .3px; }
     .legend { list-style: none; margin: 0; padding: 0; min-width: 160px; flex: 1; }
     .legend li { display: flex; align-items: center; gap: 0.5rem; padding: 0.2rem 0; font-size: 0.85rem; }
     .dot { width: 0.7rem; height: 0.7rem; border-radius: 3px; flex: none; }
-    .lg-label { color: #3d5372; flex: 1; }
+    .lg-label { color: var(--muted-foreground); flex: 1; }
     .lg-value { font-weight: 700; color: #0f2c4d; }
   `],
 })

@@ -72,6 +72,7 @@ import { ParamDialog, ParamData } from '../../shared/param-dialog';
             <a class="task-link" [routerLink]="['/tasks', t.taskGroup, t.taskName]"
                (click)="$event.stopPropagation()">
               <span class="muted">{{ t.taskGroup }} /</span> <strong>{{ t.taskName }}</strong>
+              <span class="type-badge" [class]="'tb-' + typeOf(t).kind">{{ typeOf(t).label }}</span>
             </a>
             @if (t.description) { <div class="muted text-xs">{{ t.description }}</div> }
           </td>
@@ -146,13 +147,20 @@ import { ParamDialog, ParamData } from '../../shared/param-dialog';
     .table-scroll td .text-xs { overflow: hidden; text-overflow: ellipsis; max-width: 320px; }
     tr.clickable { cursor: pointer; }
     tr.clickable:hover { background: var(--cf-blue-light); }
-    .task-link { text-decoration: none; color: #0f2c4d; }
-    .task-link:hover strong { color: #1565c0; }
+    .task-link { text-decoration: none; color: var(--cf-ink); }
+    .task-link:hover strong { color: var(--cf-blue); }
+    .type-badge { display: inline-block; margin-left: 0.5rem; padding: 0.05rem 0.45rem; border-radius: 6px;
+      font-size: 0.66rem; font-weight: 700; letter-spacing: 0.02em; vertical-align: 1px;
+      border: 1px solid transparent; }
+    .tb-script { color: #0d9488; background: color-mix(in srgb, #0d9488 12%, var(--card)); border-color: color-mix(in srgb, #0d9488 30%, transparent); }
+    .tb-http { color: var(--primary); background: var(--cf-blue-light); border-color: color-mix(in srgb, var(--primary) 30%, transparent); }
+    .tb-dag { color: #7c3aed; background: color-mix(in srgb, #7c3aed 12%, var(--card)); border-color: color-mix(in srgb, #7c3aed 30%, transparent); }
+    .tb-bean { color: var(--muted-foreground); background: var(--muted); border-color: var(--border); }
     .w-40 { width: 10rem; } .w-44 { width: 11rem; }
-    .empty { padding: 2rem; text-align: center; color: #3d5372; }
+    .empty { padding: 2rem; text-align: center; color: var(--muted-foreground); }
     .danger-item mat-icon, .danger-item { color: #d93025; }
     .cron-cell { display: inline-flex; align-items: center; gap: 0.4rem; }
-    .cron-type { font-size: 18px; width: 18px; height: 18px; color: #3d5372; }
+    .cron-type { font-size: 18px; width: 18px; height: 18px; color: var(--muted-foreground); }
     .cron-type.ycron { color: #1565c0; }
   `],
 })
@@ -275,6 +283,16 @@ export class TaskList implements OnInit {
         this.api.remove(t.taskGroup, t.taskName).subscribe(() => this.load());
       }
     });
+  }
+
+  /** The task's invocation kind, for the badge next to its name. */
+  typeOf(t: { taskType?: string; className?: string }): { kind: string; label: string } {
+    if ((t.className ?? '').endsWith('DagTriggerTask')) { return { kind: 'dag', label: 'DAG' }; }
+    switch ((t.taskType ?? 'BEAN').toUpperCase()) {
+      case 'SCRIPT': return { kind: 'script', label: 'Script' };
+      case 'HTTP': return { kind: 'http', label: 'HTTP' };
+      default: return { kind: 'bean', label: 'Bean' };
+    }
   }
 
   cls(status: string): string {

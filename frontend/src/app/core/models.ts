@@ -9,6 +9,10 @@ export interface TaskView {
   url?: string;
   httpMethod?: string;
   httpHeaders?: string;
+  // Script task fields: a script task carries a language and inline source instead of a bean+method.
+  language?: string;
+  script?: string;
+  datasource?: string;
   cron?: string;
   parser?: string;
   description?: string;
@@ -130,7 +134,7 @@ export interface NodeHealth {
 export interface TaskMetadata {
   taskGroup: string;
   taskName: string;
-  taskType: 'BEAN' | 'HTTP';
+  taskType: 'BEAN' | 'HTTP' | 'SCRIPT';
   // Spring-bean task fields
   className: string;
   beanName: string;
@@ -138,6 +142,10 @@ export interface TaskMetadata {
   // HTTP-API task fields (url is submitted plain; the server stores it as a request line)
   url: string;
   httpMethod: string;
+  // Script task fields: run a shell/python/sql/java script on an executor instead of a bean.
+  language?: string;
+  script?: string;
+  datasource?: string;
   // Common
   initialParameter: string;
   cron: string;

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{{ site.title }} · distributed cron scheduler for the JVM</title>
+  <title>{{ site.title }} · distributed DAG platform for the JVM</title>
   <meta name="description" content="{{ site.description }}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -160,16 +160,17 @@
   <div class="hero">
     <div class="wrap">
       <span class="eyebrow">Open source · Apache 2.0</span>
-      <h1>Distributed cron for the JVM, with a console.</h1>
-      <p class="lead">cronflower is a distributed, stateful cron scheduler that forms its own cluster and
-        needs no external database, broker, or coordinator. Drop <code>@Task</code> on a Spring bean and
-        the cluster owns the schedule. Declare a <code>@Dag</code> and it runs a whole workflow across your machines.</p>
+      <h1>The distributed DAG platform for the JVM.</h1>
+      <p class="lead">cronflower runs DAG workflows across a cluster it forms itself, with no external
+        database, broker, or coordinator. A workflow node can be a Spring <code>@DagNode</code> bean, a
+        shell / Python / Java / SQL script, or an HTTP call to any service. Describe a workflow in plain
+        language and AI drafts it. Trigger it by hand, from a finished task, or on a cron schedule.</p>
       <div class="cta">
         <a class="btn btn-primary" href="#quick-start">Get Started</a>
         <a class="btn btn-ghost" href="https://github.com/paganini2008/cronflower">GitHub</a>
         <a class="btn btn-ghost" href="{{ '/architecture.html' | relative_url }}">Documentation</a>
       </div>
-      <div class="equation"><b>cronflower</b> = cronsmith (distributed scheduling) + cronflow (DAG orchestration)</div>
+      <div class="equation"><b>cronflower</b> = a DAG engine (cronflow) on a self-clustering scheduler (cronsmith)</div>
       <div class="badges">
         <img alt="Java 17" src="https://img.shields.io/badge/Java-17-007396?logo=openjdk&logoColor=white" />
         <img alt="Spring Boot 4.1" src="https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F?logo=springboot&logoColor=white" />
@@ -188,24 +189,15 @@
     <div class="wrap">
       <div class="sec-head">
         <h2>See it in action</h2>
-        <p>Two short screencasts, under two minutes each.</p>
+        <p>One walkthrough, end to end: scheduled tasks, then the whole DAG surface, authored, triggered, and watched across the cluster.</p>
       </div>
-      <div class="shots">
-        <figure class="shot" style="margin:0">
-          <video controls preload="none" style="width:100%;border-radius:12px;border:1px solid var(--line);background:#0f2c4d"
-                 poster="{{ '/video/distributed-tasks.poster.jpg' | relative_url }}">
-            <source src="{{ '/video/distributed-tasks.mp4' | relative_url }}" type="video/mp4" />
-          </video>
-          <figcaption>Distributed task scheduling: create an HTTP API task, preview cron or YCRON, run it now, read the result.</figcaption>
-        </figure>
-        <figure class="shot" style="margin:0">
-          <video controls preload="none" style="width:100%;border-radius:12px;border:1px solid var(--line);background:#0f2c4d"
-                 poster="{{ '/video/dag-workflows.poster.jpg' | relative_url }}">
-            <source src="{{ '/video/dag-workflows.mp4' | relative_url }}" type="video/mp4" />
-          </video>
-          <figcaption>DAG orchestration: trigger a @Dag and watch it flow node by node across the cluster.</figcaption>
-        </figure>
-      </div>
+      <figure class="shot" style="margin:0 auto;max-width:900px">
+        <video controls preload="none" style="width:100%;border-radius:14px;border:1px solid var(--line);background:#0f2c4d;box-shadow:0 26px 54px -30px rgba(15,44,77,0.5)"
+               poster="{{ '/video/dag-workflows.poster.jpg' | relative_url }}">
+          <source src="{{ '/video/dag-workflows.mp4' | relative_url }}" type="video/mp4" />
+        </video>
+        <figcaption>From a scheduled task to a full workflow: author a @Dag on the canvas or as code, trigger a live run, and follow it node by node with per-node detail and run history.</figcaption>
+      </figure>
     </div>
   </section>
 
@@ -214,7 +206,7 @@
     <div class="wrap">
       <div class="sec-head">
         <h2>Why cronflower?</h2>
-        <p><code>@Scheduled</code> and chained cron jobs break down the moment you scale out. Here's what hurts.</p>
+        <p>Chained cron jobs and hand-wired service calls are not a workflow. Here is what hurts the moment you need steps, data, and scale.</p>
       </div>
       <div class="grid2">
         <div class="card"><p class="pain">Scale out and it fires twice</p>
@@ -233,22 +225,28 @@
   <section id="features" class="soft">
     <div class="wrap">
       <div class="sec-head">
-        <h2>Everything a scheduler needs, nothing to provision</h2>
-        <p>Embedded store, self-forming cluster, self-balancing console.</p>
+        <h2>Everything a workflow platform needs, nothing to provision</h2>
+        <p>Author, generate, and run DAG workflows across a cluster that forms itself.</p>
       </div>
       <div class="grid3">
-        <div class="card"><div class="ic">◈</div><h3>Self-clustering &amp; HA</h3>
-          <p>Nodes gossip and elect a leader, no ZooKeeper or etcd. Followers fail over, no cron fires twice, none goes missing.</p></div>
-        <div class="card"><div class="ic">⛁</div><h3>Stateful &amp; durable</h3>
-          <p>Schedules and history in a store auto-detected from the JDBC URL (H2 → MySQL/PostgreSQL). A restart loses nothing.</p></div>
-        <div class="card"><div class="ic">⚡</div><h3>Scales horizontally</h3>
-          <p>A timing wheel drives large volumes, group sharding spreads them and weighted dispatch fans out to executors by capacity.</p></div>
-        <div class="card"><div class="ic">⌗</div><h3>Rich <code>@Task</code> model</h3>
-          <p>Cron, year-based YCRON, interval or ISO-8601, plus retry, timeout, misfire policy and repeat/stop-at, all declarative.</p></div>
         <div class="card"><div class="ic">⤳</div><h3>DAG orchestration</h3>
           <p>Declare a <code>@Dag</code> with typed channels, branching, joins, subgraphs and dynamic fan-out, driven across the cluster.</p></div>
+        <div class="card"><div class="ic">❮❯</div><h3>Polyglot nodes</h3>
+          <p>A node is a Spring bean, or a shell / Python / Java / SQL script run in a per-run Docker sandbox with CPU, memory and network limits.</p></div>
+        <div class="card"><div class="ic">⇄</div><h3>HTTP &amp; cross-app nodes</h3>
+          <p>A node can call any REST endpoint. Upstream output feeds downstream input through typed channels, so one workflow spans many services.</p></div>
+        <div class="card"><div class="ic">✦</div><h3>AI-generated workflows</h3>
+          <p>Describe a workflow in plain language and an LLM drafts the <code>@Dag</code> for you, on OpenAI or a local Ollama model, yours to review and run.</p></div>
+        <div class="card"><div class="ic">◈</div><h3>Self-clustering &amp; HA</h3>
+          <p>Nodes gossip and elect a leader, no ZooKeeper or etcd. Followers fail over, so a run never fires twice or goes missing.</p></div>
+        <div class="card"><div class="ic">⚡</div><h3>Scales horizontally</h3>
+          <p>A timing wheel drives large volumes, group sharding spreads them and weighted dispatch fans runs out to executors by capacity.</p></div>
+        <div class="card"><div class="ic">⌗</div><h3>Scheduled triggers</h3>
+          <p>Fire a workflow or a <code>@Task</code> on cron, year-based YCRON, interval or ISO-8601, with retry, timeout, misfire policy and repeat limits.</p></div>
+        <div class="card"><div class="ic">⛁</div><h3>Stateful &amp; durable</h3>
+          <p>Definitions, runs and history in a store auto-detected from the JDBC URL (H2 → MySQL/PostgreSQL). A restart loses nothing.</p></div>
         <div class="card"><div class="ic">▤</div><h3>Operator console</h3>
-          <p>Tasks, Executors, Cluster, DAG runs, Health and live Settings, one endpoint, UTC-first with a local toggle.</p></div>
+          <p>Workflows, DAG runs, Tasks, Executors, Cluster, Health and live Settings, one endpoint, UTC-first with a local toggle and a dark theme.</p></div>
       </div>
     </div>
   </section>
@@ -258,14 +256,14 @@
     <div class="wrap">
       <div class="sec-head">
         <h2>How it works</h2>
-        <p>A console talks to one endpoint. A self-electing scheduler cluster owns the schedule and dispatches due runs to your executors. State lives in an auto-detected store, so a restart or failover loses nothing.</p>
+        <p>A console talks to one endpoint. A self-electing cluster owns your workflows and schedules, and drives each DAG node by node, dispatching bean and script nodes to executors and calling HTTP nodes itself. State lives in an auto-detected store, so a restart or failover loses nothing.</p>
       </div>
       <div class="flow">
         <div class="stage"><h4>Console</h4><p>one endpoint,<br/>self-balancing + failover</p></div>
         <div class="arrow">→</div>
         <div class="stage"><h4>Scheduler cluster</h4><p>gossip + leader election<br/>windowed loading, dispatch</p></div>
         <div class="arrow">→</div>
-        <div class="stage"><h4>Executors</h4><p>your <code>@Task</code> / <code>@Dag</code> beans,<br/>run on callback</p></div>
+        <div class="stage"><h4>Executors</h4><p>your <code>@DagNode</code> / <code>@Task</code> beans<br/>+ scripts, run on callback</p></div>
       </div>
       <div class="flow-store"><span>shared store · H2 · MySQL · PostgreSQL (auto-detected)</span></div>
       <p style="text-align:center;margin-top:1.4rem"><a href="{{ '/architecture.html' | relative_url }}">Full architecture, with diagrams →</a></p>
@@ -416,7 +414,7 @@ docker compose up -d
       <div class="cols">
         <div>
           <div class="brand">cronflower</div>
-          <p style="max-width:34ch;color:#9fb4d4;font-size:0.9rem">Distributed cron for the JVM, with a console. cronsmith + cronflow.</p>
+          <p style="max-width:34ch;color:#9fb4d4;font-size:0.9rem">The distributed DAG platform for the JVM, with a console. cronflow on cronsmith.</p>
         </div>
         <div><h4>Docs</h4>
           <a href="{{ '/architecture.html' | relative_url }}">Architecture</a>

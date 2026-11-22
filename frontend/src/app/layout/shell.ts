@@ -60,6 +60,11 @@ interface NavItem {
               {{ e }}
             </span>
           }
+          <button matIconButton type="button" (click)="toggleDark()" class="mr-1"
+            [matTooltip]="dark() ? 'Switch to light theme' : 'Switch to dark theme'"
+            aria-label="Toggle dark theme">
+            <mat-icon>{{ dark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+          </button>
           <button type="button" class="tz-badge" [matMenuTriggerFor]="tzMenu"
             matTooltip="Times are UTC by default — click to switch time zone">
             <mat-icon>schedule</mat-icon>{{ tzLabel() }}<mat-icon class="caret">expand_more</mat-icon>
@@ -141,100 +146,85 @@ interface NavItem {
   `,
   styles: [`
     :host { display: block; height: 100vh; }
-    .app-toolbar { position: sticky; top: 0; z-index: 10; color: #0f2c4d; background: #fff;
-      border-bottom: 1px solid #e8eef6; box-shadow: 0 1px 3px rgba(15, 44, 77, 0.05); }
-    /* Brand now lives at the top of the blue sidebar; the whole left column is blue. Logo rendered
-       white so it reads on the blue rail. */
-    .sidenav-brand { display: flex; align-items: center; height: 64px; padding-left: 1.15rem;
-      text-decoration: none; flex: 0 0 auto; }
-    .sidenav-brand .logo { height: 40px; width: auto; display: block; filter: brightness(0) invert(1); }
-    .app-sidenav.collapsed .sidenav-brand { padding-left: 0.9rem; }
+    .app-toolbar { position: sticky; top: 0; z-index: 10; color: var(--foreground);
+      background: var(--background); border-bottom: 1px solid var(--border); box-shadow: none; }
+    .sidenav-brand { display: flex; align-items: center; height: 68px; padding-left: 1.1rem;
+      text-decoration: none; flex: 0 0 auto; border-bottom: 1px solid var(--sidebar-border); }
+    .sidenav-brand .logo { height: 46px; width: auto; display: block; }
+    .app-sidenav.collapsed .sidenav-brand { padding-left: 0.7rem; }
+    .app-sidenav.collapsed .sidenav-brand .logo { height: 40px; }
     @media (max-width: 900px) { .brand-tagline { display: none; } }
     .env-badge { margin-left: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.7rem;
       font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
-    /* Solid background reflecting live cluster health: full green when UP, full red when DOWN. */
-    .env-badge.up { color: #ffffff; background: #0f9d58; border: 1px solid #0f9d58; }
-    .env-badge.down { color: #ffffff; background: #d93025; border: 1px solid #d93025; }
+    .env-badge.up { color: #ffffff; background: #16a34a; border: 1px solid #16a34a; }
+    .env-badge.down { color: #ffffff; background: #dc2626; border: 1px solid #dc2626; }
     .tz-badge { display: inline-flex; align-items: center; gap: 0.3rem; margin-right: 0.9rem;
-      padding: 0.2rem 0.6rem; border: none; cursor: pointer; border-radius: 999px; background: #f1f5f9;
-      color: #3d5372; font-size: 0.75rem; font-weight: 600; white-space: nowrap;
-      transition: background .15s, color .15s; }
-    .tz-badge:hover { background: #e2ebf6; color: #1565c0; }
+      padding: 0.25rem 0.65rem; border: 1px solid var(--border); cursor: pointer; border-radius: 8px;
+      background: var(--background); color: var(--muted-foreground); font-size: 0.75rem; font-weight: 600;
+      white-space: nowrap; transition: background .15s, color .15s, border-color .15s; }
+    .tz-badge:hover { background: var(--accent); color: var(--foreground); }
     .tz-badge mat-icon { font-size: 16px; width: 16px; height: 16px; }
     .tz-badge .caret { margin-left: -0.1rem; opacity: 0.7; }
     .menu-head { padding: 0.4rem 1rem 0.2rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em;
-      text-transform: uppercase; color: #3d5372; }
+      text-transform: uppercase; color: var(--muted-foreground); }
     .flex-1 { flex: 1 1 auto; }
     .ml-2 { margin-left: 0.5rem; }
-    .menu-user { padding: 0.5rem 1rem; font-size: 0.8rem; color: #3d5372; border-bottom: 1px solid #eef2f7; }
-    .menu-role { display: block; margin-top: 0.15rem; font-size: 0.72rem; color: #3d5372; text-transform: capitalize; }
-    .app-container { height: 100vh; background: #f4f7fb; }
-    /* Animate the content reflow when the sidebar collapses (autosize adjusts its left margin). */
+    .mr-1 { margin-right: 0.25rem; }
+    .menu-user { padding: 0.5rem 1rem; font-size: 0.8rem; color: var(--muted-foreground);
+      border-bottom: 1px solid var(--border); }
+    .menu-role { display: block; margin-top: 0.15rem; font-size: 0.72rem; color: var(--muted-foreground);
+      text-transform: capitalize; }
+    .app-container { height: 100vh; background: var(--background); }
     .app-container ::ng-deep .mat-drawer-content { transition: margin-left 0.18s ease; }
-    /* Square the drawer edges so the blue sidebar meets the footer with no rounded corner. */
     .app-sidenav, .app-sidenav ::ng-deep .mat-drawer-inner-container { border-radius: 0; }
-    /* Bright royal-blue sidebar (blue chrome, white content) — the blue-white theme, a touch
-       lighter and glossier than before. Solid, not gradient. */
-    .app-sidenav { width: 236px; border-right: 0; background: #2563eb; padding-top: 0;
-      display: flex; flex-direction: column; transition: width 0.18s ease; overflow-x: hidden; }
+    /* Light shadcn sidebar: near-white surface, hairline right border, blue active pill. */
+    .app-sidenav { width: 236px; background: var(--sidebar); border-right: 1px solid var(--sidebar-border);
+      padding-top: 0; display: flex; flex-direction: column; transition: width 0.18s ease; overflow-x: hidden; }
     .app-sidenav.collapsed { width: 68px; }
-    /* Menu items sit against a small blue gutter on the left and run to the sidebar's right edge, so
-       the active item reads as a white tab connecting into the content area (like the reference). */
-    .app-sidenav .nav-list { padding: 0.25rem 0 0.25rem 0.7rem; }
+    .app-sidenav .nav-list { padding: 0.6rem 0.6rem; }
     .app-sidenav .mat-mdc-list-item, .app-sidenav .mdc-list-item {
-      border-radius: 16px 0 0 16px !important; margin: 3px 0; overflow: visible; }
-    /* White labels/icons on the blue rail (override Material's default dark tokens). */
+      border-radius: 8px !important; margin: 2px 0; overflow: visible; min-height: 42px; }
     .app-sidenav .nav-label,
-    .app-sidenav .mat-mdc-list-item .mdc-list-item__primary-text { color: #ffffff; font-weight: 600; }
-    .app-sidenav .mat-mdc-list-item mat-icon { color: rgba(255, 255, 255, 0.88); }
-    .app-sidenav .mat-mdc-list-item:hover { background: rgba(255, 255, 255, 0.16); }
-    /* Active item: a white tab, flush to the right edge, blue label/icon — the reference's signature.
-       The ::before / ::after carve concave corners so the white flows smoothly into the blue. */
-    .app-sidenav .active-link { background: #ffffff; position: relative; font-weight: 700; }
-    .app-sidenav .active-link:hover { background: #ffffff; }
+    .app-sidenav .mat-mdc-list-item .mdc-list-item__primary-text { color: var(--sidebar-foreground);
+      font-weight: 500; font-size: 0.9rem; }
+    .app-sidenav .mat-mdc-list-item mat-icon { color: var(--muted-foreground); }
+    .app-sidenav .mat-mdc-list-item:hover { background: var(--sidebar-accent); }
+    /* Active item: a solid brand-blue pill with white label/icon. */
+    .app-sidenav .active-link { background: var(--primary); position: relative; }
+    .app-sidenav .active-link:hover { background: var(--primary); }
     .app-sidenav .active-link .nav-label,
-    .app-sidenav .active-link .mdc-list-item__primary-text { color: #1d4ed8; }
-    .app-sidenav .active-link mat-icon { color: #2563eb; }
-    .app-sidenav .active-link::before,
-    .app-sidenav .active-link::after {
-      content: ''; position: absolute; right: 0; width: 16px; height: 16px; background: #ffffff;
-      pointer-events: none; }
-    .app-sidenav .active-link::before {
-      top: -16px;
-      -webkit-mask: radial-gradient(circle at top left, transparent 16px, #000 16px);
-      mask: radial-gradient(circle at top left, transparent 16px, #000 16px); }
-    .app-sidenav .active-link::after {
-      bottom: -16px;
-      -webkit-mask: radial-gradient(circle at bottom left, transparent 16px, #000 16px);
-      mask: radial-gradient(circle at bottom left, transparent 16px, #000 16px); }
+    .app-sidenav .active-link .mdc-list-item__primary-text { color: var(--primary-foreground); font-weight: 600; }
+    .app-sidenav .active-link mat-icon { color: var(--primary-foreground); }
     .app-sidenav.collapsed .nav-label { display: none; }
-    .app-content { background: #f4f7fb; display: flex; flex-direction: column; min-height: 100%; }
+    .app-content { background: var(--background); display: flex; flex-direction: column; min-height: 100%; }
     .content-inner { flex: 1 0 auto; padding: 1.5rem 1.5rem 2rem; box-sizing: border-box; }
-    /* Footer shares the sidebar's bright blue so the chrome reads as one colour. */
-    .app-footer { flex: 0 0 auto; border-top: 0; background: #2563eb; color: rgba(255, 255, 255, 0.82);
-      font-size: 0.78rem; padding: 1.6rem 1.75rem 1.1rem; }
+    /* Neutral footer that sits quietly under the content. */
+    .app-footer { flex: 0 0 auto; border-top: 1px solid var(--border); background: var(--muted);
+      color: var(--muted-foreground); font-size: 0.78rem; padding: 1.6rem 1.75rem 1.1rem; }
     .app-footer .ft-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem 2.5rem;
       max-width: 1200px; margin: 0 auto; }
     @media (max-width: 820px) { .app-footer .ft-cols { grid-template-columns: 1fr; } }
-    .app-footer .ft-col h4 { margin: 0 0 0.6rem; color: #ffffff; font-size: 0.82rem; font-weight: 700;
+    .app-footer .ft-col h4 { margin: 0 0 0.6rem; color: var(--foreground); font-size: 0.82rem; font-weight: 700;
       letter-spacing: 0.02em; }
     .app-footer .ft-col ul { list-style: none; margin: 0; padding: 0; display: flex;
       flex-direction: column; gap: 0.4rem; }
     .app-footer .ft-col li { position: relative; padding-left: 1rem; line-height: 1.45;
-      color: rgba(255, 255, 255, 0.85); }
+      color: var(--muted-foreground); }
     .app-footer .ft-col li::before { content: ''; position: absolute; left: 0; top: 0.5rem;
-      width: 5px; height: 5px; border-radius: 50%; background: #bcd6ff; }
+      width: 5px; height: 5px; border-radius: 50%; background: var(--primary); opacity: 0.6; }
     .app-footer .ft-bar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
       max-width: 1200px; margin: 1.3rem auto 0; padding-top: 0.9rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.12); }
-    .app-footer .ft-tagline { color: #ffffff; font-weight: 500; }
+      border-top: 1px solid var(--border); }
+    .app-footer .ft-tagline { color: var(--foreground); font-weight: 500; }
     .app-footer .ft-sep { opacity: 0.5; }
     .app-footer .flex-1 { flex: 1 1 auto; }
-    .app-footer .ft-gh { display: inline-flex; align-items: center; color: rgba(255, 255, 255, 0.85);
+    .app-footer .ft-gh { display: inline-flex; align-items: center; color: var(--muted-foreground);
       margin-right: 0.9rem; transition: color .15s; }
-    .app-footer .ft-gh:hover { color: #ffffff; }
-    /* Logo rendered white so it stays legible on the blue footer band. */
-    .app-footer .ft-logo { height: 24px; width: auto; filter: brightness(0) invert(1); opacity: 0.92; }
+    .app-footer .ft-gh:hover { color: var(--foreground); }
+    .app-footer .ft-logo { height: 22px; width: auto; opacity: 0.9; }
+    /* The logo art is dark; in dark mode render it light so it stays legible on the dark chrome. */
+    :host-context(:root.dark) .sidenav-brand .logo,
+    :host-context(:root.dark) .app-footer .ft-logo { filter: brightness(0) invert(1); }
   `],
 })
 export class Shell {
@@ -262,6 +252,35 @@ export class Shell {
     ))),
     { initialValue: true },
   );
+
+  /** Dark theme toggle — adds/removes the `dark` class on <html> (the Spartan/shadcn dark variant),
+   *  persisted per browser. */
+  protected readonly dark = signal<boolean>(this.restoreDark());
+
+  protected toggleDark(): void {
+    this.dark.update((v) => !v);
+    this.applyDark(this.dark());
+    try {
+      localStorage.setItem('cf.theme.dark', String(this.dark()));
+    } catch {
+      /* storage unavailable */
+    }
+  }
+
+  private restoreDark(): boolean {
+    let on = false;
+    try {
+      on = localStorage.getItem('cf.theme.dark') === 'true';
+    } catch {
+      on = false;
+    }
+    this.applyDark(on);
+    return on;
+  }
+
+  private applyDark(on: boolean): void {
+    document.documentElement.classList.toggle('dark', on);
+  }
 
   protected useTz(mode: 'utc' | 'local'): void {
     setTzMode(mode);

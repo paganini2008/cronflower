@@ -1,2 +1,3 @@
 com.github.cronflow.springapp.executor.CronflowExecutorAutoConfiguration
 com.github.cronflow.springapp.executor.CronflowClientAutoConfiguration
+com.github.cronflow.springapp.executor.script.CronflowScriptAutoConfiguration

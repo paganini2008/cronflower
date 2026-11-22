@@ -41,7 +41,7 @@ class DefaultTaskExecutionServiceTests {
 
     private RunRequest run(String method, String param) {
         return new RunRequest("exec-1", "grp", "task", Greeter.class.getName(), "greeter", method,
-                param, 0, -1L, null);
+                param, 0, -1L, null, null, null, null);
     }
 
     private CompleteRequest await() {

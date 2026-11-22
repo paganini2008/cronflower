@@ -11,12 +11,12 @@ import { DonutChart, DonutSegment } from '../../shared/donut-chart';
 import { Bar, BarChart } from '../../shared/bar-chart';
 
 const STATUS_COLORS: Record<string, string> = {
-  STANDBY: '#64748b', SCHEDULED: '#1565c0', RUNNING: '#0f9d58',
+  STANDBY: 'var(--muted-foreground)', SCHEDULED: '#1565c0', RUNNING: '#0f9d58',
   PAUSED: '#b7791f', FINISHED: '#0891b2', CANCELED: '#d93025',
 };
 
 const DAG_STATUS_COLORS: Record<string, string> = {
-  RUNNING: '#1565c0', SUCCESS: '#0f9d58', FAILED: '#d93025', SKIPPED: '#94a3b8',
+  RUNNING: '#1565c0', SUCCESS: '#0f9d58', FAILED: '#d93025', SKIPPED: 'var(--muted-foreground)',
 };
 
 @Component({
@@ -214,10 +214,10 @@ const DAG_STATUS_COLORS: Record<string, string> = {
     </div>
   `,
   styles: [`
-    .kpi-label { display: flex; align-items: center; gap: 0.4rem; color: #3d5372; font-size: 0.85rem; }
+    .kpi-label { display: flex; align-items: center; gap: 0.4rem; color: var(--muted-foreground); font-size: 0.85rem; }
     .kpi-label mat-icon { font-size: 1.1rem; width: 1.1rem; height: 1.1rem; color: #1565c0; }
     .kpi-value { font-size: 2rem; font-weight: 700; color: #0f2c4d; margin-top: 0.25rem; }
-    .kpi-of { font-size: 1rem; color: #3d5372; font-weight: 500; margin-left: 0.25rem; }
+    .kpi-of { font-size: 1rem; color: var(--muted-foreground); font-weight: 500; margin-left: 0.25rem; }
     .group-title { display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem; font-weight: 600;
       color: #0f2c4d; margin: 0 0 1rem; padding-left: 0.6rem; border-left: 3px solid #1565c0; }
     .group-title mat-icon { font-size: 1.15rem; width: 1.15rem; height: 1.15rem; color: #1565c0; }
@@ -225,7 +225,7 @@ const DAG_STATUS_COLORS: Record<string, string> = {
     .store-name { display: flex; align-items: center; gap: 0.5rem; font-size: 1.2rem; font-weight: 700; color: #0f2c4d; margin: 0.25rem 0 1rem; }
     .store-name mat-icon { color: #1565c0; }
     .meta-row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.3rem 0; border-bottom: 1px dashed #eef2f7; }
-    .meta-row dt { color: #3d5372; font-size: 0.8rem; }
+    .meta-row dt { color: var(--muted-foreground); font-size: 0.8rem; }
     .meta-row dd { margin: 0; text-align: right; word-break: break-all; }
     .runs { display: flex; flex-direction: column; gap: 0.1rem; margin-top: 0.5rem; }
     .run-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem 0; border-bottom: 1px dashed #eef2f7; }
@@ -255,7 +255,7 @@ const DAG_STATUS_COLORS: Record<string, string> = {
     .mem-fill { display: block; height: 100%; background: #1565c0; border-radius: 999px; transition: width .4s; }
     .mem-fill.hot { background: #d93025; }
     .mem-text { font-size: 0.75rem; margin-top: 0.35rem; }
-    .mem-pct { font-weight: 600; color: #3d5372; }
+    .mem-pct { font-weight: 600; color: var(--muted-foreground); }
     .down-text { font-size: 0.75rem; margin-top: 0.35rem; color: #d93025; }
     .hc-name { flex: 1 1 auto; color: #0f2c4d; font-weight: 500; }
     .hc-status { font-size: 0.78rem; }
@@ -291,7 +291,7 @@ export class Dashboard {
     const by = this.stats()?.tasksByStatus ?? {};
     return Object.entries(by)
       .filter(([name, v]) => name !== 'NONE' && v > 0)
-      .map(([name, value]) => ({ label: name, value, color: STATUS_COLORS[name] ?? '#94a3b8' }));
+      .map(([name, value]) => ({ label: name, value, color: STATUS_COLORS[name] ?? 'var(--muted-foreground)' }));
   });
 
   protected readonly busiest = computed<Bar[]>(() => {
@@ -345,7 +345,7 @@ export class Dashboard {
     }
     return Object.entries(counts)
       .filter(([, v]) => v > 0)
-      .map(([label, value]) => ({ label, value, color: DAG_STATUS_COLORS[label] ?? '#94a3b8' }));
+      .map(([label, value]) => ({ label, value, color: DAG_STATUS_COLORS[label] ?? 'var(--muted-foreground)' }));
   });
 
   protected readonly topWorkflows = computed<Bar[]>(() => {

@@ -25,6 +25,13 @@ package com.github.cronflow.springapp.scheduler;
  * @Version 1.0.0
  */
 public record DispatchRequest(String application, String taskGroup, String taskName,
-        String className, String beanName, String methodName, String initialParameter,
-        long timeout) {
+        String className, String beanName, String methodName, String initialParameter, long timeout,
+        String language, String script, String datasource) {
+
+    /** Bean-task dispatch (no script). */
+    public DispatchRequest(String application, String taskGroup, String taskName, String className,
+            String beanName, String methodName, String initialParameter, long timeout) {
+        this(application, taskGroup, taskName, className, beanName, methodName, initialParameter,
+                timeout, null, null, null);
+    }
 }

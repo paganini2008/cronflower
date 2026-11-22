@@ -13,12 +13,13 @@ import { CronsmithApi, DagScheduleRequest } from '../../core/api.service';
 import { DagGraphView, HTTP_METHODS, MISFIRE_POLICIES, TaskMetadata } from '../../core/models';
 import { fmt, fromInputDateTime, toInputDateTime, tzLabel } from '../../core/util';
 import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-builder-dialog';
+import { CodeEditor } from '../../shared/code-editor';
 
 @Component({
   selector: 'cf-task-form',
   imports: [
     RouterLink, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule,
-    MatButtonModule, MatIconModule, MatTooltipModule,
+    MatButtonModule, MatIconModule, MatTooltipModule, CodeEditor,
   ],
   template: `
     <a routerLink="/tasks" class="back"><mat-icon>arrow_back</mat-icon> Tasks</a>
@@ -74,6 +75,12 @@ import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-bu
             <mat-icon>account_tree</mat-icon>
             <span class="tc-title">Trigger DAG</span>
             <span class="tc-desc">Fire a workflow on a schedule.</span>
+          </button>
+          <button type="button" class="type-card" [class.selected]="type() === 'SCRIPT'"
+            (click)="setType('SCRIPT')">
+            <mat-icon>terminal</mat-icon>
+            <span class="tc-title">Script</span>
+            <span class="tc-desc">Run shell, python or sql on an executor.</span>
           </button>
         </div>
 
@@ -136,6 +143,37 @@ import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-bu
                 placeholder='optional, JSON like {{ "{" }} "input": "..." {{ "}" }}'></textarea>
               <mat-hint>Passed to the workflow as its starting channel values. Leave blank for none.</mat-hint>
             </mat-form-field>
+          </div>
+        } @else if (type() === 'SCRIPT') {
+          <div class="schedule-row">
+            <mat-form-field appearance="outline" style="flex: 0 0 170px;">
+              <mat-label>Language</mat-label>
+              <mat-select formControlName="language">
+                <mat-option value="shell">Shell</mat-option>
+                <mat-option value="python">Python</mat-option>
+                <mat-option value="sql">SQL</mat-option>
+                <mat-option value="java">Java</mat-option>
+              </mat-select>
+            </mat-form-field>
+            @if (form.controls.language.value === 'sql') {
+              <mat-form-field appearance="outline" class="flex-1">
+                <mat-label>Datasource</mat-label>
+                <input matInput formControlName="datasource"
+                  placeholder="a configured cronflow.script.sql datasource" />
+                <mat-hint>The named datasource the SQL runs against.</mat-hint>
+              </mat-form-field>
+            }
+          </div>
+          <div class="param-block">
+            <div class="param-head">
+              <span class="param-title">Script</span>
+              <span class="param-note">Runs on an executor of the task group, in an isolated sandbox.</span>
+            </div>
+            <div class="code-wrap">
+              <cf-code-editor [value]="form.controls.script.value"
+                (valueChange)="form.controls.script.setValue($event)"
+                [language]="form.controls.language.value"></cf-code-editor>
+            </div>
           </div>
         } @else {
           <div class="schedule-row">
@@ -308,6 +346,8 @@ import { ScheduleBuilderDialog } from '../../shared/schedule-builder/schedule-bu
     .param-block { margin-bottom: 1.5rem; }
     .param-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem; }
     .param-title { color: var(--cf-ink-2); font-size: 0.82rem; font-weight: 600; }
+    .param-note { color: var(--cf-muted); font-size: 0.76rem; margin-left: 0.6rem; }
+    .code-wrap { height: 42vh; min-height: 320px; }
     .fmt-btn { --mdc-text-button-label-text-color: var(--cf-blue); font-size: 0.8rem; line-height: 1.6; min-width: 0; }
     .param-block textarea { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85rem; line-height: 1.5; }
 
@@ -364,6 +404,9 @@ export class TaskForm {
     methodName: ['run', Validators.required],
     url: [''],
     httpMethod: ['GET'],
+    language: ['shell'],
+    script: [''],
+    datasource: [''],
     dagGraph: [''],
     initialParameter: [''],
     cron: ['0 0 12 * * ?', Validators.required],
@@ -397,6 +440,7 @@ export class TaskForm {
             taskGroup: t.taskGroup, taskName: t.taskName, taskType: kind,
             className: t.className ?? '', beanName: t.beanName ?? '', methodName: t.methodName ?? 'run',
             url: t.url ?? '', httpMethod: t.httpMethod ?? 'GET',
+            language: t.language ?? 'shell', script: t.script ?? '', datasource: t.datasource ?? '',
             dagGraph: spec?.graph ?? '',
             initialParameter: spec ? spec.seedText : (t.initialParameter ?? ''),
             cron: t.cron ?? '', parser: t.parser ?? 'cron',
@@ -422,15 +466,18 @@ export class TaskForm {
   /** Switch required validators to match the selected task kind. */
   private applyType(kind: TaskKind): void {
     this.type.set(kind);
-    const { className, methodName, url, dagGraph } = this.form.controls;
+    const { className, methodName, url, dagGraph, script } = this.form.controls;
     className.clearValidators();
     methodName.clearValidators();
     url.clearValidators();
     dagGraph.clearValidators();
+    script.clearValidators();
     if (kind === 'HTTP') {
       url.setValidators([Validators.required]);
     } else if (kind === 'DAG') {
       dagGraph.setValidators([Validators.required]);
+    } else if (kind === 'SCRIPT') {
+      script.setValidators([Validators.required]);
     } else {
       className.setValidators([Validators.required]);
       methodName.setValidators([Validators.required]);
@@ -439,6 +486,7 @@ export class TaskForm {
     methodName.updateValueAndValidity({ emitEvent: false });
     url.updateValueAndValidity({ emitEvent: false });
     dagGraph.updateValueAndValidity({ emitEvent: false });
+    script.updateValueAndValidity({ emitEvent: false });
   }
 
   /** Pretty-print the parameter/payload field if it holds valid JSON; otherwise say so. */
@@ -507,9 +555,11 @@ export class TaskForm {
     }
 
     const body: TaskMetadata = {
-      taskGroup: v.taskGroup, taskName: v.taskName, taskType: v.taskType as 'BEAN' | 'HTTP',
+      taskGroup: v.taskGroup, taskName: v.taskName,
+      taskType: v.taskType as 'BEAN' | 'HTTP' | 'SCRIPT',
       className: v.className, beanName: v.beanName || v.className, methodName: v.methodName,
       url: v.url, httpMethod: v.httpMethod,
+      language: v.language, script: v.script, datasource: v.datasource,
       initialParameter: v.initialParameter, cron: v.cron, parser: v.parser, description: v.description,
       timeout: v.timeout, maxRetryCount: v.maxRetryCount, retryInterval: v.retryInterval,
       misfirePolicy: v.misfirePolicy,
@@ -567,7 +617,7 @@ export class TaskForm {
   }
 }
 
-type TaskKind = 'BEAN' | 'HTTP' | 'DAG';
+type TaskKind = 'BEAN' | 'HTTP' | 'DAG' | 'SCRIPT';
 
 /** Split a DAG-trigger task's stored spec into its graph and a pretty seed for editing. */
 function parseTriggerSpec(initialParameter?: string):

@@ -24,7 +24,10 @@ import { ParamDialog, ParamData } from '../../shared/param-dialog';
         <h1 class="page-title">Workflows</h1>
         <p class="page-sub">Registered DAG definitions. Select one to see its shape, trigger it, or draw a new one.</p>
       </div>
-      <a mat-flat-button color="primary" routerLink="/dag/new"><mat-icon>add</mat-icon> New workflow</a>
+      <div class="head-actions">
+        <a mat-stroked-button routerLink="/dag/ai"><mat-icon>auto_awesome</mat-icon> Generate with AI</a>
+        <a mat-flat-button color="primary" routerLink="/dag/new"><mat-icon>add</mat-icon> New workflow</a>
+      </div>
     </div>
 
     <div class="grid">
@@ -45,7 +48,9 @@ import { ParamDialog, ParamData } from '../../shared/param-dialog';
               <button type="button" class="row" [class.sel]="isSel(d)" (click)="select(d)">
                 <mat-icon>account_tree</mat-icon>
                 <span class="row-main">
-                  <span class="row-title">{{ d.graph }}</span>
+                  <span class="row-title">{{ d.graph }}
+                    @if (d.application === 'http') { <span class="dag-badge">HTTP</span> }
+                  </span>
                   <span class="row-sub">{{ d.application }}</span>
                 </span>
                 <span class="count">{{ d.nodeCount }} nodes</span>
@@ -92,13 +97,14 @@ import { ParamDialog, ParamData } from '../../shared/param-dialog';
   styles: [`
     .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
     .page-head .page-title { margin: 0; } .page-head .page-sub { margin: 0.15rem 0 1.1rem; }
+    .head-actions { display: inline-flex; gap: 0.5rem; flex-shrink: 0; }
     .g-actions { display: flex; gap: 0.5rem; }
     .grid { display: grid; grid-template-columns: 320px 1fr; gap: 1.25rem; align-items: start; }
     @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
     .list-card { padding: 0; display: flex; flex-direction: column; }
     .list-filter { display: flex; align-items: center; gap: 0.4rem; padding: 0.6rem 0.8rem;
       border-bottom: 1px solid #eef2f7; }
-    .list-filter mat-icon { color: #3d5372; font-size: 20px; width: 20px; height: 20px; }
+    .list-filter mat-icon { color: var(--muted-foreground); font-size: 20px; width: 20px; height: 20px; }
     .list-filter input { border: 0; outline: 0; flex: 1 1 auto; font: inherit; color: #0f2c4d; background: transparent; }
     .list { padding: 0.4rem; max-height: 60vh; overflow: auto; }
     .row { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left;
@@ -106,26 +112,30 @@ import { ParamDialog, ParamData } from '../../shared/param-dialog';
     .row:hover { background: #f1f5f9; }
     .row.sel { background: #e8f1fd; }
     .row.sel .row-title { color: #1565c0; }
-    .row > mat-icon { color: #3d5372; }
+    .row > mat-icon { color: var(--muted-foreground); }
     .row.sel > mat-icon { color: #1565c0; }
     .row-main { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
     .row-title { font-weight: 650; font-size: 0.9rem; }
-    .row-sub { font-size: 0.75rem; color: #3d5372; overflow: hidden; text-overflow: ellipsis; }
-    .count { font-size: 0.7rem; color: #3d5372; white-space: nowrap; }
+    .dag-badge { display: inline-block; margin-left: 0.4rem; padding: 0.02rem 0.4rem; border-radius: 6px;
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.02em; vertical-align: 1px;
+      color: var(--primary); background: var(--cf-blue-light);
+      border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); }
+    .row-sub { font-size: 0.75rem; color: var(--muted-foreground); overflow: hidden; text-overflow: ellipsis; }
+    .count { font-size: 0.7rem; color: var(--muted-foreground); white-space: nowrap; }
     .graph-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; min-height: 420px; }
     .graph-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem;
       padding: 0.9rem 1.1rem; border-bottom: 1px solid #eef2f7; }
     .g-title { font-weight: 700; font-size: 1.05rem; color: #0f2c4d; }
-    .g-sub { font-size: 0.78rem; color: #3d5372; margin-left: 0.6rem; }
+    .g-sub { font-size: 0.78rem; color: var(--muted-foreground); margin-left: 0.6rem; }
     .graph { flex: 1 1 auto; height: 62vh; }
     .legend { display: flex; gap: 1.2rem; padding: 0.6rem 1.1rem; border-top: 1px solid #eef2f7;
-      font-size: 0.75rem; color: #3d5372; }
+      font-size: 0.75rem; color: var(--muted-foreground); }
     .legend i.sw { display: inline-block; width: 0.85rem; height: 0.85rem; border-radius: 4px;
       vertical-align: -2px; margin-right: 0.3rem; border: 2px solid #c3d0e0; background: #eef2f7; }
     .legend i.entry { border-color: #16b8a6; background: #d9f5f0; }
     .legend i.sub { border-color: #d99514; border-style: dashed; background: #fbf1dc; }
     .legend i.cond { border: 0; height: 0; border-top: 2px dashed #7c6bb0; width: 1.1rem; border-radius: 0; }
-    .empty { padding: 2.5rem; text-align: center; color: #3d5372; display: flex; flex-direction: column;
+    .empty { padding: 2.5rem; text-align: center; color: var(--muted-foreground); display: flex; flex-direction: column;
       align-items: center; gap: 0.4rem; }
     .empty mat-icon { font-size: 2.5rem; width: 2.5rem; height: 2.5rem; }
   `],

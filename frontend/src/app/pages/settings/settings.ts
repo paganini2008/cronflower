@@ -104,11 +104,20 @@ export class Settings implements OnInit {
     if (Array.isArray(val)) {
       if (val.length === 0) { return [{ k: key, v: '[]' }]; }
       if (val.every((x) => x === null || typeof x !== 'object')) {
-        return [{ k: key, v: val.join(', ') }];
+        return [{ k: key, v: this.redact(key, val.join(', ')) }];
       }
       return val.flatMap((x, i) => this.flattenValue(`${key}[${i}]`, x));
     }
     if (typeof val === 'object') { return this.flatten(val as Record<string, unknown>, key); }
-    return [{ k: key, v: String(val) }];
+    return [{ k: key, v: this.redact(key, String(val)) }];
+  }
+
+  /** Mask any value whose key names a secret — a defence-in-depth guard so an API key, token, password
+   *  or signing secret never renders here even if the server returned it unmasked. */
+  private redact(key: string, value: string): string {
+    const last = key.split('.').pop() ?? key;
+    const secret = /(api-?key|secret|password|passwd|token|credential|private-?key|signing)/i;
+    if (!secret.test(last) || !value || value === '—') { return value; }
+    return '••••••••';
   }
 }

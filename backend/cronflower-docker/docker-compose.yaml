@@ -95,6 +95,12 @@ services:
     environment:
       SPRING_APPLICATION_JSON: '{"server":{"port":8080},"spring":{"application":{"name":"demo-executor"}},"cronflow":{"executor":{"server-urls":"http://cronflower-api-1:8080,http://cronflower-api-2:8080,http://cronflower-api-3:8080","server-api-prefix":"/cronflow/scheduler"},"client":{"server-urls":"http://cronflower-api-1:8080,http://cronflower-api-2:8080,http://cronflower-api-3:8080","server-api-prefix":"/cronflow/dag"}}}'
       JAVA_TOOL_OPTIONS: "-Xmx1g"
+    # SCRIPT tasks run in per-run sibling containers on the host daemon (copy-mode), so the executor
+    # needs the Docker socket. Pre-pull the script images on the host (bash:5, python:3-slim,
+    # eclipse-temurin:21) or override cronflow.script.docker.images. Remove this mount to forbid
+    # Docker-based SCRIPT tasks on this executor.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       cronflower-api-1: { condition: service_healthy }
     restart: unless-stopped

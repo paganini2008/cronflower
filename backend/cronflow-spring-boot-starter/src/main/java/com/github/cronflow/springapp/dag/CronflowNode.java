@@ -41,9 +41,11 @@ import com.github.cronflow.springapp.pojo.NodeRunResult;
 public class CronflowNode extends GraphNode {
 
     private final DagNodeDispatcher dispatcher;
+    private final DagExecutorRegistry registry;
 
-    public CronflowNode(DagNodeDispatcher dispatcher) {
+    public CronflowNode(DagNodeDispatcher dispatcher, DagExecutorRegistry registry) {
         this.dispatcher = dispatcher;
+        this.registry = registry;
     }
 
     @Override
@@ -54,10 +56,13 @@ public class CronflowNode extends GraphNode {
 
     @Override
     public Map<String, Object> execute(GraphState state, NodeContext context) {
-        String bean = context.getString("bean");
-        String method = context.getString("method");
-        DagDefinition.NodeDef node =
-                new DagDefinition.NodeDef(context.node(), false, "ALL", 0, bean, method, "");
+        // Resolve the node's full definition (it may be an HTTP node or target another application);
+        // the engine config only carries bean/method, so fall back to that for a plain bean node.
+        DagDefinition.NodeDef node = resolveNode(context.graph(), context.node());
+        if (node == null) {
+            node = new DagDefinition.NodeDef(context.node(), false, "ALL", 0,
+                    context.getString("bean"), context.getString("method"), "");
+        }
         DagNodeDispatcher.Dispatched dispatched =
                 dispatcher.dispatch(context.graph(), node, state.asMap());
         NodeRunResult result = dispatched.result();
@@ -66,6 +71,15 @@ public class CronflowNode extends GraphNode {
         }
         throw new IllegalStateException(
                 "cronflow node '" + context.node() + "' failed: " + result.errorDetail());
+    }
+
+    /** The node's stored definition (carrying any HTTP endpoint / target application), or null. */
+    private DagDefinition.NodeDef resolveNode(String graph, String nodeName) {
+        DagDefinition def = registry.definition(graph);
+        if (def == null || def.nodes() == null) {
+            return null;
+        }
+        return def.nodes().stream().filter(n -> nodeName.equals(n.name())).findFirst().orElse(null);
     }
 
 }

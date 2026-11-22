@@ -28,4 +28,11 @@ import java.util.Map;
  * @Version 1.0.0
  */
 public record NodeRunRequest(String graph, String node, String beanName, String methodName,
-        Map<String, Object> state) {}
+        Map<String, Object> state, String language, String script, String datasource) {
+
+    /** A bean node has no {@code language}: the executor invokes the bean method. A script node carries a
+     *  {@code language} and {@code script} and runs via a ScriptRunner, reading and writing channels. */
+    public boolean isScript() {
+        return language != null && !language.isBlank();
+    }
+}

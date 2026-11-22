@@ -18,6 +18,10 @@ CREATE TABLE cs_task_detail (
     bean_name           TEXT,
     application         TEXT,
     url                 TEXT,
+    -- Script-task fields: a script task carries a language and inline source instead of a bean+method.
+    language            TEXT,
+    script              TEXT,
+    datasource          TEXT,
     description         TEXT,
     initial_parameter   TEXT,
     cron_expression     BLOB          NOT NULL,

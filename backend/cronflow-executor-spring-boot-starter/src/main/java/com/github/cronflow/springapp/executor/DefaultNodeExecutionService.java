@@ -20,8 +20,13 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.support.AopUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.ReflectionUtils;
+import com.github.cronflow.springapp.executor.script.ScriptLanguage;
+import com.github.cronflow.springapp.executor.script.ScriptResult;
+import com.github.cronflow.springapp.executor.script.ScriptRunner;
+import com.github.cronflow.springapp.executor.script.ScriptSpec;
 import com.github.cronflow.springapp.executor.pojo.NodeRunRequest;
 import com.github.cronflow.springapp.executor.pojo.NodeRunResult;
 
@@ -46,13 +51,25 @@ public class DefaultNodeExecutionService implements NodeExecutionService {
 
     private final ApplicationContext applicationContext;
 
+    /** Optional script script runner. Null unless {@code cronflow.script.enabled=true} wired one. */
+    private ScriptRunner scriptRunner;
+
     public DefaultNodeExecutionService(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
+    }
+
+    /** Injected by the script auto-configuration when the feature is on. */
+    @Autowired(required = false)
+    public void setScriptRunner(ScriptRunner scriptRunner) {
+        this.scriptRunner = scriptRunner;
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public NodeRunResult run(NodeRunRequest request) {
+        if (request.isScript()) {
+            return runScriptNode(request);
+        }
         try {
             Object bean = applicationContext.getBean(request.beanName());
             Class<?> targetClass = AopUtils.getTargetClass(bean);
@@ -75,6 +92,26 @@ public class DefaultNodeExecutionService implements NodeExecutionService {
                     request.beanName(), request.methodName(), cause.toString());
             return NodeRunResult.failure(cause.toString());
         }
+    }
+
+    private NodeRunResult runScriptNode(NodeRunRequest request) {
+        if (scriptRunner == null) {
+            return NodeRunResult.failure(
+                    "script is not enabled on this executor (cronflow.script.enabled=false)");
+        }
+        ScriptLanguage lang = ScriptLanguage.from(request.language());
+        if (lang == null || !scriptRunner.supports(lang)) {
+            return NodeRunResult.failure("script language not supported here: " + request.language());
+        }
+        String id = request.graph() + "/" + request.node();
+        ScriptResult res = scriptRunner.run(
+                ScriptSpec.node(lang, request.script(), id, id, request.state(), 0L, request.datasource()));
+        if (res.success()) {
+            log.info("cronflow: ran script node {} of graph {} ({}) here", request.node(), request.graph(),
+                    lang);
+            return NodeRunResult.success(res.channelUpdates());
+        }
+        return NodeRunResult.failure(res.failureDetail());
     }
 
     /** Prefer a method taking a single {@link DagState}, else a no-arg method of the same name. */

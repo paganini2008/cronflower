@@ -28,7 +28,21 @@ package com.github.cronflow.springapp.scheduler;
 public record ExecutorTaskMetadata(String taskGroup, String taskName, String className,
         String beanName, String methodName, String cron, String parser, String description,
         String initialParameter, long timeout, int maxRetryCount, long retryInterval,
-        String misfirePolicy, int repeatCount, String stopAt) {
+        String misfirePolicy, int repeatCount, String stopAt, String language, String script,
+        String datasource) {
+
+    /**
+     * Bean-task constructor (no script): the executor invokes a bean method. {@code language}/
+     * {@code script}/{@code datasource} are null.
+     */
+    public ExecutorTaskMetadata(String taskGroup, String taskName, String className, String beanName,
+            String methodName, String cron, String parser, String description, String initialParameter,
+            long timeout, int maxRetryCount, long retryInterval, String misfirePolicy, int repeatCount,
+            String stopAt) {
+        this(taskGroup, taskName, className, beanName, methodName, cron, parser, description,
+                initialParameter, timeout, maxRetryCount, retryInterval, misfirePolicy, repeatCount,
+                stopAt, null, null, null);
+    }
 
     /**
      * Back-compatible constructor: an executor that names no {@code parser} means traditional cron,
@@ -38,6 +52,12 @@ public record ExecutorTaskMetadata(String taskGroup, String taskName, String cla
             String methodName, String cron, String description, String initialParameter, long timeout,
             int maxRetryCount, long retryInterval, String misfirePolicy) {
         this(taskGroup, taskName, className, beanName, methodName, cron, "cron", description,
-                initialParameter, timeout, maxRetryCount, retryInterval, misfirePolicy, -1, null);
+                initialParameter, timeout, maxRetryCount, retryInterval, misfirePolicy, -1, null, null,
+                null, null);
+    }
+
+    /** True when this is a script task (runs a script on the executor, not a bean method). */
+    public boolean isScript() {
+        return language != null && !language.isBlank();
     }
 }

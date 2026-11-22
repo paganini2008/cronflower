@@ -32,7 +32,7 @@ class NodeExecutionTests {
     }
 
     private NodeRunRequest req(String method, Map<String, Object> state) {
-        return new NodeRunRequest("g", "n", "nodeBean", method, state);
+        return new NodeRunRequest("g", "n", "nodeBean", method, state, null, null, null);
     }
 
     @Test
@@ -73,7 +73,7 @@ class NodeExecutionTests {
     @Test
     void unknownBeanFails() {
         NodeRunResult result =
-                service.run(new NodeRunRequest("g", "n", "ghostBean", "withState", Map.of()));
+                service.run(new NodeRunRequest("g", "n", "ghostBean", "withState", Map.of(), null, null, null));
         assertThat(result.ok()).isFalse();
     }
 

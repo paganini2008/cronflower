@@ -119,6 +119,35 @@ public Map<String, Object> square(DagState state) { /* 运行时每个 id 跑一
 
 ![一次完成的运行：图 + 触发方式](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-run.jpg)
 
+## 不只是 Java 节点：HTTP 与跨应用
+
+节点不一定是 Java bean。每个节点有一个 `kind`,cronflower 内置三种：
+
+| 类型 | 运行什么 | 在哪里运行 |
+|------|---------|-----------|
+| `bean` | 执行器上的 `@DagNode` 方法 | 托管该 bean 的执行器 |
+| `script` | shell / Python / Java / SQL 脚本 | 执行器,在每次运行的 Docker 沙箱里 |
+| `http` | 任意 REST 接口 | 调度端本身,不需要执行器 |
+
+`http` 节点调用一个 URL,把合并后的 channel 状态作为请求体发出去,再把响应映射回 channel。于是上一个接口的输出就成了下一个接口的输入,和 Spring service 方法一级一级喂下去是一回事。每个节点背后的服务可以用 Python、Go、Rust 或任何会讲 HTTP 的语言写,节点各自声明 `application`,所以一个工作流能横跨多个服务。cronflower 负责编排,你的服务负责干活。
+
+```json
+{
+  "name": "score-orders",
+  "kind": "http",
+  "endpoint": { "url": "http://risk-svc/score-orders", "method": "POST" },
+  "io": { "input": { "orders": "orders" }, "output": { "maxRisk": "score.max" } }
+}
+```
+
+## 让 AI 起草工作流
+
+打开「Generate with AI」,用自然语言描述流程,LLM 就返回一个现成的 `@Dag` 供你审阅后再运行。它支持 OpenAI 或本地 Ollama 模型,具体模型可以在下拉框里挑。描述三个接口,它就起草三个按「输出接输入」连好的 `http` 节点,正是上面那个形状。
+
+> 「从 /fetch-orders 拉订单,在 /score-orders 打分,再到 /decide 做决策。」
+
+![用一句话生成 DAG](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-ai.jpg)
+
 ## 配置：channel 与 reducer
 
 每个 `@Channel` 用内置 reducer 合并并发写入，或用 `customReducer` 指向你自己的：

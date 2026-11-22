@@ -48,6 +48,54 @@ export interface ConfigProps {
   contexts?: Record<string, { beans?: Record<string, ConfigPropsBean> }>;
 }
 
+/** A configured LLM provider (AiDagController.ProviderInfo). `cloud` marks an off-network provider. */
+export interface AiProviderInfo {
+  id: string;
+  cloud: boolean;
+  defaultModel: string;
+  /** The models offered for this provider in the dropdown (incl. the default). */
+  models: string[];
+}
+
+/** A node the model may wire into a generated DAG (ai.CatalogNode). */
+export interface AiCatalogNode {
+  name: string;
+  description: string;
+  beanName: string;
+  methodName: string;
+  reads: string[];
+  writes: string[];
+}
+
+/** One validation problem on a generated DAG (DagValidator.Issue). */
+export interface AiIssue {
+  path: string;
+  message: string;
+}
+
+/** Response of POST /ai/generate (AiDagController.GenerateResponse). */
+export interface AiGenerateResponse {
+  id: string;
+  valid: boolean;
+  dag: DagDefinition | null;
+  issues: AiIssue[];
+  provider: string;
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  repairs: number;
+  error: string | null;
+}
+
+/** Response of POST /ai/approve (AiDagController.ApproveResponse). */
+export interface AiApproveResponse {
+  registered: boolean;
+  graph: string | null;
+  application: string | null;
+  issues: AiIssue[];
+  error: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CronsmithApi {
   private readonly http = inject(HttpClient);
@@ -206,6 +254,32 @@ export class CronsmithApi {
     Observable<{ graph: string; taskGroup: string; taskName: string }> {
     return this.http.post<{ graph: string; taskGroup: string; taskName: string }>(
       `${this.cronflowBase}/dags/${enc(graph)}/schedule`, req);
+  }
+
+  // ---- AI DAG generation (cronflow.ai.enabled) --------------------------------------------------
+
+  /** Configured LLM providers and whether each sends data off-network. */
+  aiProviders(): Observable<AiProviderInfo[]> {
+    return this.http.get<AiProviderInfo[]>(`${this.cronflowBase}/ai/providers`);
+  }
+
+  /** The nodes a generation may wire (derived from the registered DAGs). */
+  aiCatalog(): Observable<AiCatalogNode[]> {
+    return this.http.get<AiCatalogNode[]>(`${this.cronflowBase}/ai/catalog`);
+  }
+
+  /** Draft a DAG from a prompt. The model call can take a while, so there is no client timeout here. */
+  aiGenerate(prompt: string, provider?: string, model?: string, privateOnly?: boolean):
+    Observable<AiGenerateResponse> {
+    return this.http.post<AiGenerateResponse>(`${this.cronflowBase}/ai/generate`,
+      { prompt, provider, model, privateOnly });
+  }
+
+  /** Approve a reviewed DAG: re-validates and registers it against a live executor of {@code application}. */
+  aiApprove(id: string | null, dag: DagDefinition, application: string, approver?: string):
+    Observable<AiApproveResponse> {
+    return this.http.post<AiApproveResponse>(`${this.cronflowBase}/ai/approve`,
+      { id, dag, application, approver });
   }
 }
 

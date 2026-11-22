@@ -76,19 +76,39 @@ public class DagAuthoringController {
         if (def.nodes() == null || def.nodes().isEmpty()) {
             return bad("a graph needs at least one node");
         }
-        if (request.application() == null || request.application().isBlank()) {
+        // A pure-HTTP graph (every node is an HTTP call the scheduler makes itself) needs no executor,
+        // so it registers host-less and even without an application; a graph with bean/script nodes
+        // still needs a live executor of its application to dispatch to.
+        boolean needsExecutor = needsExecutor(def);
+        String application = request.application() == null || request.application().isBlank()
+                ? (needsExecutor ? null : "http")
+                : request.application();
+        if (needsExecutor && application == null) {
             return bad("an application is required");
         }
-        ExecutorInstance host = registry.anyLiveInstance(request.application()).orElse(null);
+        if (!needsExecutor) {
+            registry.registerDefinition(application, def);
+            return ResponseEntity.ok(Map.of("graph", def.graph(), "application", application));
+        }
+        ExecutorInstance host = registry.anyLiveInstance(application).orElse(null);
         if (host == null) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
-                    "error", "no live executor for application '" + request.application() + "'"));
+                    "error", "no live executor for application '" + application + "'"));
         }
-        DagRegistrationRequest reg = new DagRegistrationRequest(request.application(),
+        DagRegistrationRequest reg = new DagRegistrationRequest(application,
                 host.instanceId(), host.runUrl(), host.healthCheckUrl(), List.of(def), null,
                 host.weight());
         clusterRegistry.register(reg);
-        return ResponseEntity.ok(Map.of("graph", def.graph(), "application", request.application()));
+        return ResponseEntity.ok(Map.of("graph", def.graph(), "application", application));
+    }
+
+    /** True when the graph has a bean/script node (runs on an executor); HTTP and subgraph nodes do not. */
+    private static boolean needsExecutor(DagDefinition def) {
+        if (def.nodes() == null) {
+            return false;
+        }
+        return def.nodes().stream().anyMatch(n -> !n.isHttp()
+                && (n.subgraph() == null || n.subgraph().isBlank()));
     }
 
     private ResponseEntity<Map<String, Object>> bad(String message) {

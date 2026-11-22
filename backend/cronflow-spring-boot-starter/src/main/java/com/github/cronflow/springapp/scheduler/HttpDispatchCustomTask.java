@@ -68,6 +68,9 @@ public class HttpDispatchCustomTask extends BeanReflectionTask {
         record.put("parser", metadata.parser());
         record.put("repeatCount", metadata.repeatCount());
         record.put("stopAt", metadata.stopAt());
+        record.put("language", metadata.language());
+        record.put("script", metadata.script());
+        record.put("datasource", metadata.datasource());
         return new HttpDispatchCustomTask(record);
     }
 
@@ -99,6 +102,21 @@ public class HttpDispatchCustomTask extends BeanReflectionTask {
         return stringOf("beanName");
     }
 
+    /** The script language (shell/python/sql/java) when this is a script task; null for a bean task. */
+    public String getLanguage() {
+        return stringOf("language");
+    }
+
+    /** The inline script source when this is a script task; null for a bean task. */
+    public String getScript() {
+        return stringOf("script");
+    }
+
+    /** The named datasource a SQL script runs against; null when not applicable. */
+    public String getDatasource() {
+        return stringOf("datasource");
+    }
+
     /** The executor application to dispatch to; falls back to the task group when not stored. */
     public String getApplication() {
         String application = stringOf("application");
@@ -110,7 +128,7 @@ public class HttpDispatchCustomTask extends BeanReflectionTask {
             String initialParameter) {
         DispatchRequest request = new DispatchRequest(getApplication(), stringOf("taskGroup"),
                 stringOf("taskName"), taskClassName, getBeanName(), taskMethodName, initialParameter,
-                getTimeout());
+                getTimeout(), stringOf("language"), stringOf("script"), stringOf("datasource"));
         return TaskDispatcherHolder.require().dispatchAndWait(request);
     }
 

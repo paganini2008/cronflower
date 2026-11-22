@@ -14,6 +14,10 @@ CREATE TABLE cs_task_detail (
     bean_name           VARCHAR(255),
     application         VARCHAR(255),
     url                 VARCHAR(1024),
+    -- Script-task fields: a script task carries a language and inline source instead of a bean+method.
+    language            VARCHAR(32),
+    script              CLOB,
+    datasource          VARCHAR(255),
     description         VARCHAR(1024),
     initial_parameter   CLOB,
     -- The serialized expression is what the scheduler computes from; the text form beside it is

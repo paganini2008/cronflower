@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.expression.ExpressionParser;
@@ -36,6 +37,10 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
+import com.github.cronflow.springapp.executor.script.ScriptLanguage;
+import com.github.cronflow.springapp.executor.script.ScriptResult;
+import com.github.cronflow.springapp.executor.script.ScriptRunner;
+import com.github.cronflow.springapp.executor.script.ScriptSpec;
 
 /**
  * Default {@link TaskExecutionService}: reflectively invokes the target bean method on a pool
@@ -64,6 +69,15 @@ public class DefaultTaskExecutionService implements TaskExecutionService, Dispos
     private final ParserContext templateContext = new TemplateParserContext();
     private final BeanFactoryResolver beanFactoryResolver;
 
+    /** Optional script script runner. Null unless {@code cronflow.script.enabled=true} wired one. */
+    private ScriptRunner scriptRunner;
+
+    /** Injected by the script auto-configuration when the feature is on; a script task fails cleanly otherwise. */
+    @Autowired(required = false)
+    public void setScriptRunner(ScriptRunner scriptRunner) {
+        this.scriptRunner = scriptRunner;
+    }
+
     public DefaultTaskExecutionService(ApplicationContext applicationContext,
             CronflowExecutorServerClient serverClient, ExecutorIdentity identity, int poolSize) {
         this.applicationContext = applicationContext;
@@ -89,17 +103,24 @@ public class DefaultTaskExecutionService implements TaskExecutionService, Dispos
         String returnValue = null;
         String errorDetail = null;
         try {
-            Object bean = resolveBean(request);
-            Method method = resolveMethod(bean, request.methodName());
-            ReflectionUtils.makeAccessible(method);
-            Object result;
-            if (method.getParameterCount() == 1) {
-                result = method.invoke(bean, resolveParameter(request.initialParameter()));
+            if (request.isScript()) {
+                ScriptResult res = runScript(request);
+                returnValue = res.resultValue();
+                success = res.success();
+                errorDetail = success ? null : res.failureDetail();
             } else {
-                result = method.invoke(bean);
+                Object bean = resolveBean(request);
+                Method method = resolveMethod(bean, request.methodName());
+                ReflectionUtils.makeAccessible(method);
+                Object result;
+                if (method.getParameterCount() == 1) {
+                    result = method.invoke(bean, resolveParameter(request.initialParameter()));
+                } else {
+                    result = method.invoke(bean);
+                }
+                returnValue = result == null ? null : String.valueOf(result);
+                success = true;
             }
-            returnValue = result == null ? null : String.valueOf(result);
-            success = true;
         } catch (InvocationTargetException e) {
             errorDetail = stackTrace(e.getTargetException());
             log.warn("Task {} threw", request.taskName(), e.getTargetException());
@@ -111,6 +132,21 @@ public class DefaultTaskExecutionService implements TaskExecutionService, Dispos
         serverClient.complete(new CompleteRequest(request.executionId(), request.taskGroup(),
                 request.taskName(), success, returnValue, errorDetail, firedAt, completedAt,
                 completedAt - firedAt, request.attempt(), identity.repr()));
+    }
+
+    private ScriptResult runScript(RunRequest request) {
+        if (scriptRunner == null) {
+            throw new IllegalStateException(
+                    "script is not enabled on this executor (cronflow.script.enabled=false)");
+        }
+        ScriptLanguage lang = ScriptLanguage.from(request.language());
+        if (lang == null || !scriptRunner.supports(lang)) {
+            throw new IllegalStateException("script language not supported here: " + request.language());
+        }
+        ScriptSpec spec = ScriptSpec.task(lang, request.script(), request.executionId(),
+                request.taskGroup() + "/" + request.taskName(), request.attempt(), request.timeout(),
+                request.initialParameter(), request.datasource());
+        return scriptRunner.run(spec);
     }
 
     private Object resolveBean(RunRequest request) throws ClassNotFoundException {

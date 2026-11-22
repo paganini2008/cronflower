@@ -96,6 +96,13 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/dag-new/dag-new').then((m) => m.DagNewPage),
       },
       {
+        // AI workflow generation: prompt to a reviewed, registrable DAG. Full-screen like dag/new.
+        path: 'dag/ai',
+        title: 'Generate with AI · cronflower',
+        canActivate: [cronflowGuard, roleGuard('ADMIN', 'WORKFLOW_ADMIN')],
+        loadComponent: () => import('./pages/dag-ai/dag-ai').then((m) => m.DagAiPage),
+      },
+      {
         path: 'dag',
         title: 'DAG · cronflower',
         canActivate: [cronflowGuard, roleGuard('ADMIN', 'WORKFLOW_ADMIN')],

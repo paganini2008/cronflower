@@ -136,6 +136,42 @@ public Map<String, Object> square(DagState state) { /* runs once per id, at run 
 
 ![A completed run: the graph and how it was triggered](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-run.jpg)
 
+## Nodes beyond Java: HTTP and cross application
+
+A node does not have to be a Java bean. A node has a `kind`, and cronflower ships three:
+
+| Kind | What it runs | Where it runs |
+|------|--------------|---------------|
+| `bean` | a `@DagNode` method on an executor | the executor that hosts the bean |
+| `script` | a shell, Python, Java or SQL script | an executor, in a per run Docker sandbox |
+| `http` | any REST endpoint | the scheduler itself, no executor needed |
+
+An `http` node calls a URL, sends the merged channel state as the request body, and maps the response
+back into channels. So the output of one endpoint becomes the input of the next, the same way a Spring
+service method feeds the next. The service behind each node can be written in Python, Go, Rust or
+anything that speaks HTTP, and each node names its own `application`, so one workflow can span several
+services. cronflower orchestrates, your services do the work.
+
+```json
+{
+  "name": "score-orders",
+  "kind": "http",
+  "endpoint": { "url": "http://risk-svc/score-orders", "method": "POST" },
+  "io": { "input": { "orders": "orders" }, "output": { "maxRisk": "score.max" } }
+}
+```
+
+## Let AI draft the workflow
+
+Open *Generate with AI*, describe the flow in plain language, and an LLM returns a ready `@Dag` for you
+to review before you run it. It works against OpenAI or a local Ollama model, and you pick the exact
+model from a dropdown. Describe three endpoints and it drafts three `http` nodes wired output to input,
+exactly the shape above.
+
+> "Fetch orders from /fetch-orders, score them at /score-orders, then decide at /decide."
+
+![Generate a DAG from a prompt](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dag-ai.jpg)
+
 ## Configuration: channels & reducers
 
 Each `@Channel` merges concurrent writes with a built-in reducer, or your own via `customReducer`:

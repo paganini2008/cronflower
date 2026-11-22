@@ -7,45 +7,43 @@
 ![Build](https://img.shields.io/badge/build-Maven%20Wrapper-C71A36?logo=apachemaven&logoColor=white)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 
-**Distributed cron for the JVM, with a console: it clusters itself and depends on nothing external.**
+**A distributed DAG workflow platform for the JVM, with a console: it clusters itself and depends on nothing external.**
 
-Drop `@Task` on a Spring bean and the cluster owns the schedule and calls you back, declare a `@Dag`
-and the same cluster runs a whole workflow across your machines. One command takes you from `git clone`
-to a live, distributed scheduler cluster with a UI: no database, broker, or ZooKeeper/etcd to stand up.
+Declare a `@Dag` and the cluster runs it node by node across your machines. A node can be a Spring
+`@DagNode` bean, a shell / Python / Java / SQL script in a Docker sandbox, or an HTTP call to any
+service, with output feeding input through typed channels. Describe a workflow in plain language and AI
+drafts it. Trigger it by hand, from a finished `@Task`, or on a cron schedule. One command takes you
+from `git clone` to a live, distributed cluster with a UI: no database, broker, or ZooKeeper/etcd to stand up.
 
 ```
-cronflower = cronsmith (distributed scheduling) + cronflow (DAG orchestration)
+cronflower = a DAG engine (cronflow) on a self-clustering scheduler (cronsmith)
 ```
 
 ![Dashboard](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/dashboard.jpg)
 
 ## See it in action
 
-Two short screencasts, under two minutes each. Press play.
-
-**Distributed task scheduling**: create an HTTP API task, preview a cron or YCRON schedule, run it now, and read the result.
-
-<video src="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.mp4" poster="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.poster.jpg" controls width="100%"></video>
-
-**DAG workflow orchestration**: trigger a `@Dag` and watch it flow node by node across the cluster.
+One walkthrough, end to end. It starts with scheduled tasks, then covers the whole DAG surface: author a `@Dag` on the canvas or as code, generate one from a plain-language prompt, trigger a live run, and follow it node by node across the cluster with per-node detail and run history.
 
 <video src="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.mp4" poster="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/dag-workflows.poster.jpg" controls width="100%"></video>
 
 ## Features
 
-Replacing `@Scheduled` + Quartz + a database + a lock table + a hand-rolled dashboard with two
-dependencies:
+A workflow engine and the distributed runtime under it, in two dependencies, with nothing external to
+provision:
 
 | Capability | What it gives you |
 |------------|-------------------|
+| **DAG orchestration** | `@Dag` graphs with typed channels, branching, joins, subgraphs, and dynamic fan-out, driven node by node across the cluster |
+| **Polyglot nodes** | A node is a Spring `@DagNode` bean, or a shell / Python / Java / SQL script run in a per-run Docker sandbox with CPU, memory, and network limits |
+| **HTTP & cross-app nodes** | A node can call any REST endpoint: upstream output feeds downstream input through typed channels, so one workflow spans many services, in any language |
+| **AI-generated workflows** | Describe a workflow in plain language and an LLM drafts the `@Dag`, on OpenAI or a local Ollama model, yours to review before you run it |
+| **Distributed & HA** | Gossip leader election (via *openspreader*), followers fail over, no run fires twice, none goes missing |
+| **Scales horizontally** | A timing wheel drives large volumes, **group sharding** spreads them across nodes, **weighted dispatch** fans runs out to executors by capacity |
+| **Scheduled triggers** | Fire a workflow or a `@Task` on cron / YCRON / fixed-interval / ISO-8601, with retry back-off, per-run timeout, misfire policy, and repeat / stop-at limits |
 | **Zero external infrastructure** | No separate database, broker, or coordination service: embedded H2 store, self-forming cluster, self-balancing console |
-| **Distributed & HA** | Gossip leader election (via *openspreader*), followers fail over, no cron fires twice, none goes missing |
-| **Stateful & durable** | Schedules + history in a store **auto-detected** from the JDBC URL (in-memory → H2/SQLite → MySQL/PostgreSQL), a restart or failover loses nothing |
-| **Scales horizontally** | A timing wheel drives large task volumes, **group sharding** spreads them across nodes, **weighted dispatch** fans runs out to executors by capacity |
-| **Rich `@Task` model** | cron / YCRON / fixed-interval / ISO-8601 duration, plus retry with back-off, per-run timeout, misfire policy, and repeat / stop-at limits: all declarative |
-| **YCRON** | Year-based schedules ("the 200th day of the year") that no traditional cron field can express |
-| **DAG orchestration** | `@Dag` graphs with typed channels, branching, joins, subgraphs, and dynamic fan-out, driven across the cluster |
-| **Operator console** | Tasks, Executors, Cluster, DAG runs, System Health, and a live Settings view: one endpoint, UTC-first with a per-viewer time-zone toggle |
+| **Stateful & durable** | Definitions, runs + history in a store **auto-detected** from the JDBC URL (in-memory → H2/SQLite → MySQL/PostgreSQL), a restart or failover loses nothing |
+| **Operator console** | Workflows, DAG runs, Tasks, Executors, Cluster, System Health, and a live Settings view: one endpoint, UTC-first with a time-zone toggle and a dark theme |
 
 ## How it works
 
@@ -57,13 +55,13 @@ flowchart LR
     F1 <-->|gossip| F2["scheduler-3<br/>follower"]
   end
   Cluster --> Store[("store<br/>H2 · MySQL · PostgreSQL")]
-  L -->|"dispatch when due"| E1["executor<br/>@Task / @Dag beans"]
+  L -->|"dispatch nodes"| E1["executor<br/>@DagNode / @Task beans + scripts"]
   L --> E2["executor"]
   E1 -.->|register + heartbeat| L
 ```
 
-- The **scheduler** owns time: it parses schedules, keeps the next-fire wheel, and dispatches due runs. The **leader** dispatches, **followers** take over on failure.
-- An **executor** is your app: it registers `@Task` / `@Dag` beans on boot and runs them on callback. HTTP-API tasks run on the scheduler itself, with no executor.
+- The **cluster** owns your workflows and schedules: it drives each DAG node by node and keeps the next-fire wheel for scheduled triggers. The **leader** drives and dispatches, **followers** take over on failure.
+- An **executor** is your app: it registers `@DagNode` / `@Task` beans on boot and runs bean and script nodes on callback. HTTP nodes and HTTP-API tasks run on the scheduler itself, with no executor.
 
 Deeper dive, with diagrams: [`docs/architecture.md`](docs/architecture.md).
 

@@ -65,6 +65,12 @@ public class TaskTables {
     public static final Field<String> APPLICATION =
             DSL.field(DSL.unquotedName("application"), SQLDataType.VARCHAR);
     public static final Field<String> URL = DSL.field(DSL.unquotedName("url"), SQLDataType.VARCHAR);
+    public static final Field<String> LANGUAGE =
+            DSL.field(DSL.unquotedName("language"), SQLDataType.VARCHAR);
+    public static final Field<String> SCRIPT =
+            DSL.field(DSL.unquotedName("script"), SQLDataType.CLOB);
+    public static final Field<String> DATASOURCE =
+            DSL.field(DSL.unquotedName("datasource"), SQLDataType.VARCHAR);
     public static final Field<String> DESCRIPTION =
             DSL.field(DSL.unquotedName("description"), SQLDataType.VARCHAR);
     public static final Field<String> INITIAL_PARAMETER =
@@ -157,10 +163,10 @@ public class TaskTables {
      */
     public Field<?>[] detailFields() {
         return new Field<?>[] {TASK_GROUP, TASK_NAME, TASK_CLASS, TASK_METHOD, BEAN_NAME, APPLICATION,
-                URL, DESCRIPTION, INITIAL_PARAMETER, CRON_EXPRESSION, CRON, NEXT_FIRED_DATETIME,
-                PREV_FIRED_DATETIME, TASK_STATUS, MISFIRE_POLICY, MAX_RETRY_COUNT, RETRY_INTERVAL,
-                TIMEOUT, REPEAT_COUNT, STOP_AT, RUN_COUNT, FAILURE_COUNT, MISFIRE_COUNT,
-                LAST_MODIFIED};
+                URL, LANGUAGE, SCRIPT, DATASOURCE, DESCRIPTION, INITIAL_PARAMETER, CRON_EXPRESSION,
+                CRON, NEXT_FIRED_DATETIME, PREV_FIRED_DATETIME, TASK_STATUS, MISFIRE_POLICY,
+                MAX_RETRY_COUNT, RETRY_INTERVAL, TIMEOUT, REPEAT_COUNT, STOP_AT, RUN_COUNT,
+                FAILURE_COUNT, MISFIRE_COUNT, LAST_MODIFIED};
     }
 
     /**
