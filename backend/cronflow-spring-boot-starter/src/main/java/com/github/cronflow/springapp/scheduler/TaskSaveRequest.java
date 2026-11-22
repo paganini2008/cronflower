@@ -36,7 +36,18 @@ public record TaskSaveRequest(String taskGroup, String taskName, String taskType
         String beanName, String methodName, String initialParameter, String url, String httpMethod,
         String httpHeaders, String dataType, String cron, String parser, String description,
         long timeout, int maxRetryCount, long retryInterval, String misfirePolicy, int repeatCount,
-        String stopAt) {
+        String stopAt, String language, String script, String datasource) {
+
+    /** Back-compatible constructor for a bean or HTTP task (no script fields). */
+    public TaskSaveRequest(String taskGroup, String taskName, String taskType, String className,
+            String beanName, String methodName, String initialParameter, String url, String httpMethod,
+            String httpHeaders, String dataType, String cron, String parser, String description,
+            long timeout, int maxRetryCount, long retryInterval, String misfirePolicy, int repeatCount,
+            String stopAt) {
+        this(taskGroup, taskName, taskType, className, beanName, methodName, initialParameter, url,
+                httpMethod, httpHeaders, dataType, cron, parser, description, timeout, maxRetryCount,
+                retryInterval, misfirePolicy, repeatCount, stopAt, null, null, null);
+    }
 
     /** Whether this describes an HTTP-API task rather than a Spring-bean task. */
     public boolean isHttp() {
@@ -46,11 +57,24 @@ public record TaskSaveRequest(String taskGroup, String taskName, String taskType
         return StringUtils.isNotBlank(url);
     }
 
-    /** Adapt the bean-task fields to the shape the executor dispatch path already understands. */
+    /**
+     * Whether this is a script task: the executor runs a shell/python/sql/java script instead of
+     * invoking a bean. A script task carries inline source plus a language, not a bean+method.
+     */
+    public boolean isScript() {
+        if (StringUtils.isNotBlank(taskType)) {
+            return "SCRIPT".equalsIgnoreCase(taskType);
+        }
+        return StringUtils.isNotBlank(language) && StringUtils.isNotBlank(script);
+    }
+
+    /** Adapt the task fields to the shape the executor dispatch path already understands. A script task
+     *  carries language/script/datasource instead of a bean+method. */
     public ExecutorTaskMetadata toExecutorMetadata() {
         // repeatCount <= 0 means unlimited; a blank stopAt means no deadline.
         return new ExecutorTaskMetadata(taskGroup, taskName, className, beanName, methodName, cron,
                 parser, description, initialParameter, timeout, maxRetryCount, retryInterval,
-                misfirePolicy, repeatCount, StringUtils.isNotBlank(stopAt) ? stopAt.trim() : null);
+                misfirePolicy, repeatCount, StringUtils.isNotBlank(stopAt) ? stopAt.trim() : null,
+                language, script, datasource);
     }
 }

@@ -35,7 +35,7 @@ interface Row {
         </div>
       </div>
 
-      <h2 class="sub-head">Nodes <span class="muted">· live JVM memory per scheduler node</span></h2>
+      <h2 class="sub-head"><mat-icon>dns</mat-icon> Nodes <span class="muted">· live JVM memory per scheduler node</span></h2>
       @if (nodes(); as ns) {
         @if (ns.length === 0) { <p class="muted">No nodes.</p> }
         <div class="grid gap-4 nodes-grid">
@@ -67,7 +67,7 @@ interface Row {
         </div>
       } @else { <p class="muted">Loading node memory…</p> }
 
-      <h2 class="sub-head">Components</h2>
+      <h2 class="sub-head"><mat-icon>widgets</mat-icon> Components</h2>
 
       <div class="grid gap-4 mt-4" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
         @for (c of components(); track c.name) {
@@ -97,9 +97,11 @@ interface Row {
     .overall mat-icon { font-size: 2.5rem; width: 2.5rem; height: 2.5rem; }
     .overall.up { border-left: 5px solid #0f9d58; } .overall.up mat-icon { color: #0f9d58; }
     .overall.down { border-left: 5px solid #d93025; } .overall.down mat-icon { color: #d93025; }
-    .overall-label { color: #3d5372; font-size: 0.85rem; }
+    .overall-label { color: var(--muted-foreground); font-size: 0.85rem; }
     .overall-status { font-size: 1.6rem; font-weight: 700; color: #0f2c4d; }
-    .sub-head { font-size: 1rem; font-weight: 600; color: #0f2c4d; margin: 1.5rem 0 0.75rem; }
+    .sub-head { font-size: 1rem; font-weight: 600; color: var(--cf-ink); margin: 1.5rem 0 0.75rem;
+      display: flex; align-items: center; gap: 0.4rem; }
+    .sub-head mat-icon { font-size: 20px; width: 20px; height: 20px; color: var(--primary); }
     .nodes-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
     .node-card.down { border-left: 4px solid #d93025; }
     .node-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
@@ -112,14 +114,14 @@ interface Row {
     .mem-fill { display: block; height: 100%; background: #1565c0; border-radius: 999px; transition: width .4s; }
     .mem-fill.hot { background: #d93025; }
     .mem-text { font-size: 0.78rem; margin-top: 0.4rem; }
-    .mem-pct { font-weight: 600; color: #3d5372; }
+    .mem-pct { font-weight: 600; color: var(--muted-foreground); }
     .down-text { font-size: 0.78rem; margin-top: 0.4rem; color: #d93025; }
     .comp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
     .comp-name { font-weight: 600; color: #0f2c4d; }
     /* Scalar rows keep key and value close together (capped width) so a wide card never flings the
        value to a far-off right edge; only JSON blocks (.pre-row) span the full card width. */
     .meta > div { display: flex; justify-content: space-between; gap: 1rem; padding: 0.25rem 0; border-bottom: 1px dashed #eef2f7; max-width: 560px; }
-    .meta dt { color: #3d5372; font-size: 0.8rem; flex: 0 0 auto; } .meta dd { margin: 0; text-align: right; word-break: break-word; min-width: 0; }
+    .meta dt { color: var(--muted-foreground); font-size: 0.8rem; flex: 0 0 auto; } .meta dd { margin: 0; text-align: right; word-break: break-word; min-width: 0; }
     /* A card holding a JSON block spans the full grid width and lets the block scroll within bounds. */
     .card.wide { grid-column: 1 / -1; }
     .meta .pre-row { display: block; max-width: none; padding: 0.35rem 0; border-bottom: 1px dashed #eef2f7; }

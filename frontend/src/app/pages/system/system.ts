@@ -30,12 +30,12 @@ import { MatIconModule } from '@angular/material/icon';
   styles: [`
     .page-title { margin: 0; }
     .page-sub { margin: 0.15rem 0 1rem; }
-    .tabs { display: flex; gap: 0.3rem; border-bottom: 1px solid #e3eaf3; margin-bottom: 1.25rem; }
+    .tabs { display: flex; gap: 0.3rem; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem; }
     .tabs a { display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none;
-      color: #3d5372; font-weight: 600; font-size: 0.9rem; padding: 0.6rem 0.9rem; border-bottom: 2px solid transparent;
-      margin-bottom: -1px; }
-    .tabs a:hover { color: #0f2c4d; }
-    .tabs a.on { color: #1565c0; border-bottom-color: #1565c0; }
+      color: var(--muted-foreground); font-weight: 600; font-size: 0.9rem; padding: 0.6rem 0.9rem;
+      border-bottom: 2px solid transparent; margin-bottom: -1px; }
+    .tabs a:hover { color: var(--foreground); }
+    .tabs a.on { color: var(--primary); border-bottom-color: var(--primary); }
     .tabs mat-icon { font-size: 20px; width: 20px; height: 20px; }
     /* The child pages render their own titles; keep them but tighten the top gap under the tabs. */
     .tab-body :first-child ::ng-deep .page-title { font-size: 1.15rem; }

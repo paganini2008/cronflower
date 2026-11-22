@@ -27,5 +27,5 @@ package com.github.cronflow.springapp.scheduler;
  */
 public record RunRequest(String executionId, String taskGroup, String taskName, String className,
         String beanName, String methodName, String initialParameter, int attempt, long timeout,
-        String schedulerRepr) {
+        String schedulerRepr, String language, String script, String datasource) {
 }

@@ -41,6 +41,9 @@ import static com.github.cronflow.springapp.jooq.TaskTables.SCHEDULER_REPR;
 import static com.github.cronflow.springapp.jooq.TaskTables.EXECUTOR_REPR;
 import static com.github.cronflow.springapp.jooq.TaskTables.SUCCESS;
 import static com.github.cronflow.springapp.jooq.TaskTables.APPLICATION;
+import static com.github.cronflow.springapp.jooq.TaskTables.LANGUAGE;
+import static com.github.cronflow.springapp.jooq.TaskTables.SCRIPT;
+import static com.github.cronflow.springapp.jooq.TaskTables.DATASOURCE;
 import static com.github.cronflow.springapp.jooq.TaskTables.BEAN_NAME;
 import static com.github.cronflow.springapp.jooq.TaskTables.TASK_CLASS;
 import static com.github.cronflow.springapp.jooq.TaskTables.TASK_GROUP;
@@ -78,6 +81,7 @@ import org.slf4j.LoggerFactory;
 import com.github.cronsmith.cron.CronExpression;
 import com.github.cronflow.springapp.scheduler.ApiCallTask;
 import com.github.cronflow.springapp.scheduler.BeanReflectionTask;
+import com.github.cronflow.springapp.scheduler.HttpDispatchCustomTask;
 import com.github.cronflow.springapp.scheduler.MisfirePolicy;
 import com.github.cronflow.springapp.scheduler.Settings;
 import com.github.cronflow.springapp.scheduler.Task;
@@ -399,12 +403,23 @@ public class JooqTaskManager implements TaskManager {
         if (StringUtils.isBlank(application)) {
             application = taskId.getGroup();
         }
+        // Script-task fields live in the dispatch task's record; persist them to their own columns so
+        // they round-trip and the executor runs the script instead of reflecting a (null) bean.
+        String language = null;
+        String script = null;
+        String datasource = null;
+        if (task instanceof HttpDispatchCustomTask dispatchTask) {
+            language = dispatchTask.getLanguage();
+            script = dispatchTask.getScript();
+            datasource = dispatchTask.getDatasource();
+        }
         try {
             // Re-saving is a re-registration: the definition is refreshed and the task drops back
             // to standby with no fire times, but its counters are history and are left alone.
             int updated = dsl.update(tables.taskDetail()).set(TASK_CLASS, taskClass)
                     .set(TASK_METHOD, taskMethod).set(BEAN_NAME, beanName)
                     .set(APPLICATION, application).set(URL, url)
+                    .set(LANGUAGE, language).set(SCRIPT, script).set(DATASOURCE, datasource)
                     .set(DESCRIPTION, task.getDescription())
                     .set(CRON_EXPRESSION, cronExpression.serialize())
                     .set(CRON, cronExpression.toString()).set(INITIAL_PARAMETER, parameter)
@@ -421,6 +436,7 @@ public class JooqTaskManager implements TaskManager {
                         .set(TASK_NAME, taskId.getName()).set(TASK_CLASS, taskClass)
                         .set(TASK_METHOD, taskMethod).set(BEAN_NAME, beanName)
                         .set(APPLICATION, application).set(URL, url)
+                        .set(LANGUAGE, language).set(SCRIPT, script).set(DATASOURCE, datasource)
                         .set(DESCRIPTION, task.getDescription())
                         .set(CRON_EXPRESSION, cronExpression.serialize())
                         .set(CRON, cronExpression.toString()).set(INITIAL_PARAMETER, parameter)

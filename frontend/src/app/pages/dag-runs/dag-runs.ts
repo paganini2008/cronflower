@@ -109,7 +109,7 @@ import { dagStatusClass, fmt } from '../../core/util';
     .clickable:hover { background: var(--cf-blue-light); }
     .sub-tag { margin-left: 0.5rem; font-size: 0.68rem; font-weight: 600; color: #7e57c2;
       background: #f3ecfb; border-radius: 999px; padding: 0.05rem 0.45rem; }
-    .empty { padding: 2.5rem; text-align: center; color: #3d5372; }
+    .empty { padding: 2.5rem; text-align: center; color: var(--muted-foreground); }
     .empty mat-icon { font-size: 2.5rem; width: 2.5rem; height: 2.5rem; }
   `],
 })

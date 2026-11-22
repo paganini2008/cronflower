@@ -59,6 +59,7 @@ import com.github.cronflow.springapp.jooq.JooqDagRunLog;
 import com.github.cronflow.springapp.jooq.JooqDagStore;
 import com.github.cronflow.springapp.web.DagRegistrationController;
 import com.github.cronflow.springapp.web.DagQueryController;
+import com.github.cronflow.springapp.ai.AiDagController;
 import com.github.cronflow.springapp.web.DagTriggerController;
 import com.github.cronflow.springapp.web.DagAuthoringController;
 import com.github.cronflow.springapp.scheduler.SchedulerLifecycle;
@@ -181,8 +182,8 @@ public class CronflowServerAutoConfiguration {
     /** The one node bean the openspreader engine dispatches for every cronflow node (HTTP → executor). */
     @Bean(name = "cronflowNode")
     @ConditionalOnMissingBean(name = "cronflowNode")
-    public CronflowNode cronflowNode(DagNodeDispatcher dispatcher) {
-        return new CronflowNode(dispatcher);
+    public CronflowNode cronflowNode(DagNodeDispatcher dispatcher, DagExecutorRegistry registry) {
+        return new CronflowNode(dispatcher, registry);
     }
 
     /** The node bean for a {@code @DagNode(subgraph=...)} — runs the nested graph on the engine. Depends
@@ -301,7 +302,7 @@ public class CronflowServerAutoConfiguration {
     /** The DAG (workflow) REST controllers, scoped for the API-prefix path matcher. */
     private static final Set<Class<?>> DAG_CONTROLLERS = Set.of(DagAuthoringController.class,
             DagQueryController.class, DagRegistrationController.class, DagTriggerController.class,
-            CronflowNodeHealthController.class);
+            CronflowNodeHealthController.class, AiDagController.class);
 
     /** Applies the DAG API prefix to the DAG controllers only (never the scheduler's paths). Scheduler
      *  and DAG controllers share one package, so this scopes by controller class, not package. */

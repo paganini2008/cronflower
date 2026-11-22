@@ -41,7 +41,7 @@ public record TaskDetailView(String taskGroup, String taskName, String taskType,
         String status, LocalDateTime nextFiredDateTime, LocalDateTime previousFiredDateTime,
         LocalDateTime lastModified, long runCount, long failureCount, long misfireCount, long timeout,
         int maxRetryCount, long retryInterval, String misfirePolicy, int repeatCount,
-        LocalDateTime stopAt) {
+        LocalDateTime stopAt, String language, String script, String datasource) {
 
     public static TaskDetailView of(TaskDetail detail) {
         TaskId id = detail.getTaskId();
@@ -53,6 +53,9 @@ public record TaskDetailView(String taskGroup, String taskName, String taskType,
         String url = null;
         String httpMethod = null;
         String httpHeaders = null;
+        String language = null;
+        String script = null;
+        String datasource = null;
         String cron = null;
         String parser = "cron";
         String description = null;
@@ -77,6 +80,16 @@ public record TaskDetailView(String taskGroup, String taskName, String taskType,
             if (task instanceof HttpDispatchCustomTask dispatch) {
                 beanName = dispatch.getBeanName();
                 application = dispatch.getApplication();
+                language = dispatch.getLanguage();
+                script = dispatch.getScript();
+                datasource = dispatch.getDatasource();
+                // A script task is a dispatch task that carries a language and inline source; surface
+                // it as its own kind so the console shows the editor instead of bean/method fields.
+                if (language != null && !language.isBlank()) {
+                    taskType = "SCRIPT";
+                    className = null;
+                    methodName = null;
+                }
             }
             if (task != null) {
                 description = task.getDescription();
@@ -101,7 +114,7 @@ public record TaskDetailView(String taskGroup, String taskName, String taskType,
                 initialParameter, status != null ? status.name() : null, detail.getNextFiredDateTime(),
                 detail.getPreviousFiredDateTime(), detail.getLastModified(), detail.getRunCount(),
                 detail.getFailureCount(), detail.getMisfireCount(), timeout, maxRetryCount,
-                retryInterval, misfirePolicy, repeatCount, stopAt);
+                retryInterval, misfirePolicy, repeatCount, stopAt, language, script, datasource);
     }
 
 }

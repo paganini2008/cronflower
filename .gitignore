@@ -45,6 +45,11 @@ tools/video-gen/node_modules/
 # --- Dev notes (kept local, not published) --------------------------------------------------
 **/change_logs/
 
+# --- Local env files (real secrets; the tracked .env.example files document every key) ------
+.env
+**/.env
+!**/.env.example
+
 # --- OS / misc ------------------------------------------------------------------------------
 .DS_Store
 Thumbs.db

@@ -43,26 +43,54 @@ public class DagNodeDispatcher {
 
     private final DagExecutorRegistry registry;
     private final RestClient restClient;
+    private final HttpNodeRunner httpNodeRunner;
 
     public DagNodeDispatcher(DagExecutorRegistry registry, RestClient restClient) {
         this.registry = registry;
         this.restClient = restClient;
+        this.httpNodeRunner = new HttpNodeRunner(restClient);
     }
 
     /** A node dispatch result plus which executor ran it (its node-run URL), for the run log. */
     public record Dispatched(NodeRunResult result, String executor) {}
 
-    /** Run {@code node} of {@code graph} on some live executor hosting it, handing it {@code state}. */
+    /**
+     * Run {@code node} of {@code graph} with {@code state}. An HTTP node is called here on the scheduler
+     * (no executor). A bean/script node is dispatched to an executor — of the node's own
+     * {@code application} when it names one (cross-application), otherwise of the application that owns
+     * the graph.
+     */
     public Dispatched dispatch(String graph, DagDefinition.NodeDef node, Map<String, Object> state) {
-        ExecutorInstance instance = registry.pick(graph).orElseThrow(() -> new IllegalStateException(
-                "No live executor hosts graph '" + graph + "' to run node '" + node.name() + "'"));
+        if (node.isHttp()) {
+            NodeRunResult result = httpNodeRunner.run(node, state);
+            String where = node.endpoint() != null ? node.endpoint().url() : "http";
+            return new Dispatched(result, where);
+        }
+        ExecutorInstance instance = select(graph, node).orElseThrow(() -> new IllegalStateException(
+                routeError(graph, node)));
         NodeRunRequest request = new NodeRunRequest(graph, node.name(), node.beanName(),
-                node.methodName(), state);
+                node.methodName(), state, node.language(), node.script(), node.datasource());
         log.info("cronflow: dispatch {}/{} -> {}", graph, node.name(), instance.runUrl());
         NodeRunResult result = restClient.post().uri(instance.runUrl()).body(request).retrieve()
                 .body(NodeRunResult.class);
         return new Dispatched(result != null ? result : new NodeRunResult(false, Map.of(),
                 "empty response"), instance.runUrl());
+    }
+
+    /** A node runs on its own application when it names one (cross-app), else on the graph's hosts. */
+    private java.util.Optional<ExecutorInstance> select(String graph, DagDefinition.NodeDef node) {
+        if (node.application() != null && !node.application().isBlank()) {
+            return registry.pickForApplication(node.application());
+        }
+        return registry.pick(graph);
+    }
+
+    private static String routeError(String graph, DagDefinition.NodeDef node) {
+        if (node.application() != null && !node.application().isBlank()) {
+            return "No live executor for application '" + node.application() + "' to run node '"
+                    + node.name() + "'";
+        }
+        return "No live executor hosts graph '" + graph + "' to run node '" + node.name() + "'";
     }
 
 }

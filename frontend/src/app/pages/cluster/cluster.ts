@@ -35,7 +35,7 @@ import { orderedEntries, poll } from '../../core/util';
 
       <div class="grid gap-4" style="grid-template-columns: 1fr;">
         <div class="card overflow-hidden">
-          <div class="card-head">Nodes</div>
+          <div class="card-head"><mat-icon class="db">dns</mat-icon> Nodes</div>
           <div class="table-scroll">
           <table mat-table [dataSource]="c.nodes">
             <ng-container matColumnDef="role">
@@ -76,7 +76,7 @@ import { orderedEntries, poll } from '../../core/util';
     } @else { <p class="muted">Loading…</p> }
   `,
   styles: [`
-    .l { color: #3d5372; font-size: 0.8rem; } .v { font-size: 1.8rem; font-weight: 700; color: #0f2c4d; }
+    .l { color: var(--muted-foreground); font-size: 0.8rem; } .v { font-size: 1.8rem; font-weight: 700; color: #0f2c4d; }
     .v-sm { font-size: 1.05rem; font-weight: 700; color: #0f2c4d; margin-top: 0.25rem; }
     .card-head { padding: 1rem 1.25rem; font-weight: 600; color: #0f2c4d; border-bottom: 1px solid #eef2f7; display: flex; align-items: center; gap: 0.4rem; }
     .db { color: #1565c0; }
@@ -85,7 +85,7 @@ import { orderedEntries, poll } from '../../core/util';
     .table-scroll table { min-width: 620px; }
     .table-scroll th, .table-scroll td { white-space: nowrap; }
     .meta div { display: flex; justify-content: space-between; gap: 1rem; padding: 0.4rem 0; border-bottom: 1px dashed #eef2f7; }
-    .meta dt { color: #3d5372; font-size: 0.82rem; } .meta dd { margin: 0; text-align: right; word-break: break-all; }
+    .meta dt { color: var(--muted-foreground); font-size: 0.82rem; } .meta dd { margin: 0; text-align: right; word-break: break-all; }
   `],
 })
 export class Cluster {

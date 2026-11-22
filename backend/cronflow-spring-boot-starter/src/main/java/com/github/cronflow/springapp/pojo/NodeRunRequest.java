@@ -19,7 +19,9 @@ import java.util.Map;
 
 /**
  * Server → executor node dispatch (server-side copy). The coordinator fills in the node's remote bean
- * coordinates from the stored {@link DagDefinition} and the current run state.
+ * coordinates from the stored {@link DagDefinition} and the current run state. For a script node it
+ * also carries {@code language}/{@code script}/{@code datasource}; the executor branches on the
+ * presence of {@code language} to run a script instead of a bean method.
  *
  * @Description: NodeRunRequest
  * @Author: Fred Feng
@@ -27,4 +29,11 @@ import java.util.Map;
  * @Version 1.0.0
  */
 public record NodeRunRequest(String graph, String node, String beanName, String methodName,
-        Map<String, Object> state) {}
+        Map<String, Object> state, String language, String script, String datasource) {
+
+    /** Back-compatible constructor for a bean node (no script fields). */
+    public NodeRunRequest(String graph, String node, String beanName, String methodName,
+            Map<String, Object> state) {
+        this(graph, node, beanName, methodName, state, null, null, null);
+    }
+}

@@ -4,15 +4,12 @@ title: "Cronflower: Turn a Spring Boot app into a distributed cron cluster easil
 
 # Cronflower: Turn a Spring Boot app into a distributed cron cluster easily
 
-**cronflower** is an open-source, distributed cron scheduler for the JVM with a web console. It forms
-its own cluster and needs no external database, broker, or coordinator. This post is the usage tour of
-its distributed **task** scheduling.
+**cronflower** is an open-source, distributed DAG workflow platform for the JVM with a web console. It
+forms its own cluster and needs no external database, broker, or coordinator. Workflows are the headline,
+but every workflow needs a trigger, so this post is the usage tour of its distributed **task** scheduling:
+the cron side that fires tasks and workflows on time.
 
 ![The task list in the console](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/tasks-list.jpg)
-
-<video src="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.mp4" poster="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.poster.jpg" controls width="100%"></video>
-
-*▶ Two-minute screencast.*
 
 ## What problem does it solve?
 

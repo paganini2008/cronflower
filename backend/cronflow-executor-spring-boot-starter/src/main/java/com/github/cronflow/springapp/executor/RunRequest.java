@@ -26,5 +26,11 @@ package com.github.cronflow.springapp.executor;
  */
 public record RunRequest(String executionId, String taskGroup, String taskName, String className,
         String beanName, String methodName, String initialParameter, int attempt, long timeout,
-        String schedulerRepr) {
+        String schedulerRepr, String language, String script, String datasource) {
+
+    /** A bean task has no {@code language}: the executor reflectively invokes the bean method. A script
+     *  (script) task carries a {@code language} and {@code script} and runs via a ScriptRunner instead. */
+    public boolean isScript() {
+        return language != null && !language.isBlank();
+    }
 }

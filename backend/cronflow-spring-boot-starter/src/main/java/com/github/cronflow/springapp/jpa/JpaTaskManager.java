@@ -105,6 +105,17 @@ public class JpaTaskManager implements TaskManager {
         String application =
                 task instanceof HttpDispatchCustomTask ? ((HttpDispatchCustomTask) task).getApplication()
                         : taskId.getGroup();
+        // Script-task fields travel in the dispatch task's record; carry them to their own columns so
+        // they survive the round-trip and the executor can run the script rather than a bean.
+        String language =
+                task instanceof HttpDispatchCustomTask ? ((HttpDispatchCustomTask) task).getLanguage()
+                        : null;
+        String script =
+                task instanceof HttpDispatchCustomTask ? ((HttpDispatchCustomTask) task).getScript()
+                        : null;
+        String datasource =
+                task instanceof HttpDispatchCustomTask ? ((HttpDispatchCustomTask) task).getDatasource()
+                        : null;
         try {
             transactionTemplate.executeWithoutResult(status -> {
                 TaskDetailEntity entity =
@@ -124,6 +135,9 @@ public class JpaTaskManager implements TaskManager {
                 entity.setBeanName(beanName);
                 entity.setApplication(application);
                 entity.setUrl(url);
+                entity.setLanguage(language);
+                entity.setScript(script);
+                entity.setDatasource(datasource);
                 entity.setDescription(task.getDescription());
                 entity.setCronExpression(cronExpression.serialize());
                 entity.setCron(cronExpression.toString());
@@ -477,6 +491,9 @@ public class JpaTaskManager implements TaskManager {
         r.put("beanName", e.getBeanName());
         r.put("application", e.getApplication());
         r.put("url", e.getUrl());
+        r.put("language", e.getLanguage());
+        r.put("script", e.getScript());
+        r.put("datasource", e.getDatasource());
         r.put("description", e.getDescription());
         r.put("initialParameter", e.getInitialParameter());
         r.put("cronExpression", e.getCronExpression());

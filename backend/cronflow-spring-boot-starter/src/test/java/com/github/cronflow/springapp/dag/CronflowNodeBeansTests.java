@@ -29,7 +29,7 @@ class CronflowNodeBeansTests {
         when(dispatcher.dispatch(eq("g"), any(), any())).thenReturn(
                 new DagNodeDispatcher.Dispatched(new NodeRunResult(true, Map.of("out", 1), null),
                         "exec"));
-        CronflowNode node = new CronflowNode(dispatcher);
+        CronflowNode node = new CronflowNode(dispatcher, mock(DagExecutorRegistry.class));
         Map<String, Object> result = node.execute(GraphState.of(Map.of("in", 1)),
                 ctx(Map.of("bean", "b", "method", "m")));
         assertThat(result).containsEntry("out", 1);
@@ -40,7 +40,7 @@ class CronflowNodeBeansTests {
         DagNodeDispatcher dispatcher = mock(DagNodeDispatcher.class);
         when(dispatcher.dispatch(any(), any(), any())).thenReturn(
                 new DagNodeDispatcher.Dispatched(new NodeRunResult(true, null, null), "exec"));
-        CronflowNode node = new CronflowNode(dispatcher);
+        CronflowNode node = new CronflowNode(dispatcher, mock(DagExecutorRegistry.class));
         assertThat(node.execute(GraphState.of(Map.of()), ctx(Map.of("bean", "b", "method", "m"))))
                 .isEmpty();
     }
@@ -51,7 +51,7 @@ class CronflowNodeBeansTests {
         when(dispatcher.dispatch(any(), any(), any())).thenReturn(
                 new DagNodeDispatcher.Dispatched(new NodeRunResult(false, Map.of(), "kaboom"),
                         "exec"));
-        CronflowNode node = new CronflowNode(dispatcher);
+        CronflowNode node = new CronflowNode(dispatcher, mock(DagExecutorRegistry.class));
         assertThatThrownBy(() -> node.execute(GraphState.of(Map.of()),
                 ctx(Map.of("bean", "b", "method", "m"))))
                         .isInstanceOf(IllegalStateException.class).hasMessageContaining("kaboom");
@@ -59,7 +59,8 @@ class CronflowNodeBeansTests {
 
     @Test
     void cronflowNodeWithoutContextThrows() {
-        CronflowNode node = new CronflowNode(mock(DagNodeDispatcher.class));
+        CronflowNode node =
+                new CronflowNode(mock(DagNodeDispatcher.class), mock(DagExecutorRegistry.class));
         assertThatThrownBy(() -> node.execute(GraphState.of(Map.of())))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("NodeContext");
     }

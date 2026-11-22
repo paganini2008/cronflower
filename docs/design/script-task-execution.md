@@ -1,4 +1,4 @@
-# Cronflower Glue: Containerized Multi-Language Script Tasks and DAG Nodes
+# Cronflower Scripting: Containerized Multi-Language Script Tasks and DAG Nodes
 
 Status: Draft for review. Owner: Fred Feng. Date: 2026-10-25.
 Scope: an enterprise design (not an MVP). The target architecture runs user-authored scripts
@@ -9,13 +9,12 @@ isolated containers, with streamed results and interactive debugging.
 
 ## 1. Goal and scope
 
-Add a **Glue** capability so an operator can, from the console, write a script in shell, python, java,
+Add a **Scripting** capability so an operator can, from the console, write a script in shell, python, java,
 or sql, save it as a versioned Task or DAG node, schedule or trigger it like any other task, run it in an
 isolated container on an executor, and watch the output, exit status, and (for python and java) step
-through it with a real debugger.
+through it with a real debugger. We call these **script tasks** and **script nodes**.
 
-The name follows the industry convention: XXL-JOB calls this GLUE mode, and AWS Glue popularized the term
-for script-driven data work.
+The name is deliberately plain: a task or node whose body is a script, named for exactly that.
 
 ### In scope
 - New Task type **SCRIPT** and new DAG node type **script**, each carrying a language and source code.
@@ -26,10 +25,10 @@ for script-driven data work.
 - Security: role-based access, sandboxing, network controls, secret injection, audit.
 
 ### Non-goals (v1 target)
-- A general in-browser IDE with multi-file projects. Glue is single-script per task or node.
-- Running Spark or heavy distributed compute. Glue runs process-level scripts. Spark-style work stays a
+- A general in-browser IDE with multi-file projects. Script is single-script per task or node.
+- Running Spark or heavy distributed compute. Script runs process-level scripts. Spark-style work stays a
   future node type.
-- Replacing the existing `@Task` bean and HTTP-API task types. Glue is additive.
+- Replacing the existing `@Task` bean and HTTP-API task types. Script is additive.
 
 ---
 
@@ -40,7 +39,7 @@ for script-driven data work.
 | Script Task | A scheduler Task whose body is a script (language + source), run via a runner. |
 | Script Node | A DAG node whose body is a script instead of a `@DagNode` bean method. |
 | Runner | The executor component that executes one script run in an isolated unit. |
-| Runtime image | A per-language container image carrying the interpreter plus the Glue entrypoint. |
+| Runtime image | A per-language container image carrying the interpreter plus the Script entrypoint. |
 | Sandbox | The isolation boundary around a run: runc, gVisor, Kata, or a Firecracker microVM. |
 | Session | A long-lived interactive run for debugging or REPL, as opposed to a one-shot run. |
 | Datasource | A named, pre-registered database connection that sql scripts run against. |
@@ -49,7 +48,7 @@ for script-driven data work.
 
 ## 3. How it fits the current architecture
 
-Glue reuses the existing control plane. The scheduler still owns schedules and dispatch. The executor is
+Script reuses the existing control plane. The scheduler still owns schedules and dispatch. The executor is
 extended from a bean and DAG-node runner into a **script runner**. Nothing in the scheduling, clustering,
 retry, or dispatch model changes.
 
@@ -66,7 +65,7 @@ retry, or dispatch model changes.
 
 Integration points that already exist and are reused:
 
-| Existing piece | Reuse for Glue |
+| Existing piece | Reuse for Script |
 |----------------|----------------|
 | `taskType` on the task model (today: bean, HTTP) | add `SCRIPT` |
 | Task dispatch over `POST /cronflow/executor/run` (RunRequest) | carry script payload for script tasks |
@@ -124,15 +123,15 @@ save script (new version) -> schedule or trigger -> scheduler routes to an execu
   -> ScriptRunner.start(spec):
        select runtime image for language
        create container or Job with:
-         command   = Glue entrypoint for the language
-         mounts    = /glue/script.<ext>, /glue/input.json, /glue/secrets/*
-         env       = GLUE_* run context (scrubbed), no inline secrets
+         command   = Script entrypoint for the language
+         mounts    = /script/script.<ext>, /script/input.json, /script/secrets/*
+         env       = SCRIPT_* run context (scrubbed), no inline secrets
          limits    = cpu, memory, pids, wall-time, max output bytes
-         fs        = read-only rootfs + a writable /glue/work tmpfs
+         fs        = read-only rootfs + a writable /script/work tmpfs
          net       = none, or an egress allowlist (NetworkPolicy)
          security  = drop all caps, no-new-privileges, non-root uid, seccomp, runtimeClass
        start -> stream stdout and stderr -> process exits
-  -> collect exit code + /glue/result.json + resource usage
+  -> collect exit code + /script/result.json + resource usage
   -> map: exit 0 = success, non-zero = failure, wall-time exceeded = timeout, OOM = failure
   -> store stdout, stderr, exit code in the execution log (size-capped, overflow to object store)
   -> for a DAG node: parse result channels and write them into DagState
@@ -144,14 +143,14 @@ save script (new version) -> schedule or trigger -> scheduler routes to an execu
 A stable contract decouples the script from the platform. Everything a script needs is a file or an env
 variable. Everything a script returns is a file or stdout.
 
-Inputs, mounted at `/glue`:
+Inputs, mounted at `/script`:
 
 | Path or var | Content |
 |-------------|---------|
-| `/glue/script.<ext>` | the script source |
-| `/glue/input.json` | `{ context, params, channels }`: run id, task group and name, attempt, the task parameter, and (for DAG nodes) the inbound channel state |
-| `/glue/secrets/<name>` | each referenced named credential, as a file (never an env value) |
-| env `GLUE_RUN_ID`, `GLUE_TASK`, `GLUE_ATTEMPT`, `GLUE_DEADLINE_MS` | run context mirror for convenience |
+| `/script/script.<ext>` | the script source |
+| `/script/input.json` | `{ context, params, channels }`: run id, task group and name, attempt, the task parameter, and (for DAG nodes) the inbound channel state |
+| `/script/secrets/<name>` | each referenced named credential, as a file (never an env value) |
+| env `SCRIPT_RUN_ID`, `SCRIPT_TASK`, `SCRIPT_ATTEMPT`, `SCRIPT_DEADLINE_MS` | run context mirror for convenience |
 
 Outputs:
 
@@ -159,24 +158,24 @@ Outputs:
 |----------------|---------|
 | stdout, stderr | streamed live, stored capped |
 | exit code | 0 success, non-zero failure |
-| `/glue/result.json` (optional) | structured result. For a task: `{ "result": <any> }` feeds the task result and any SpEL parameter template. For a DAG node: `{ "channels": { name: value } }` writes outbound channels |
+| `/script/result.json` (optional) | structured result. For a task: `{ "result": <any> }` feeds the task result and any SpEL parameter template. For a DAG node: `{ "channels": { name: value } }` writes outbound channels |
 
-If `/glue/result.json` is absent, the task result is the last non-empty stdout line, matching the common
+If `/script/result.json` is absent, the task result is the last non-empty stdout line, matching the common
 scheduler convention.
 
 ---
 
 ## 5. Language runtimes
 
-Each language is one maintained base image plus the Glue entrypoint. Images are versioned, signed, and
+Each language is one maintained base image plus the Script entrypoint. Images are versioned, signed, and
 scanned.
 
 | Language | Base image | How a run executes | Structured result | Interactive debug |
 |----------|-----------|--------------------|-------------------|-------------------|
-| **shell** | `glue-shell` (debian-slim + bash + coreutils + curl + db clients) | `bash /glue/script.sh`, input.json plus env, stdin available | result.json or last stdout line | tier 1 only (run and inspect) |
-| **python** | `glue-python:3.x` (slim + pip allowlist + debugpy) | `python /glue/script.py`, reads input.json | result.json | tier 2 via debugpy over DAP |
-| **java** | `glue-java:21` (JDK) | single-file `java /glue/script.java`, or compile and run a known entrypoint. JShell for REPL sessions | result.json | tier 2 via JDWP and the java-debug adapter |
-| **sql** | `glue-sql` (JDBC drivers) or in-executor JDBC | connect to a named datasource, run statements, page results | rows as JSON, or update counts | tier 1 only |
+| **shell** | `script-shell` (debian-slim + bash + coreutils + curl + db clients) | `bash /script/script.sh`, input.json plus env, stdin available | result.json or last stdout line | tier 1 only (run and inspect) |
+| **python** | `script-python:3.x` (slim + pip allowlist + debugpy) | `python /script/script.py`, reads input.json | result.json | tier 2 via debugpy over DAP |
+| **java** | `script-java:21` (JDK) | single-file `java /script/script.java`, or compile and run a known entrypoint. JShell for REPL sessions | result.json | tier 2 via JDWP and the java-debug adapter |
+| **sql** | `script-sql` (JDBC drivers) or in-executor JDBC | connect to a named datasource, run statements, page results | rows as JSON, or update counts | tier 1 only |
 
 Notes.
 - shell and sql are the lowest-risk and ship first in the rollout, but all four are part of the target.
@@ -189,7 +188,7 @@ Notes.
 ## 6. Script authoring and versioning
 
 Every save creates a new immutable **version** with author, timestamp, and a message. A run pins the exact
-version it executed, so history is reproducible. This matches XXL-JOB GLUE history and a git-like model.
+version it executed, so history is reproducible, a git-like model.
 
 | Field | Notes |
 |-------|-------|
@@ -231,9 +230,9 @@ container with only the JDBC drivers and no host access.
 | Execution log (`cs_task_log`) | add `exit_code`, `stdout_ref`, `stderr_ref` (inline if small, else object-store reference) |
 | DAG definition (`cf_task_dag` JSON) | a node gains optional `language`, `script` or `scriptRef`, `runtimeOpts` |
 | DAG node log (`cf_dag_node_log`) | add `exit_code`, `stdout_ref`, `stderr_ref` |
-| New: script versions | `glue_script_version(id, owner, language, source_ref, version, author, created, message)` |
-| New: datasource registry | `glue_datasource(name, jdbc_url, driver, credential_ref, read_only, limits)` |
-| New: runtime registry | `glue_runtime(language, image, default_limits, sandbox_class, enabled)` |
+| New: script versions | `script_version(id, owner, language, source_ref, version, author, created, message)` |
+| New: datasource registry | `script_datasource(name, jdbc_url, driver, credential_ref, read_only, limits)` |
+| New: runtime registry | `script_runtime(language, image, default_limits, sandbox_class, enabled)` |
 
 All dialect schema files (`db/cronflow-schema-*.sql`) plus the JPA entities and the jOOQ table constants
 change together, following the pattern already used for the task and DAG tables.
@@ -300,7 +299,7 @@ addition for the two languages where it is standard.
 
 ## 12. Security model
 
-Glue is arbitrary code execution by design. Security is the center of the design, not an add-on.
+Script is arbitrary code execution by design. Security is the center of the design, not an add-on.
 
 | Concern | Control |
 |---------|---------|
@@ -315,7 +314,7 @@ Glue is arbitrary code execution by design. Security is the center of the design
 | Secrets | referenced by name, injected as mounted files, never inline in source, redacted in logs |
 | sql | named datasources only, read-only option, row and time limits |
 | Supply chain | runtime images signed with cosign and scanned with trivy, pinned by digest, an allowlist of images |
-| Enablement | the whole feature is off by default, `cronflow.glue.enabled=false`, opt-in per executor with an allowed-language list |
+| Enablement | the whole feature is off by default, `cronflow.script.enabled=false`, opt-in per executor with an allowed-language list |
 | Audit | an append-only audit log of author and run events, exportable |
 
 ---
@@ -327,7 +326,7 @@ Glue is arbitrary code execution by design. Security is the center of the design
 | Live logs | streamed to the console over SSE during a run |
 | Stored logs | execution log, inline when small, object-store reference when large |
 | Metrics | run count, duration, exit codes, queue depth, cold-start time, sandbox kills, per language and per executor, exposed on the existing Prometheus endpoint |
-| Artifacts | optional files a run writes under `/glue/out` are captured to an object store and linked from the run detail |
+| Artifacts | optional files a run writes under `/script/out` are captured to an object store and linked from the run detail |
 | Run detail | the DAG run and task detail pages gain a Logs and a Result view, reusing the existing viewers |
 
 ---
@@ -349,15 +348,15 @@ Glue is arbitrary code execution by design. Security is the center of the design
 
 | Key | Meaning |
 |-----|---------|
-| `cronflow.glue.enabled` | master switch, default false |
-| `cronflow.glue.runner` | docker or kubernetes |
-| `cronflow.glue.languages` | allowed languages on this executor |
-| `cronflow.glue.images.<lang>` | runtime image by digest |
-| `cronflow.glue.sandbox-class` | runc, gvisor, kata, firecracker |
-| `cronflow.glue.limits.*` | default cpu, memory, pids, wall-time, max output |
-| `cronflow.glue.network` | none or an egress allowlist |
-| `cronflow.glue.max-concurrency` | per-executor cap |
-| `cronflow.glue.datasources.*` | the sql datasource registry, credentials by reference |
+| `cronflow.script.enabled` | master switch, default false |
+| `cronflow.script.runner` | docker or kubernetes |
+| `cronflow.script.languages` | allowed languages on this executor |
+| `cronflow.script.images.<lang>` | runtime image by digest |
+| `cronflow.script.sandbox-class` | runc, gvisor, kata, firecracker |
+| `cronflow.script.limits.*` | default cpu, memory, pids, wall-time, max output |
+| `cronflow.script.network` | none or an egress allowlist |
+| `cronflow.script.max-concurrency` | per-executor cap |
+| `cronflow.script.datasources.*` | the sql datasource registry, credentials by reference |
 
 ---
 
@@ -403,7 +402,7 @@ secure, usable increment. There is no cut-down permanent MVP.
 
 ## Appendix A. Input and output example
 
-`/glue/input.json` handed to a run:
+`/script/input.json` handed to a run:
 
 ```json
 {
@@ -417,10 +416,10 @@ A python Script Node that reads a channel and writes two channels:
 
 ```python
 import json
-data = json.load(open("/glue/input.json"))
+data = json.load(open("/script/input.json"))
 applicant = data["channels"]["input"]
 score = 40
-json.dump({"channels": {"score": score, "factors": "credit"}}, open("/glue/result.json", "w"))
+json.dump({"channels": {"score": score, "factors": "credit"}}, open("/script/result.json", "w"))
 print(f"scored {applicant} = {score}")
 ```
 
@@ -429,9 +428,9 @@ A shell Script Task that calls a public API and returns a result:
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-date=$(python -c 'import json;print(json.load(open("/glue/input.json"))["params"]["date"])')
-curl -s "https://httpbin.org/get?date=$date" | tee /glue/work/out.json
-echo "{\"result\": \"ok\"}" > /glue/result.json
+date=$(python -c 'import json;print(json.load(open("/script/input.json"))["params"]["date"])')
+curl -s "https://httpbin.org/get?date=$date" | tee /script/work/out.json
+echo "{\"result\": \"ok\"}" > /script/result.json
 ```
 
 A sql Script Task against a named datasource (datasource chosen in runtime options):
@@ -444,14 +443,3 @@ where created_at >= :date
 group by status;
 ```
 
-## Appendix B. Comparison to prior art
-
-| System | What it does | What Cronflower borrows |
-|--------|--------------|-------------------------|
-| XXL-JOB GLUE | online editor, versioned code, executor runs shell, python, java-via-groovy | the product shape: online editor plus versioning plus executor run |
-| Apache DolphinScheduler | shell, python, sql task types, tenant isolation, a K8s task | tenant and container isolation, named datasources |
-| Airflow, Argo | DockerOperator and KubernetesPodOperator, Pod per task | the Docker and Kubernetes runner split |
-| AWS Lambda, Fargate | customer code in Firecracker microVMs, warm pools | the microVM hardening option and warm pools |
-| Judge0, Piston | run untrusted code via nsjail and containers | the sandbox and resource-limit discipline |
-| GitHub Codespaces, Gitpod, Theia | Monaco plus LSP plus DAP over WebSocket | the editor, intelligence, and debug stack |
-| Metabase, Redash | sql against registered connections | the datasource registry and credential handling |

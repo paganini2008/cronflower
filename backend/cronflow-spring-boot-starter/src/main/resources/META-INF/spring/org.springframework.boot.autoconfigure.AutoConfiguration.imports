@@ -1,2 +1,3 @@
 com.github.cronflow.springapp.CronflowSchedulerAutoConfiguration
 com.github.cronflow.springapp.CronflowServerAutoConfiguration
+com.github.cronflow.springapp.ai.CronflowAiAutoConfiguration

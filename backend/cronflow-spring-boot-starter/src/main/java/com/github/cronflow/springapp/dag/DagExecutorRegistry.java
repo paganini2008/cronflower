@@ -162,6 +162,18 @@ public class DagExecutorRegistry {
         return true;
     }
 
+    /**
+     * Register a graph definition with no live executor host — for a DAG whose nodes are all HTTP calls
+     * the scheduler makes itself, so there is nothing to dispatch to an executor. The definition is
+     * stored and made triggerable; only bean/script nodes would need {@link #pick}/{@link #register}.
+     */
+    public void registerDefinition(String application, DagDefinition dag) {
+        definitions.put(dag.graph(), dag);
+        applicationByGraph.put(dag.graph(), application);
+        persist(application, dag);
+        log.info("cronflow: registered host-less graph '{}' (application {})", dag.graph(), application);
+    }
+
     private void persist(String application, DagDefinition dag) {
         try {
             dagStore.save(application, dag.graph(), codec.encode(dag, definitionFormat), definitionFormat);
@@ -228,6 +240,23 @@ public class DagExecutorRegistry {
     public Optional<ExecutorInstance> anyLiveInstance(String application) {
         return instances.values().stream()
                 .filter(i -> application.equals(i.application()) && isLive(i)).findFirst();
+    }
+
+    /**
+     * Pick a live executor instance of an application, round-robin — routes a node to an application
+     * other than the one that owns the graph (cross-application orchestration).
+     */
+    public Optional<ExecutorInstance> pickForApplication(String application) {
+        if (application == null || application.isBlank()) {
+            return Optional.empty();
+        }
+        List<ExecutorInstance> live = instances.values().stream()
+                .filter(i -> application.equals(i.application()) && isLive(i))
+                .collect(Collectors.toList());
+        if (live.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(live.get(Math.floorMod(roundRobin.getAndIncrement(), live.size())));
     }
 
     /** Pick a live instance hosting {@code graph}, round-robin. TODO: reuse the scheduler's router. */

@@ -6,10 +6,6 @@ its distributed **task** scheduling.
 
 ![The task list in the console](https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/images/tasks-list.jpg)
 
-<video src="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.mp4" poster="https://raw.githubusercontent.com/paganini2008/cronflower/main/docs/video/distributed-tasks.poster.jpg" controls width="100%"></video>
-
-*▶ Two-minute screencast.*
-
 ## What problem does it solve?
 
 `@Scheduled` runs in one JVM, so the moment you scale to two instances the job fires twice. It has no

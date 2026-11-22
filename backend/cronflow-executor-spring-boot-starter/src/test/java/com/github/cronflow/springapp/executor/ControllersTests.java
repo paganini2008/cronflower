@@ -21,7 +21,7 @@ class ControllersTests {
         AtomicReference<RunRequest> seen = new AtomicReference<>();
         CronflowExecutorController controller = new CronflowExecutorController(seen::set);
         RunRequest request =
-                new RunRequest("e", "g", "t", "C", "b", "m", null, 0, -1L, null);
+                new RunRequest("e", "g", "t", "C", "b", "m", null, 0, -1L, null, null, null, null);
 
         ResponseEntity<Void> response = controller.run(request);
 

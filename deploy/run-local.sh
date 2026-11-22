@@ -68,6 +68,7 @@ launch_scheduler() {
     --spring.spreader.port="$SPREADER_PORT" \
     --spring.spreader.ip-addresses=127.0.0.1 \
     --spring.config.additional-location="file:$CONF/server.properties" \
+    --spring.config.import="optional:file:$ROOT/backend/.env[.properties]" \
     $(scheduler_ds_args "$i") \
     >"$LOGS/scheduler-$i.log" 2>&1 &
   echo $! >"$RUN/scheduler-$i.pid"

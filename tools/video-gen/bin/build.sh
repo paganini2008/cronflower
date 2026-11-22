@@ -13,7 +13,7 @@ cd "$here"
 
 flows=()
 for a in "$@"; do [ -n "$a" ] && flows+=("$a"); done   # drop empty args (e.g. a blank -Dvideo.flows)
-[ ${#flows[@]} -eq 0 ] && flows=(distributed-tasks dag-workflows)
+[ ${#flows[@]} -eq 0 ] && flows=(dag-workflows)
 
 # 1. BGM, generated once and reused.
 if [ ! -f assets/bgm.mp3 ]; then

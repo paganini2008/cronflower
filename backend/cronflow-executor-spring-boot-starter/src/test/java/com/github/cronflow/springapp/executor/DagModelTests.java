@@ -52,7 +52,7 @@ class DagModelTests {
         DagHeartbeatRequest hb = new DagHeartbeatRequest("app", "i", "run", "health", 1);
         assertThat(hb.runUrl()).isEqualTo("run");
         assertThat(new DagHeartbeatResponse(true).known()).isTrue();
-        NodeRunRequest nr = new NodeRunRequest("g", "n", "b", "m", Map.of("k", "v"));
+        NodeRunRequest nr = new NodeRunRequest("g", "n", "b", "m", Map.of("k", "v"), null, null, null);
         assertThat(nr.state()).containsEntry("k", "v");
         NodeRunResult ok = NodeRunResult.success(Map.of("o", 1));
         assertThat(ok.ok()).isTrue();

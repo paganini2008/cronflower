@@ -65,6 +65,18 @@ public class TaskDetailEntity {
     @Column(name = "url", length = 1024)
     private String url;
 
+    // Script-task fields: a script task carries a language and inline source instead of a bean+method.
+    // Nullable so a bean/HTTP task, and rows written before these columns existed, read back as null.
+    @Column(name = "language", length = 32)
+    private String language;
+
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "script")
+    private String script;
+
+    @Column(name = "datasource", length = 255)
+    private String datasource;
+
     @Column(name = "description", length = 1024)
     private String description;
 

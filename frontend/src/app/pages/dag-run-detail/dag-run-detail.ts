@@ -188,34 +188,34 @@ import { TextViewerDialog } from '../../shared/text-viewer-dialog';
     .parent { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.8rem; color: #0891a5;
       text-decoration: none; }
     .parent mat-icon { font-size: 18px; width: 18px; height: 18px; }
-    .run-id { color: #3d5372; margin: 0 0 1.1rem 2.6rem; font-size: 0.8rem; }
+    .run-id { color: var(--muted-foreground); margin: 0 0 1.1rem 2.6rem; font-size: 0.8rem; }
     .grid { display: grid; grid-template-columns: 1fr 320px; gap: 1.25rem; align-items: start; }
     @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
     .graph-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; min-height: 460px; }
     .graph { height: 56vh; }
     .node-panel { border-top: 1px solid #eef2f7; padding: 0.8rem 1rem; }
     .np-head { display: flex; align-items: center; gap: 0.6rem; }
-    .np-meta { font-size: 0.78rem; color: #3d5372; }
+    .np-meta { font-size: 0.78rem; color: var(--muted-foreground); }
     .np-row { display: flex; gap: 0.6rem; margin-top: 0.5rem; font-size: 0.82rem; }
-    .np-row .k { color: #3d5372; min-width: 68px; }
+    .np-row .k { color: var(--muted-foreground); min-width: 68px; }
     .np-row .v { word-break: break-all; }
     .call { color: #0f2c4d; font-weight: 600; }
-    .call .sep { color: #38bdf8; margin: 0 1px; } .call .paren { color: #3d5372; }
-    .call-cell { color: #3d5372; font-size: 0.8rem; }
+    .call .sep { color: #38bdf8; margin: 0 1px; } .call .paren { color: var(--muted-foreground); }
+    .call-cell { color: var(--muted-foreground); font-size: 0.8rem; }
     .np-actions { display: flex; gap: 0.5rem; margin-top: 0.7rem; flex-wrap: wrap; }
-    .hint { border-top: 1px solid #eef2f7; padding: 0.8rem 1rem; color: #3d5372; font-size: 0.83rem;
+    .hint { border-top: 1px solid #eef2f7; padding: 0.8rem 1rem; color: var(--muted-foreground); font-size: 0.83rem;
       display: flex; align-items: center; gap: 0.4rem; }
     .side { display: flex; flex-direction: column; gap: 1.25rem; }
     .sum { padding: 1rem 1.1rem; }
     .sum h3 { margin: 0 0 0.7rem; font-size: 0.95rem; color: #0f2c4d; }
     .sum dl { margin: 0; display: flex; flex-direction: column; gap: 0.45rem; }
     .sum dl > div { display: flex; justify-content: space-between; gap: 0.8rem; font-size: 0.83rem; }
-    .sum dt { color: #3d5372; } .sum dd { margin: 0; text-align: right; word-break: break-all; }
+    .sum dt { color: var(--muted-foreground); } .sum dd { margin: 0; text-align: right; word-break: break-all; }
     .sum-actions { display: flex; gap: 0.5rem; margin-top: 0.9rem; flex-wrap: wrap; }
     .child { display: flex; align-items: center; gap: 0.55rem; text-decoration: none; color: inherit;
       padding: 0.4rem 0.2rem; border-radius: 8px; }
     .child:hover { background: #f6f9fd; }
-    .c-graph { font-weight: 600; font-size: 0.85rem; } .c-id { color: #3d5372; margin-left: auto; }
+    .c-graph { font-weight: 600; font-size: 0.85rem; } .c-id { color: var(--muted-foreground); margin-left: auto; }
     .nodes { margin-top: 1.25rem; }
     .nodes-head { padding: 0.8rem 1.1rem; font-weight: 650; color: #0f2c4d; border-bottom: 1px solid #eef2f7; }
     .nodes-scroll { overflow-x: auto; }
@@ -223,11 +223,11 @@ import { TextViewerDialog } from '../../shared/text-viewer-dialog';
     .nodes-scroll th, .nodes-scroll td { white-space: nowrap; }
     .ok-i { color: #1565c0; }
     .bad-i { color: #d93025; }
-    .ran-on { display: inline-flex; align-items: center; gap: 0.3rem; color: #3d5372; font-size: 0.82rem; white-space: nowrap; }
+    .ran-on { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--muted-foreground); font-size: 0.82rem; white-space: nowrap; }
     .ran-on mat-icon { font-size: 16px; width: 16px; height: 16px; color: #1565c0; }
     .linkish { background: 0; border: 0; padding: 0; color: #1565c0; font-weight: 600; cursor: pointer; font: inherit; }
     tr.hl { background: #fff7e6; }
-    .empty { padding: 2.5rem; text-align: center; color: #3d5372; }
+    .empty { padding: 2.5rem; text-align: center; color: var(--muted-foreground); }
     .empty mat-icon { font-size: 2.5rem; width: 2.5rem; height: 2.5rem; }
   `],
 })

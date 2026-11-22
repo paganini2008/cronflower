@@ -52,25 +52,26 @@ body {
 /* You can add global styles to this file, and also import other style files */
 
 :root {
-  --cf-blue: #1565c0;
-  --cf-blue-light: #e8f1fd;
-  /* Design tokens shared across pages */
-  --cf-ink: #0f2c4d;          /* headings */
-  --cf-ink-2: #3d5372;        /* body strong */
-  --cf-muted: #3d5372;        /* secondary text — kept dark for readability (no light gray) */
-  /* Darken Material's default gray secondary text (hints, labels, paginator, options, etc.). */
-  --mat-sys-on-surface-variant: #3d5372;
-  --cf-line: #e6edf6;         /* hairline borders */
-  --cf-surface: #ffffff;
-  --cf-surface-2: #f6f9fd;    /* subtle fills */
-  --cf-radius: 14px;
-  --cf-radius-sm: 10px;
-  --cf-shadow: 0 1px 2px rgba(15, 44, 77, 0.05), 0 8px 24px -12px rgba(15, 44, 77, 0.14);
-  --cf-shadow-hover: 0 2px 6px rgba(15, 44, 77, 0.08), 0 14px 34px -14px rgba(21, 101, 192, 0.28);
+  /* Shared page tokens, remapped onto the Spartan (shadcn) design tokens defined in tailwind.css, so
+     the whole app adopts the Spartan palette, borders and radius from one place. The DAG canvas tokens
+     and run-status colors below are deliberately independent (the dark graph surface). */
+  --cf-blue: var(--primary);
+  --cf-blue-light: color-mix(in srgb, var(--primary) 10%, white);
+  --cf-ink: var(--foreground);          /* headings */
+  --cf-ink-2: var(--foreground);        /* body strong */
+  --cf-muted: var(--muted-foreground);  /* secondary text */
+  --mat-sys-on-surface-variant: var(--muted-foreground);
+  --cf-line: var(--border);             /* hairline borders */
+  --cf-surface: var(--card);
+  --cf-surface-2: var(--muted);         /* subtle fills */
+  --cf-radius: 0.75rem;                 /* cards: shadcn rounded-xl */
+  --cf-radius-sm: var(--radius);        /* controls: shadcn radius */
+  --cf-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --cf-shadow-hover: 0 1px 2px 0 rgb(0 0 0 / 0.06), 0 8px 24px -12px rgb(0 0 0 / 0.18);
 
-  /* Display typeface for titles — Poppins: rounded, friendly geometric sans that matches the
-     smooth, bright blue-white dashboard style (pairs with Inter for body/UI). */
-  --cf-font-display: 'Poppins', 'Inter', system-ui, sans-serif;
+  /* One mainstream UI typeface everywhere — Inter (the shadcn/modern-dashboard standard), for both
+     body and headings; headings lean on weight and tracking, not a second family. */
+  --cf-font-display: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --cf-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* DAG canvas — a dark, terminal-grade surface (the graph is where people watch a run live). */
@@ -85,7 +86,7 @@ body {
   --cf-ok: #34d399;
   --cf-bad: #fb7185;
   --cf-run: #38bdf8;
-  --cf-skip: #64748b;
+  --cf-skip: var(--muted-foreground);
 }
 
 /* Page scaffolding */
@@ -143,21 +144,21 @@ body {
   border-radius: 50%;
   background: currentColor;
 }
-.st-standby   { color: #3d5372; background: #f1f5f9; }
+.st-standby   { color: var(--muted-foreground); background: #f1f5f9; }
 .st-scheduled { color: #1565c0; background: #e8f1fd; }
 .st-running   { color: #0f9d58; background: #e6f4ea; }
 .st-paused    { color: #b7791f; background: #fdf6e3; }
 .st-finished  { color: #0891b2; background: #e0f7fa; }
 .st-canceled  { color: #d93025; background: #fce8e6; }
-.st-none      { color: #3d5372; background: #f1f5f9; }
+.st-none      { color: var(--muted-foreground); background: #f1f5f9; }
 
 /* DAG run/node status chips — a cleaner, more saturated palette than the old pastels; the hues match
    the cytoscape node colours used on the dark canvas in cf-dag-graph. */
 .dg-success { color: #067a55; background: #d9f5ea; }
 .dg-failed  { color: #c02b4b; background: #ffe4e9; }
 .dg-running { color: #0b74b8; background: #dcf1fd; }
-.dg-skipped { color: #3d5372; background: #eef1f6; }
-.dg-none    { color: #3d5372; background: #f1f5f9; }
+.dg-skipped { color: var(--muted-foreground); background: #eef1f6; }
+.dg-none    { color: var(--muted-foreground); background: #f1f5f9; }
 
 .ok   { color: #0f9d58; font-weight: 600; }
 .bad  { color: #d93025; font-weight: 600; }
@@ -226,3 +227,83 @@ table.mat-mdc-table {
 .mat-mdc-icon-button { border-radius: 50% !important; }
 /* Plain HTML buttons/inputs used in custom toolbars already set their own radius; leave them. */
 
+
+/* ── Spartan (shadcn) bridge for the remaining Material components ──────────────────────────────
+   Align Material inputs, selects, menus, dialogs and tooltips to the shadcn tokens so the whole
+   app reads as one system without rewriting every template. */
+
+/* Outlined form fields (inputs + selects): shadcn radius + hairline border, filled surface. */
+:root {
+  --mdc-outlined-text-field-container-shape: var(--radius);
+  --mdc-outlined-text-field-outline-color: var(--border);
+  --mdc-outlined-text-field-hover-outline-color: var(--muted-foreground);
+  --mdc-outlined-text-field-focus-outline-color: var(--primary);
+  --mdc-outlined-text-field-focus-outline-width: 1px;
+}
+
+/* Overlay surfaces: select panels, autocomplete, menus — shadcn card look. */
+.mat-mdc-select-panel,
+.mat-mdc-autocomplete-panel,
+.mat-mdc-menu-panel {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: 0 4px 16px -4px rgb(0 0 0 / 0.14), 0 2px 6px -2px rgb(0 0 0 / 0.10) !important;
+  background: var(--popover) !important;
+}
+.mat-mdc-option { border-radius: 6px; margin: 2px 4px; min-height: 38px; }
+.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
+  background: var(--cf-blue-light) !important;
+}
+
+/* Dialogs: shadcn rounded card with a soft shadow and a hairline border. */
+.mat-mdc-dialog-container .mdc-dialog__surface {
+  border-radius: var(--radius) !important;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 38px -10px rgb(0 0 0 / 0.28), 0 3px 10px -3px rgb(0 0 0 / 0.14) !important;
+}
+
+/* Tooltips: smaller, shadcn-dark. */
+.mat-mdc-tooltip .mdc-tooltip__surface {
+  background: var(--foreground) !important;
+  color: var(--background) !important;
+  border-radius: 6px !important;
+  font-size: 0.72rem !important;
+}
+
+/* Snackbars: shadcn surface. */
+.mat-mdc-snack-bar-container .mdc-snackbar__surface {
+  border-radius: var(--radius) !important;
+  border: 1px solid var(--border);
+}
+
+/* Paginator: flatten onto the page background. */
+.mat-mdc-paginator { background: transparent !important; color: var(--muted-foreground); }
+
+/* ── Dark theme: map Material's system tokens onto the shadcn dark tokens (which flip under .dark in
+   tailwind.css), so Angular Material components go dark alongside the Spartan/token-driven surfaces. */
+:root.dark {
+  color-scheme: dark;
+  --mat-sys-background: var(--background);
+  --mat-sys-surface: var(--card);
+  --mat-sys-surface-container-low: var(--card);
+  --mat-sys-surface-container: var(--card);
+  --mat-sys-surface-container-high: var(--popover);
+  --mat-sys-surface-container-highest: var(--popover);
+  --mat-sys-surface-variant: var(--muted);
+  --mat-sys-on-surface: var(--foreground);
+  --mat-sys-on-surface-variant: var(--muted-foreground);
+  --mat-sys-outline: var(--border);
+  --mat-sys-outline-variant: var(--border);
+  --mat-sys-primary: var(--primary);
+  --mat-sys-on-primary: var(--primary-foreground);
+  --mat-sys-secondary-container: var(--accent);
+  --mat-sys-on-secondary-container: var(--accent-foreground);
+  --mat-sys-error: var(--destructive);
+}
+
+/* The app body follows the shadcn background in both themes (tailwind's base layer already sets this on
+   body; keep Material's body rule in step so there is no light flash behind the content). */
+:root.dark body { background-color: var(--background); color: var(--foreground); }
+
+/* Table hover tint reads too strong on dark; soften it. */
+:root.dark .mat-mdc-row:hover .mat-mdc-cell { background: color-mix(in srgb, var(--primary) 16%, transparent); border-color: var(--border); }

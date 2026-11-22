@@ -99,7 +99,8 @@ public class DefaultTaskDispatcher
         try {
             RunRequest run = new RunRequest(executionId, request.taskGroup(), request.taskName(),
                     request.className(), request.beanName(), request.methodName(),
-                    request.initialParameter(), 0, request.timeout(), schedulerRepr);
+                    request.initialParameter(), 0, request.timeout(), schedulerRepr,
+                    request.language(), request.script(), request.datasource());
             restClient.post().uri(executor.runUrl()).contentType(MediaType.APPLICATION_JSON)
                     .body(run).retrieve().toBodilessEntity();
 
